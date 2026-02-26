@@ -1,0 +1,44 @@
+name: appsi
+description: A new Flutter project for Supabase and Dokploy.
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.6.0
+  flutter_dotenv: ^5.1.0
+  image_picker: ^1.0.7
+  google_fonts: ^6.2.1
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.19.0
+  flutter_web_plugins: 
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/
+    - .env
+
+dependency_overrides:
+  app_links: 6.1.1
+
+flutter_launcher_icons:
+  image_path: "assets/iconoapp.png"
+  android: true
+  ios: false
+  web:
+    generate: true
+    image_path: "assets/iconoapp.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
