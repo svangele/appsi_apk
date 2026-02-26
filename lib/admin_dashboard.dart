@@ -594,9 +594,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           separatorBuilder: (_, __) => const SizedBox(height: 12),
                           itemBuilder: (_, __) => _buildShimmerItem(),
                         )
-                      : RefreshIndicator(
-                    onRefresh: _fetchUsers,
-                    child: users.isEmpty
+                      : LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isDesktop = constraints.maxWidth > 800;
+                            return RefreshIndicator(
+                              onRefresh: _fetchUsers,
+                              child: users.isEmpty
                         ? ListView(
                             children: [
                               const SizedBox(height: 80),
@@ -614,139 +617,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               ),
                             ],
                           )
-                        : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: users.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final user = users[index];
-                        final String role = user['role'] ?? 'usuario';
-                        
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            side: BorderSide(color: Colors.grey[200]!),
-                          ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: role == 'admin' 
-                                  ? theme.colorScheme.tertiary.withOpacity(0.1)
-                                  : theme.colorScheme.secondary.withOpacity(0.1),
-                              child: Icon(
-                                role == 'admin' ? Icons.admin_panel_settings : Icons.person_outline,
-                                color: role == 'admin' 
-                                    ? theme.colorScheme.tertiary 
-                                    : theme.colorScheme.secondary,
-                              ),
-                            ),
-                            title: Text(
-                              '${user['numero_empleado'] ?? '----'} | ${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'.trim(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                decoration: (user['is_blocked'] ?? false) ? TextDecoration.lineThrough : null,
-                                color: (user['is_blocked'] ?? false) ? Colors.grey : null,
-                              ),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(user['email'] ?? 'Sin correo', style: const TextStyle(fontSize: 12)),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: role == 'admin' 
-                                              ? theme.colorScheme.tertiary.withOpacity(0.1)
-                                              : theme.colorScheme.primary.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          role.toUpperCase(),
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: role == 'admin' 
-                                                ? theme.colorScheme.tertiary 
-                                                : theme.colorScheme.primary,
-                                          ),
-                                        ),
-                                      ),
-                                      if (user['is_blocked'] ?? false) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.red.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(8),
-                                          ),
-                                          child: const Text(
-                                            'BLOQUEADO',
-                                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red),
-                                          ),
-                                        ),
-                                      ],
-                                      const SizedBox(width: 12),
-                                      // Permission Indicators
-                                      if (user['permissions'] != null) ...[
-                                        _buildMiniIcon(Icons.group, user['permissions']['show_users'] == true),
-                                        _buildMiniIcon(Icons.inventory_2, user['permissions']['show_issi'] == true),
-                                        _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
-                                        _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
-                                        _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            trailing: _isAdmin 
-                              ? PopupMenuButton<String>(
-                                  onSelected: (value) async {
-                                    if (value == 'edit') {
-                                      _showUserForm(user: user);
-                                    } else if (value == 'delete') {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Eliminar Usuario'),
-                                          content: const Text('¿Estás seguro de que deseas eliminar este usuario? Esta acción no se puede deshacer.'),
-                                          actions: [
-                                            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('CANCELAR')),
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context, true),
-                                              style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                              child: const Text('ELIMINAR'),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm == true) {
-                                        try {
-                                          await Supabase.instance.client.rpc('delete_user_admin', params: {'user_id_param': user['id']});
-                                          _fetchUsers();
-                                        } catch (e) {
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                                        }
-                                      }
-                                    }
-                                  },
-                                  itemBuilder: (context) => [
-                                    const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Editar'), dense: true)),
-                                    const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
-                                  ],
-                                )
-                              : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                        : (isDesktop 
+                            ? _buildDesktopLayout(theme, users) 
+                            : _buildMobileLayout(theme, users)),
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -760,6 +636,274 @@ class _AdminDashboardState extends State<AdminDashboard> {
         icon,
         size: 14,
         color: active ? const Color(0xFF344092) : Colors.grey.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildMobileLayout(ThemeData theme, List<Map<String, dynamic>> users) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: users.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final user = users[index];
+        final String role = user['role'] ?? 'usuario';
+        
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[200]!),
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: role == 'admin' 
+                  ? theme.colorScheme.tertiary.withOpacity(0.1)
+                  : theme.colorScheme.secondary.withOpacity(0.1),
+              child: Icon(
+                role == 'admin' ? Icons.admin_panel_settings : Icons.person_outline,
+                color: role == 'admin' 
+                    ? theme.colorScheme.tertiary 
+                    : theme.colorScheme.secondary,
+              ),
+            ),
+            title: Text(
+              '${user['numero_empleado'] ?? '----'} | ${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'.trim(),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                decoration: (user['is_blocked'] ?? false) ? TextDecoration.lineThrough : null,
+                color: (user['is_blocked'] ?? false) ? Colors.grey : null,
+              ),
+            ),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: 4.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(user['email'] ?? 'Sin correo', style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: role == 'admin' 
+                              ? theme.colorScheme.tertiary.withOpacity(0.1)
+                              : theme.colorScheme.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          role.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: role == 'admin' 
+                                ? theme.colorScheme.tertiary 
+                                : theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      if (user['is_blocked'] ?? false) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            'BLOQUEADO',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 12),
+                      if (user['permissions'] != null) ...[
+                        _buildMiniIcon(Icons.group, user['permissions']['show_users'] == true),
+                        _buildMiniIcon(Icons.inventory_2, user['permissions']['show_issi'] == true),
+                        _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
+                        _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
+                        _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            trailing: _isAdmin 
+              ? PopupMenuButton<String>(
+                  onSelected: (value) async {
+                    if (value == 'edit') {
+                      _showUserForm(user: user);
+                    } else if (value == 'delete') {
+                      _deleteUser(user['id']);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Editar'), dense: true)),
+                    const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
+                  ],
+                )
+              : null,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopLayout(ThemeData theme, List<Map<String, dynamic>> users) {
+    int totalAdmins = _users.where((u) => u['role'] == 'admin').length;
+    int totalBlocked = _users.where((u) => (u['is_blocked'] ?? false) == true).length;
+    int totalActive = _users.where((u) => u['status_sys'] == 'ACTIVO').length;
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: _buildKpiCard('Total Usuarios', _users.length.toString(), Icons.people, Colors.blue)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildKpiCard('Activos', totalActive.toString(), Icons.check_circle, Colors.green)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildKpiCard('Administradores', totalAdmins.toString(), Icons.admin_panel_settings, theme.colorScheme.tertiary)),
+              const SizedBox(width: 16),
+              Expanded(child: _buildKpiCard('Bloqueados', totalBlocked.toString(), Icons.block, Colors.red)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.grey[200]!),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
+                child: DataTable(
+                  headingRowColor: WidgetStateProperty.all(Colors.grey[50]),
+                  columns: const [
+                    DataColumn(label: Text('Num. Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Accesos', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                  ],
+                  rows: users.map((user) {
+                    final role = user['role'] ?? 'usuario';
+                    return DataRow(
+                      cells: [
+                        DataCell(Text(user['numero_empleado'] ?? '----')),
+                        DataCell(Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: role == 'admin' 
+                                  ? theme.colorScheme.tertiary.withOpacity(0.1)
+                                  : theme.colorScheme.secondary.withOpacity(0.1),
+                              child: Icon(
+                                role == 'admin' ? Icons.admin_panel_settings : Icons.person_outline,
+                                size: 14,
+                                color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.secondary,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'.trim(),
+                              style: TextStyle(
+                                decoration: (user['is_blocked'] ?? false) ? TextDecoration.lineThrough : null,
+                                color: (user['is_blocked'] ?? false) ? Colors.grey : null,
+                              ),
+                            ),
+                          ],
+                        )),
+                        DataCell(Text(user['email'] ?? 'Sin correo')),
+                        DataCell(Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: role == 'admin' 
+                                ? theme.colorScheme.tertiary.withOpacity(0.1)
+                                : theme.colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            role.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+                            ),
+                          ),
+                        )),
+                        DataCell(Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (user['permissions'] != null) ...[
+                              _buildMiniIcon(Icons.group, user['permissions']['show_users'] == true),
+                              _buildMiniIcon(Icons.inventory_2, user['permissions']['show_issi'] == true),
+                              _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
+                              _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
+                              _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
+                            ],
+                          ]
+                        )),
+                        DataCell(_isAdmin 
+                            ? Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                                    onPressed: () => _showUserForm(user: user),
+                                    tooltip: 'Editar',
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                                    onPressed: () => _deleteUser(user['id']),
+                                    tooltip: 'Eliminar',
+                                  ),
+                                ],
+                              )
+                            : const SizedBox()),
+                      ],
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKpiCard(String title, String value, IconData icon, Color color) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(title, style: TextStyle(color: Colors.grey[600], fontSize: 14, fontWeight: FontWeight.w500)),
+                Icon(icon, color: color, size: 24),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(value, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          ],
+        ),
       ),
     );
   }
