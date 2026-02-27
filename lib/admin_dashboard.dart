@@ -509,18 +509,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
-    if (_searchQuery.isEmpty) return _users;
-    final query = _searchQuery.toLowerCase();
-    return _users.where((user) {
-      final nombre = (user['nombre'] ?? '').toString().toLowerCase();
-      final paterno = (user['paterno'] ?? '').toString().toLowerCase();
-      final materno = (user['materno'] ?? '').toString().toLowerCase();
-      final fullName = (user['full_name'] ?? '').toString().toLowerCase();
-      final role = (user['role'] ?? '').toString().toLowerCase();
-      final numEmp = (user['numero_empleado'] ?? '').toString().toLowerCase();
-      return nombre.contains(query) || paterno.contains(query) || materno.contains(query) || 
-             fullName.contains(query) || role.contains(query) || numEmp.contains(query);
-    }).toList();
+    List<Map<String, dynamic>> result;
+    if (_searchQuery.isEmpty) {
+      result = List<Map<String, dynamic>>.from(_users);
+    } else {
+      final query = _searchQuery.toLowerCase();
+      result = _users.where((user) {
+        final nombre = (user['nombre'] ?? '').toString().toLowerCase();
+        final paterno = (user['paterno'] ?? '').toString().toLowerCase();
+        final materno = (user['materno'] ?? '').toString().toLowerCase();
+        final fullName = (user['full_name'] ?? '').toString().toLowerCase();
+        final role = (user['role'] ?? '').toString().toLowerCase();
+        final numEmp = (user['numero_empleado'] ?? '').toString().toLowerCase();
+        return nombre.contains(query) || paterno.contains(query) || materno.contains(query) || 
+               fullName.contains(query) || role.contains(query) || numEmp.contains(query);
+      }).toList();
+    }
+    
+    // Sort by numero_empleado descending
+    result.sort((a, b) {
+      final numAStr = a['numero_empleado']?.toString() ?? '';
+      final numBStr = b['numero_empleado']?.toString() ?? '';
+      final numA = int.tryParse(numAStr) ?? 0;
+      final numB = int.tryParse(numBStr) ?? 0;
+      return numB.compareTo(numA);
+    });
+    
+    return result;
   }
 
   Widget _buildShimmerItem() {
@@ -758,6 +773,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
     int totalBlocked = _users.where((u) => (u['is_blocked'] ?? false) == true).length;
     int totalActive = _users.where((u) => u['status_sys'] == 'ACTIVO').length;
 
+    final dataSource = _UserDataSource(
+      users: users,
+      theme: theme,
+      isAdmin: _isAdmin,
+      onEdit: (user) => _showUserForm(user: user),
+      onDelete: (id) => _deleteUser(id),
+    );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -775,147 +798,81 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ],
           ),
           const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'Buscar por nombre o rol...',
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() => _searchQuery = '');
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                ),
-              ),
-              if (_isAdmin) ...[
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  onPressed: () => _showUserForm(),
-                  icon: const Icon(Icons.add),
-                  label: const Text('NUEVO USUARIO'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: theme.colorScheme.secondary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 24),
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(color: Colors.grey[200]!),
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minWidth: MediaQuery.of(context).size.width - 48),
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(Colors.grey[50]),
-                  columns: const [
-                    DataColumn(label: Text('Num. Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Accesos', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                  rows: users.map((user) {
-                    final role = user['role'] ?? 'usuario';
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(user['numero_empleado'] ?? '----')),
-                        DataCell(Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 12,
-                              backgroundColor: role == 'admin' 
-                                  ? theme.colorScheme.tertiary.withOpacity(0.1)
-                                  : theme.colorScheme.secondary.withOpacity(0.1),
-                              child: Icon(
-                                role == 'admin' ? Icons.admin_panel_settings : Icons.person_outline,
-                                size: 14,
-                                color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.secondary,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'.trim(),
-                              style: TextStyle(
-                                decoration: (user['is_blocked'] ?? false) ? TextDecoration.lineThrough : null,
-                                color: (user['is_blocked'] ?? false) ? Colors.grey : null,
-                              ),
-                            ),
-                          ],
-                        )),
-                        DataCell(Text(user['email'] ?? 'Sin correo')),
-                        DataCell(Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: role == 'admin' 
-                                ? theme.colorScheme.tertiary.withOpacity(0.1)
-                                : theme.colorScheme.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            role.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.primary,
-                            ),
-                          ),
-                        )),
-                        DataCell(Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (user['permissions'] != null) ...[
-                              _buildMiniIcon(Icons.group, user['permissions']['show_users'] == true),
-                              _buildMiniIcon(Icons.inventory_2, user['permissions']['show_issi'] == true),
-                              _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
-                              _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
-                              _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
-                            ],
-                          ]
-                        )),
-                        DataCell(_isAdmin 
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
-                                    onPressed: () => _showUserForm(user: user),
-                                    tooltip: 'Editar',
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                                    onPressed: () => _deleteUser(user['id']),
-                                    tooltip: 'Eliminar',
-                                  ),
-                                ],
-                              )
-                            : const SizedBox()),
-                      ],
-                    );
-                  }).toList(),
+            child: Theme(
+              data: theme.copyWith(
+                cardTheme: const CardTheme(elevation: 0, margin: EdgeInsets.zero),
+                cardColor: Colors.transparent, // Disable inner card color
+              ),
+              child: PaginatedDataTable(
+                header: SizedBox(
+                  width: 300,
+                  height: 48,
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Buscar por nombre o rol...',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: Colors.grey[300]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide(color: theme.colorScheme.primary),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                    ),
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                  ),
                 ),
+                actions: [
+                  if (_isAdmin)
+                    ElevatedButton.icon(
+                      onPressed: () => _showUserForm(),
+                      icon: const Icon(Icons.add),
+                      label: const Text('NUEVO USUARIO', style: TextStyle(fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green, // Users usually like success green for 'New'
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                ],
+                columns: const [
+                  DataColumn(label: Text('Num. Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Accesos', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                source: dataSource,
+                rowsPerPage: users.isEmpty ? 1 : (users.length > 8 ? 8 : users.length),
+                showCheckboxColumn: false,
+                horizontalMargin: 24,
+                columnSpacing: 24,
               ),
             ),
           ),
@@ -950,4 +907,124 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
   }
+}
+
+class _UserDataSource extends DataTableSource {
+  final List<Map<String, dynamic>> users;
+  final ThemeData theme;
+  final bool isAdmin;
+  final Function(Map<String, dynamic>) onEdit;
+  final Function(String) onDelete;
+
+  _UserDataSource({
+    required this.users,
+    required this.theme,
+    required this.isAdmin,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= users.length) return null;
+    final user = users[index];
+    final role = user['role'] ?? 'usuario';
+    
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(Text(user['numero_empleado']?.toString() ?? '----')),
+        DataCell(Row(
+          children: [
+            CircleAvatar(
+              radius: 12,
+              backgroundColor: role == 'admin' 
+                  ? theme.colorScheme.tertiary.withOpacity(0.1)
+                  : theme.colorScheme.secondary.withOpacity(0.1),
+              child: Icon(
+                role == 'admin' ? Icons.admin_panel_settings : Icons.person_outline,
+                size: 14,
+                color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.secondary,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'.trim(),
+              style: TextStyle(
+                decoration: (user['is_blocked'] ?? false) ? TextDecoration.lineThrough : null,
+                color: (user['is_blocked'] ?? false) ? Colors.grey : null,
+              ),
+            ),
+          ],
+        )),
+        DataCell(Text(user['email']?.toString() ?? 'Sin correo')),
+        DataCell(Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+          decoration: BoxDecoration(
+            color: role == 'admin' 
+                ? theme.colorScheme.tertiary.withOpacity(0.1)
+                : theme.colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            role.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: role == 'admin' ? theme.colorScheme.tertiary : theme.colorScheme.primary,
+            ),
+          ),
+        )),
+        DataCell(Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (user['permissions'] != null) ...[
+              _buildMiniIcon(Icons.group, user['permissions']['show_users'] == true),
+              _buildMiniIcon(Icons.inventory_2, user['permissions']['show_issi'] == true),
+              _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
+              _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
+              _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
+            ],
+          ]
+        )),
+        DataCell(isAdmin 
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                    onPressed: () => onEdit(user),
+                    tooltip: 'Editar',
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                    onPressed: () => onDelete(user['id']),
+                    tooltip: 'Eliminar',
+                  ),
+                ],
+              )
+            : const SizedBox()),
+      ],
+    );
+  }
+
+  Widget _buildMiniIcon(IconData icon, bool active) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 4),
+      child: Icon(
+        icon,
+        size: 14,
+        color: active ? const Color(0xFF344092) : Colors.grey.withOpacity(0.3),
+      ),
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => users.length;
+
+  @override
+  int get selectedRowCount => 0;
 }
