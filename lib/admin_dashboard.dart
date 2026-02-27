@@ -193,6 +193,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text('CONTROL', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
+                const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: statusSys,
                   decoration: const InputDecoration(
@@ -227,12 +229,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   onChanged: (val) => setDialogState(() => role = val!),
                 ),
                 const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Estado de la Cuenta'),
+                ListTile(
+                  title: const Text('Cuenta', style: TextStyle(fontSize: 14)),
                   subtitle: Text(isBlocked ? 'BLOQUEADA' : 'ACTIVA'),
-                  secondary: Icon(isBlocked ? Icons.block : Icons.check_circle, color: isBlocked ? Colors.red : Colors.green),
-                  value: !isBlocked,
-                  onChanged: (val) => setDialogState(() => isBlocked = !val),
+                  leading: Icon(isBlocked ? Icons.block : Icons.check_circle, color: isBlocked ? Colors.red : Colors.green),
+                  trailing: Transform.scale(
+                    scale: 0.7,
+                    child: Switch(
+                      value: !isBlocked,
+                      onChanged: (val) => setDialogState(() => isBlocked = !val),
+                    ),
+                  ),
                   contentPadding: EdgeInsets.zero,
                 ),
               ],
@@ -268,137 +275,172 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
             return Container(
               width: double.maxFinite,
-              constraints: BoxConstraints(maxWidth: isDesktop ? 1200 : 500),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isGrantingAccess 
-                              ? 'Conceder Acceso' 
-                              : (isEditing 
-                                  ? 'Editar ${user['nombre'] ?? ''} ${user['paterno'] ?? ''}' 
-                                  : 'Crear Nuevo Usuario'),
-                            style: theme.textTheme.titleLarge,
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      if (isDesktop)
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(child: generalSection),
-                            const SizedBox(width: 32),
-                            Expanded(child: permissionsSection),
-                            const SizedBox(width: 32),
-                            Expanded(child: credentialsSection),
-                          ],
-                        )
-                      else
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            generalSection,
-                            const SizedBox(height: 24),
-                            const Divider(),
-                            const SizedBox(height: 24),
-                            permissionsSection,
-                            const SizedBox(height: 24),
-                            const Divider(),
-                            const SizedBox(height: 24),
-                            credentialsSection,
-                          ],
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 1200 : 500,
+                maxHeight: MediaQuery.of(context).size.height * 0.9,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          isGrantingAccess 
+                            ? 'Conceder Acceso' 
+                            : (isEditing 
+                                ? 'Editar ${user['nombre'] ?? ''} ${user['paterno'] ?? ''}' 
+                                : 'Crear Nuevo Usuario'),
+                          style: theme.textTheme.titleLarge,
                         ),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text('CANCELAR'),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () async {
-                              // Requisitos mínimos solo al CREAR o CONCEDER ACCESO inicial
-                              if (!isEditing || isGrantingAccess) {
-                                if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Correo y contraseña son obligatorios')),
-                                  );
-                                  return;
-                                }
-                              }
-                              
-                              // Si es EDICIÓN normal, correo es obligatorio pero password es opcional
-                              if (isEditing && !isGrantingAccess) {
-                                if (emailController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('El correo es obligatorio')),
-                                  );
-                                  return;
-                                }
-                              }
-
-                              if (passwordController.text.trim().isNotEmpty && passwordController.text.trim().length < 8) {
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: isDesktop
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(child: generalSection),
+                                const SizedBox(width: 32),
+                                Expanded(child: permissionsSection),
+                                const SizedBox(width: 32),
+                                Expanded(child: credentialsSection),
+                              ],
+                            )
+                          : Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                generalSection,
+                                const SizedBox(height: 24),
+                                const Divider(),
+                                const SizedBox(height: 24),
+                                permissionsSection,
+                                const SizedBox(height: 24),
+                                const Divider(),
+                                const SizedBox(height: 24),
+                                credentialsSection,
+                              ],
+                            ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 24, bottom: 24, right: 24, top: 8),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        OutlinedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('CANCELAR'),
+                        ),
+                        const SizedBox(width: 16),
+                        ElevatedButton(
+                          onPressed: () async {
+                            // Requisitos mínimos solo al CREAR o CONCEDER ACCESO inicial
+                            if (!isEditing || isGrantingAccess) {
+                              if (emailController.text.trim().isEmpty || passwordController.text.trim().isEmpty) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres')),
+                                  const SnackBar(content: Text('Correo y contraseña son obligatorios')),
                                 );
                                 return;
                               }
-                              try {
-                                if (isEditing && !isGrantingAccess) {
-                                  await Supabase.instance.client.rpc('update_user_admin', params: {
-                                    'user_id_param': user['id'],
-                                    'new_email': emailController.text.trim(),
-                                    'new_full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
-                                    'new_role': role,
-                                    'new_status_sys': statusSys,
-                                    'is_blocked_param': isBlocked,
-                                    'new_permissions': permissions,
-                                    'new_password': passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
-                                  });
+                            }
+                            
+                            // Si es EDICIÓN normal, correo es obligatorio pero password es opcional
+                            if (isEditing && !isGrantingAccess) {
+                              if (emailController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('El correo es obligatorio')),
+                                );
+                                return;
+                              }
+                            }
 
-                                  // Send notification if status is not ACTIVO
-                                  if (statusSys != 'ACTIVO') {
-                                    try {
-                                      await NotificationService.send(
-                                        title: 'Estatus Sys: ${nombreController.text} ${paternoController.text}',
-                                        message: 'El colaborador ha sido marcado como $statusSys',
-                                        type: 'collaborator_alert',
-                                        metadata: {
-                                          'profile_id': user['id'],
-                                          'status': statusSys,
-                                        },
-                                      );
-                                      debugPrint('[NOTIF] ✅ Enviada: $statusSys para ${nombreController.text}');
-                                    } catch (notifErr) {
-                                      debugPrint('[NOTIF] ❌ Error al enviar: $notifErr');
-                                    }
+                            if (passwordController.text.trim().isNotEmpty && passwordController.text.trim().length < 8) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres')),
+                              );
+                              return;
+                            }
+                            try {
+                              if (isEditing && !isGrantingAccess) {
+                                await Supabase.instance.client.rpc('update_user_admin', params: {
+                                  'user_id_param': user['id'],
+                                  'new_email': emailController.text.trim(),
+                                  'new_full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
+                                  'new_role': role,
+                                  'new_status_sys': statusSys,
+                                  'is_blocked_param': isBlocked,
+                                  'new_permissions': permissions,
+                                  'new_password': passwordController.text.trim().isEmpty ? null : passwordController.text.trim(),
+                                });
+
+                                // Send notification if status is not ACTIVO
+                                if (statusSys != 'ACTIVO') {
+                                  try {
+                                    await NotificationService.send(
+                                      title: 'Estatus Sys: ${nombreController.text} ${paternoController.text}',
+                                      message: 'El colaborador ha sido marcado como $statusSys',
+                                      type: 'collaborator_alert',
+                                      metadata: {
+                                        'profile_id': user['id'],
+                                        'status': statusSys,
+                                      },
+                                    );
+                                    debugPrint('[NOTIF] ✅ Enviada: $statusSys para ${nombreController.text}');
+                                  } catch (notifErr) {
+                                    debugPrint('[NOTIF] ❌ Error al enviar: $notifErr');
                                   }
-                                } else if (isGrantingAccess) {
-                                  // Grant access to an existing profile
-                                  await Supabase.instance.client.rpc('create_user_admin', params: {
-                                    'email': emailController.text.trim(),
-                                    'password': passwordController.text.trim(),
-                                    'full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
-                                    'user_role': role,
-                                    'user_id_param': user['id'], // Link to existing profile
-                                  });
-                                  // Update profile with credentials and set status to ACTIVO
+                                }
+                              } else if (isGrantingAccess) {
+                                // Grant access to an existing profile
+                                await Supabase.instance.client.rpc('create_user_admin', params: {
+                                  'email': emailController.text.trim(),
+                                  'password': passwordController.text.trim(),
+                                  'full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
+                                  'user_role': role,
+                                  'user_id_param': user['id'], // Link to existing profile
+                                });
+                                // Update profile with credentials and set status to ACTIVO
+                                await Supabase.instance.client.from('profiles').update({
+                                  'drp_user': drpUser.text.trim(),
+                                  'drp_pass': drpPass.text.trim(),
+                                  'gp_user': gpUser.text.trim(),
+                                  'gp_pass': gpPass.text.trim(),
+                                  'bitrix_user': bitrixUser.text.trim(),
+                                  'bitrix_pass': bitrixPass.text.trim(),
+                                  'ek_user': ekUser.text.trim(),
+                                  'ek_pass': ekPass.text.trim(),
+                                  'otro_user': otroUser.text.trim(),
+                                  'otro_pass': otroPass.text.trim(),
+                                  'status_sys': 'ACTIVO', // Set to ACTIVO when granting access
+                                }).eq('id', user['id']);
+                              } else {
+                                // Creating new user
+                                final response = await Supabase.instance.client.rpc('create_user_admin', params: {
+                                  'email': emailController.text.trim(),
+                                  'password': passwordController.text.trim(),
+                                  'full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
+                                  'user_role': role,
+                                  'user_id_param': null, // No existing profile to link
+                                });
+
+                                final userId = response as String?;
+                                if (userId != null) {
+                                  // Update profile with extra data (credentials)
                                   await Supabase.instance.client.from('profiles').update({
+                                    'numero_empleado': employeeNumberController.text.trim(),
                                     'drp_user': drpUser.text.trim(),
                                     'drp_pass': drpPass.text.trim(),
                                     'gp_user': gpUser.text.trim(),
@@ -409,80 +451,52 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     'ek_pass': ekPass.text.trim(),
                                     'otro_user': otroUser.text.trim(),
                                     'otro_pass': otroPass.text.trim(),
-                                    'status_sys': 'ACTIVO', // Set to ACTIVO when granting access
-                                  }).eq('id', user['id']);
-                                } else {
-                                  // Creating new user
-                                  final response = await Supabase.instance.client.rpc('create_user_admin', params: {
-                                    'email': emailController.text.trim(),
-                                    'password': passwordController.text.trim(),
-                                    'full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
-                                    'user_role': role,
-                                    'user_id_param': null, // No existing profile to link
-                                  });
+                                    'status_sys': statusSys,
+                                  }).eq('id', userId);
 
-                                  final userId = response as String?;
-                                  if (userId != null) {
-                                    // Update profile with extra data (credentials)
-                                    await Supabase.instance.client.from('profiles').update({
-                                      'numero_empleado': employeeNumberController.text.trim(),
-                                      'drp_user': drpUser.text.trim(),
-                                      'drp_pass': drpPass.text.trim(),
-                                      'gp_user': gpUser.text.trim(),
-                                      'gp_pass': gpPass.text.trim(),
-                                      'bitrix_user': bitrixUser.text.trim(),
-                                      'bitrix_pass': bitrixPass.text.trim(),
-                                      'ek_user': ekUser.text.trim(),
-                                      'ek_pass': ekPass.text.trim(),
-                                      'otro_user': otroUser.text.trim(),
-                                      'otro_pass': otroPass.text.trim(),
-                                      'status_sys': statusSys,
-                                    }).eq('id', userId);
-
-                                    // Send notification if status is not ACTIVO
-                                    if (statusSys != 'ACTIVO') {
-                                      try {
-                                        await NotificationService.send(
-                                          title: 'Estatus Sys: ${nombreController.text} ${paternoController.text}',
-                                          message: 'Nuevo colaborador creado con estatus $statusSys',
-                                          type: 'collaborator_alert',
-                                          metadata: {
-                                            'profile_id': userId,
-                                            'status': statusSys,
-                                          },
-                                        );
-                                        debugPrint('[NOTIF] ✅ Enviada (crear): $statusSys');
-                                      } catch (notifErr) {
-                                        debugPrint('[NOTIF] ❌ Error al enviar (crear): $notifErr');
-                                      }
+                                  // Send notification if status is not ACTIVO
+                                  if (statusSys != 'ACTIVO') {
+                                    try {
+                                      await NotificationService.send(
+                                        title: 'Estatus Sys: ${nombreController.text} ${paternoController.text}',
+                                        message: 'Nuevo colaborador creado con estatus $statusSys',
+                                        type: 'collaborator_alert',
+                                        metadata: {
+                                          'profile_id': userId,
+                                          'status': statusSys,
+                                        },
+                                      );
+                                      debugPrint('[NOTIF] ✅ Enviada (crear): $statusSys');
+                                    } catch (notifErr) {
+                                      debugPrint('[NOTIF] ❌ Error al enviar (crear): $notifErr');
                                     }
                                   }
                                 }
-                                if (mounted) {
-                                  Navigator.pop(context);
-                                  _fetchUsers();
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(isGrantingAccess ? 'Acceso concedido exitosamente' : (isEditing ? 'Usuario actualizado' : 'Usuario creado')),
-                                      backgroundColor: const Color(0xFFB1CB34),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-                                  );
-                                }
                               }
-                            },
-                            child: Text(isGrantingAccess ? 'CONCEDER ACCESO' : (isEditing ? 'GUARDAR' : 'CREAR')),
-                          ),
-                        ],
-                      ),
-                    ],
+                              if (mounted) {
+                                Navigator.pop(context);
+                                _fetchUsers();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(isGrantingAccess ? 'Acceso concedido exitosamente' : (isEditing ? 'Usuario actualizado' : 'Usuario creado')),
+                                    backgroundColor: const Color(0xFFB1CB34),
+                                  ),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+                                );
+                              }
+                            }
+                          },
+                          child: Text(isGrantingAccess ? 'CONCEDER ACCESO' : (isEditing ? 'GUARDAR' : 'CREAR')),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
             );
           },
@@ -492,11 +506,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   Widget _buildPermissionSwitch(String title, String key, IconData icon, Map<String, bool> permissions, StateSetter setDialogState) {
-    return SwitchListTile(
+    return ListTile(
       title: Text(title, style: const TextStyle(fontSize: 14)),
-      secondary: Icon(icon, size: 20),
-      value: permissions[key] ?? false,
-      onChanged: (val) => setDialogState(() => permissions[key] = val),
+      leading: Icon(icon, size: 20),
+      trailing: Transform.scale(
+        scale: 0.7,
+        child: Switch(
+          value: permissions[key] ?? false,
+          onChanged: (val) => setDialogState(() => permissions[key] = val),
+        ),
+      ),
       dense: true,
       contentPadding: EdgeInsets.zero,
     );
