@@ -830,10 +830,11 @@ class _CssiPageState extends State<CssiPage> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  @override
+@override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final filtered = _filteredItems;
