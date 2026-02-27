@@ -806,7 +806,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             child: Theme(
               data: theme.copyWith(
-                cardTheme: const CardTheme(elevation: 0, margin: EdgeInsets.zero),
+                cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
                 cardColor: Colors.transparent, // Disable inner card color
               ),
               child: PaginatedDataTable(
@@ -869,7 +869,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 source: dataSource,
-                rowsPerPage: users.isEmpty ? 1 : (users.length > 8 ? 8 : users.length),
+                rowsPerPage: users.isEmpty ? 1 : (users.length > 10 ? 10 : users.length),
                 showCheckboxColumn: false,
                 horizontalMargin: 24,
                 columnSpacing: 24,
