@@ -34,11 +34,11 @@ dependency_overrides:
   app_links: 6.1.1
 
 flutter_launcher_icons:
-  image_path: "assets/iconoapp.png"
+  image_path: "assets/sisolok.png"
   android: true
   ios: false
   web:
     generate: true
-    image_path: "assets/iconoapp.png"
+    image_path: "assets/sisolok.png"
     background_color: "#ffffff"
     theme_color: "#ffffff"
