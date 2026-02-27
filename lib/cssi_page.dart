@@ -776,112 +776,58 @@ class _CssiPageState extends State<CssiPage> {
     );
   }
 
-  Widget _buildDesktopLayout(List<Map<String, dynamic>> filtered) {
-    if (_currentPage >= _totalPages) _currentPage = 0;
-    
-    final startIndex = _currentPage * _itemsPerPage;
-    final endIndex = (startIndex + _itemsPerPage).clamp(0, filtered.length);
-    final paginatedItems = filtered.sublist(startIndex, endIndex);
-
-    return Column(
-      children: [
-        Expanded(
-          child: SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              width: double.infinity,
-              child: Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey[200]!)),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
-                      child: Text('Directorio de Colaboradores', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                    headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF344092)),
-                    columns: const [
-                      DataColumn(label: Text('Número')),
-                      DataColumn(label: Text('Status RH')),
-                      DataColumn(label: Text('Nombre')),
-                      DataColumn(label: Text('Puesto')),
-                      DataColumn(label: Text('Ubicación')),
-                      DataColumn(label: Text('Correo')),
-                      DataColumn(label: Text('Acciones')),
-                    ],
-                    rows: paginatedItems.map((item) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(item['numero_empleado']?.toString() ?? '---')),
-                          DataCell(_buildStatusChip(item['status_rh'] ?? 'ACTIVO', 'RH')),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                CircleAvatar(
-                                  radius: 16,
-                                  backgroundColor: const Color(0xFF344092).withOpacity(0.1),
-                                  backgroundImage: item['foto_url'] != null ? NetworkImage(item['foto_url']) : null,
-                                  child: item['foto_url'] == null 
-                                    ? Text((item['nombre'] ?? '?')[0], style: const TextStyle(color: Color(0xFF344092), fontWeight: FontWeight.bold, fontSize: 12))
-                                    : null,
-                                ),
-                                const SizedBox(width: 8),
-                                Text('${item['nombre']} ${item['paterno']} ${item['materno'] ?? ''}'.trim()),
-                              ],
-                            ),
-                          ),
-                          DataCell(Text(item['puesto'] ?? '---')),
-                          DataCell(Text(item['ubicacion'] ?? '---')),
-                          DataCell(Text(item['correo_personal'] ?? '---')),
-                          DataCell(
-                            widget.role == 'admin'
-                                ? PopupMenuButton<String>(
-                                    onSelected: (value) {
-                                      if (value == 'edit') _showForm(item: item);
-                                      if (value == 'delete') _deleteItem(item['id']);
-                                    },
-                                    itemBuilder: (context) => [
-                                      const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
-                                      const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+  Widget _buildDesktopLayout(List<Map<String, dynamic>> filtered, ThemeData theme) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey[200]!)),
+        child: Theme(
+          data: theme.copyWith(
+            cardTheme: const CardThemeData(elevation: 0, margin: EdgeInsets.zero),
+            cardColor: Colors.transparent,
+          ),
+          child: PaginatedDataTable(
+            header: const Text('Directorio de Colaboradores', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            actions: [
+              if (widget.role == 'admin')
+                ElevatedButton.icon(
+                  onPressed: () => _showForm(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.secondary,
+                    foregroundColor: Colors.white,
                   ),
+                  icon: const Icon(Icons.add),
+                  label: const Text('NUEVO'),
                 ),
-              ],
+            ],
+            columns: const [
+              DataColumn(label: Text('Número', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Status RH', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Puesto', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Ubicación', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
+              DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+            ],
+            source: _CssiDataSource(
+              items: filtered,
+              theme: theme,
+              isAdmin: widget.role == 'admin',
+              onEdit: (item) => _showForm(item: item),
+              onDelete: (id) => _deleteItem(id),
+              buildStatusChip: _buildStatusChip,
             ),
+            rowsPerPage: filtered.isEmpty ? 1 : (filtered.length > 10 ? 10 : filtered.length),
+            showCheckboxColumn: false,
+            horizontalMargin: 16,
+            columnSpacing: 16,
+            dataRowMinHeight: 40,
+            dataRowMaxHeight: 56,
+            headingRowHeight: 48,
           ),
         ),
       ),
-    ),
-        if (filtered.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: _currentPage > 0 ? () => setState(() => _currentPage--) : null,
-                ),
-                Text('Página ${_currentPage + 1} de $_totalPages'),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _currentPage < _totalPages - 1 ? () => setState(() => _currentPage++) : null,
-                ),
-              ],
-            ),
-          ),
-      ],
     );
   }
 
@@ -889,9 +835,10 @@ class _CssiPageState extends State<CssiPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final filtered = _filteredItems;
+    final isDesktopWidth = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      floatingActionButton: widget.role == 'admin' 
+      floatingActionButton: widget.role == 'admin' && !isDesktopWidth
         ? FloatingActionButton.extended(
             onPressed: () => _showForm(),
             backgroundColor: theme.colorScheme.secondary,
@@ -956,7 +903,7 @@ class _CssiPageState extends State<CssiPage> {
                     : LayoutBuilder(
                         builder: (context, constraints) {
                           if (constraints.maxWidth > 800) {
-                            return _buildDesktopLayout(filtered);
+                            return _buildDesktopLayout(filtered, theme);
                           } else {
                             return _buildMobileLayout(filtered);
                           }
@@ -967,4 +914,79 @@ class _CssiPageState extends State<CssiPage> {
       ),
     );
   }
+}
+
+class _CssiDataSource extends DataTableSource {
+  final List<Map<String, dynamic>> items;
+  final ThemeData theme;
+  final bool isAdmin;
+  final Function(Map<String, dynamic>) onEdit;
+  final Function(String) onDelete;
+  final Widget Function(String, String) buildStatusChip;
+
+  _CssiDataSource({
+    required this.items,
+    required this.theme,
+    required this.isAdmin,
+    required this.onEdit,
+    required this.onDelete,
+    required this.buildStatusChip,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= items.length) return null;
+    final item = items[index];
+
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(Text(item['numero_empleado']?.toString() ?? '---')),
+        DataCell(buildStatusChip(item['status_rh'] ?? 'ACTIVO', 'RH')),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: const Color(0xFF344092).withOpacity(0.1),
+                backgroundImage: item['foto_url'] != null ? NetworkImage(item['foto_url']) : null,
+                child: item['foto_url'] == null 
+                  ? Text((item['nombre'] ?? '?')[0], style: const TextStyle(color: Color(0xFF344092), fontWeight: FontWeight.bold, fontSize: 12))
+                  : null,
+              ),
+              const SizedBox(width: 8),
+              Text('${item['nombre']} ${item['paterno']} ${item['materno'] ?? ''}'.trim()),
+            ],
+          ),
+        ),
+        DataCell(Text(item['puesto'] ?? '---')),
+        DataCell(Text(item['ubicacion'] ?? '---')),
+        DataCell(Text(item['correo_personal'] ?? '---')),
+        DataCell(
+          isAdmin
+              ? PopupMenuButton<String>(
+                  onSelected: (value) {
+                    if (value == 'edit') onEdit(item);
+                    if (value == 'delete') onDelete(item['id']);
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
+                    const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
+                  ],
+                )
+              : const SizedBox.shrink(),
+        ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => items.length;
+
+  @override
+  int get selectedRowCount => 0;
 }
