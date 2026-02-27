@@ -492,6 +492,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
                                 );
                               }
+                            }
                           },
                           child: Text(isGrantingAccess ? 'CONCEDER ACCESO' : (isEditing ? 'GUARDAR' : 'CREAR')),
                         ),
