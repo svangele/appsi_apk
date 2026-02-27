@@ -594,12 +594,6 @@ class _IssiPageState extends State<IssiPage> {
         children: [
           PageHeader(
             title: 'ISSI - Inventario',
-            subtitle: 'Total: ${_items.length} elementos${totalFiltered != _items.length ? ' (mostrando $totalFiltered)' : ''}',
-            trailing: IconButton(
-              icon: const Icon(Icons.download_outlined, color: Colors.white),
-              tooltip: 'Exportar CSV',
-              onPressed: _exportCsv,
-            ),
             bottom: [
               TextField(
                 controller: _searchController,

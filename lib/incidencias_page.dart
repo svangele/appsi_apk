@@ -613,7 +613,6 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           SliverToBoxAdapter(
             child: PageHeader(
               title: 'Incidencias y Peticiones',
-              subtitle: 'Total: ${_incidencias.length} registros',
             ),
           ),
           // Antigüedad
