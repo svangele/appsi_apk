@@ -793,9 +793,16 @@ class _CssiPageState extends State<CssiPage> {
               child: Card(
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey[200]!)),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.fromLTRB(24, 24, 24, 0),
+                      child: Text('Directorio de Colaboradores', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    ),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: DataTable(
                     headingTextStyle: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF344092)),
                     columns: const [
                       DataColumn(label: Text('Número')),
@@ -833,19 +840,14 @@ class _CssiPageState extends State<CssiPage> {
                           DataCell(Text(item['correo_personal'] ?? '---')),
                           DataCell(
                             widget.role == 'admin'
-                                ? Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.edit, color: Colors.blue, size: 20),
-                                        onPressed: () => _showForm(item: item),
-                                        tooltip: 'Editar',
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                        onPressed: () => _deleteItem(item['id']),
-                                        tooltip: 'Eliminar',
-                                      ),
+                                ? PopupMenuButton<String>(
+                                    onSelected: (value) {
+                                      if (value == 'edit') _showForm(item: item);
+                                      if (value == 'delete') _deleteItem(item['id']);
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
+                                      const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                                     ],
                                   )
                                 : const SizedBox.shrink(),
@@ -898,34 +900,42 @@ class _CssiPageState extends State<CssiPage> {
         : null,
       body: Column(
         children: [
-          PageHeader(
-            title: 'Colaboradores SSI',
-            subtitle: null,
-            trailing: SizedBox(
-              width: 250,
-              height: 40,
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Buscar...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _searchQuery.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 20),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() { _searchQuery = ''; _currentPage = 0; });
-                          },
-                        )
-                      : null,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isDesktop = constraints.maxWidth > 800;
+              final searchWidget = SizedBox(
+                width: isDesktop ? 250 : double.infinity,
+                height: 40,
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() { _searchQuery = ''; _currentPage = 0; });
+                            },
+                          )
+                        : null,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                  ),
+                  onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 0; }),
                 ),
-                onChanged: (v) => setState(() { _searchQuery = v; _currentPage = 0; }),
-              ),
-            ),
+              );
+
+              return PageHeader(
+                title: 'Colaboradores SSI',
+                subtitle: null,
+                trailing: isDesktop ? searchWidget : null,
+                bottom: isDesktop ? null : [searchWidget],
+              );
+            },
           ),
           Expanded(
             child: _isLoading
