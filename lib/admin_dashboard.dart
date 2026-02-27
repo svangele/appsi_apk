@@ -589,15 +589,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
 
     return Scaffold(
-      floatingActionButton: (_isAdmin && !isDesktop)
-        ? FloatingActionButton.extended(
-            onPressed: () => _showUserForm(),
-            backgroundColor: theme.colorScheme.secondary,
-            foregroundColor: Colors.white,
-            icon: const Icon(Icons.add),
-            label: const Text('NUEVO'),
-          )
-        : null,
       body: Column(
               children: [
                 PageHeader(
@@ -817,20 +808,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
               child: PaginatedDataTable(
                 header: const Text('Directorio de Usuarios', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                actions: [
-                  if (_isAdmin)
-                    ElevatedButton.icon(
-                      onPressed: () => _showUserForm(),
-                      icon: const Icon(Icons.add),
-                      label: const Text('NUEVO USUARIO', style: TextStyle(fontWeight: FontWeight.bold)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green, // Users usually like success green for 'New'
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                ],
                 columns: const [
                   DataColumn(label: Text('Num. Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -842,8 +819,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 source: dataSource,
                 rowsPerPage: users.isEmpty ? 1 : (users.length > 10 ? 10 : users.length),
                 showCheckboxColumn: false,
-                horizontalMargin: 24,
-                columnSpacing: 24,
+                horizontalMargin: 16,
+                columnSpacing: 16,
+                dataRowMinHeight: 40,
+                dataRowMaxHeight: 44,
+                headingRowHeight: 48,
               ),
             ),
           ),
