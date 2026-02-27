@@ -563,6 +563,31 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final users = _filteredUsers;
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
+    final searchField = TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Buscar por nombre o rol...',
+        prefixIcon: const Icon(Icons.search),
+        suffixIcon: _searchQuery.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear, size: 20),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() => _searchQuery = '');
+                },
+              )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(24),
+          borderSide: BorderSide.none,
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+      ),
+      onChanged: (value) => setState(() => _searchQuery = value),
+    );
+
     return Scaffold(
       floatingActionButton: (_isAdmin && !isDesktop)
         ? FloatingActionButton.extended(
@@ -577,30 +602,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
               children: [
                 PageHeader(
                   title: 'Panel de Control',
-                  subtitle: 'Total: ${_users.length} usuarios registrados',
-                  bottom: isDesktop ? null : [
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Buscar por nombre o rol...',
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchQuery.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() => _searchQuery = '');
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      ),
-                      onChanged: (value) => setState(() => _searchQuery = value),
-                    ),
-                  ],
+                  trailing: isDesktop ? ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 300),
+                    child: SizedBox(height: 48, child: searchField),
+                  ) : null,
+                  bottom: !isDesktop ? [searchField] : null,
                 ),
                 Expanded(
                   child: _isLoading
@@ -810,42 +816,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 cardColor: Colors.transparent, // Disable inner card color
               ),
               child: PaginatedDataTable(
-                header: SizedBox(
-                  width: 300,
-                  height: 48,
-                  child: TextField(
-                    controller: _searchController,
-                    decoration: InputDecoration(
-                      hintText: 'Buscar por nombre o rol...',
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide(color: theme.colorScheme.primary),
-                      ),
-                      filled: true,
-                      fillColor: Colors.white,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                    ),
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                  ),
-                ),
+                header: const Text('Directorio de Usuarios', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 actions: [
                   if (_isAdmin)
                     ElevatedButton.icon(
@@ -988,19 +959,14 @@ class _UserDataSource extends DataTableSource {
           ]
         )),
         DataCell(isAdmin 
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
-                    onPressed: () => onEdit(user),
-                    tooltip: 'Editar',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                    onPressed: () => onDelete(user['id']),
-                    tooltip: 'Eliminar',
-                  ),
+            ? PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') onEdit(user);
+                  if (value == 'delete') onDelete(user['id']);
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
+                  const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                 ],
               )
             : const SizedBox()),
