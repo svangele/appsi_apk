@@ -217,7 +217,7 @@ class _CssiPageState extends State<CssiPage> {
                       child: DropdownButtonFormField<String>(
                         value: statusSys,
                         decoration: const InputDecoration(labelText: 'Status Sys'),
-                        items: ['ACTIVO', 'BAJA', 'CAMBIO', 'ELIMINAR'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                        items: ['ACTIVO', 'BAJA', 'CAMBIO', 'ELIMINAR', 'NO APLICA'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                         onChanged: (v) => setDialogState(() => statusSys = v),
                       ),
                     ),

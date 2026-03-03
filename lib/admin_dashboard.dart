@@ -202,7 +202,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     prefixIcon: Icon(Icons.settings_suggest_outlined),
                     filled: true,
                   ),
-                  items: ['ACTIVO', 'BAJA', 'CAMBIO', 'ELIMINAR'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  items: ['ACTIVO', 'BAJA', 'CAMBIO', 'ELIMINAR', 'NO APLICA'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                   onChanged: (val) => setDialogState(() => statusSys = val),
                 ),
                 const SizedBox(height: 24),
