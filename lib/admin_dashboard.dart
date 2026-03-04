@@ -999,7 +999,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     ),
                 ],
                 columns: const [
-                  DataColumn(label: Text('Num. Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('N Empleado', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Status Sys', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1075,6 +1076,7 @@ class _UserDataSource extends DataTableSource {
       index: index,
       cells: [
         DataCell(Text(user['numero_empleado']?.toString() ?? '----')),
+        DataCell(_buildStatusChip(user['status_sys']?.toString())),
         DataCell(Row(
           children: [
             CircleAvatar(
@@ -1151,6 +1153,42 @@ class _UserDataSource extends DataTableSource {
         icon,
         size: 14,
         color: active ? const Color(0xFF344092) : Colors.grey.withOpacity(0.3),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(String? status) {
+    final s = status ?? '---';
+    final Color color;
+    switch (s) {
+      case 'ACTIVO':
+        color = Colors.green;
+        break;
+      case 'CAMBIO':
+        color = Colors.orange;
+        break;
+      case 'BAJA':
+        color = Colors.red;
+        break;
+      case 'ELIMINAR':
+        color = Colors.red.shade900;
+        break;
+      case 'NO APLICA':
+        color = Colors.grey;
+        break;
+      default:
+        color = Colors.blueGrey;
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.8),
+      ),
+      child: Text(
+        s,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
       ),
     );
   }
