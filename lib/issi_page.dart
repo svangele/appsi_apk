@@ -803,45 +803,10 @@ class _IssiPageState extends State<IssiPage> {
                 ),
               );
 
-              final filterWidgets = SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    FilterChip(
-                      label: Text(_filterTipo ?? 'Tipo'),
-                      selected: _filterTipo != null,
-                      onSelected: (_) {
-                        _showFilterDialog('Tipo', _tipos, _filterTipo, (val) {
-                          setState(() { _filterTipo = val; _currentPage = 0; });
-                        });
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    FilterChip(
-                      label: Text(_filterCondicion ?? 'Condición'),
-                      selected: _filterCondicion != null,
-                      onSelected: (_) {
-                        _showFilterDialog('Condición', _condiciones, _filterCondicion, (val) {
-                          setState(() { _filterCondicion = val; _currentPage = 0; });
-                        });
-                      },
-                    ),
-                    if (_filterTipo != null || _filterCondicion != null) ...[
-                      const SizedBox(width: 8),
-                      ActionChip(
-                        avatar: const Icon(Icons.clear, size: 16),
-                        label: const Text('Limpiar'),
-                        onPressed: () => setState(() { _filterTipo = null; _filterCondicion = null; _currentPage = 0; }),
-                      ),
-                    ],
-                  ],
-                ),
-              );
-
               return PageHeader(
                 title: 'ISSI - Inventario',
                 trailing: isDesktop ? searchWidget : null,
-                bottom: isDesktop ? [filterWidgets] : [searchWidget, const SizedBox(height: 8), filterWidgets],
+                bottom: isDesktop ? null : [searchWidget],
               );
             },
           ),
@@ -856,8 +821,8 @@ class _IssiPageState extends State<IssiPage> {
                             Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
                             Text(
-                              _searchQuery.isNotEmpty || _filterTipo != null || _filterCondicion != null
-                                  ? 'Sin resultados para los filtros aplicados'
+                              _searchQuery.isNotEmpty
+                                  ? 'Sin resultados para la búsqueda'
                                   : 'No hay elementos en el inventario',
                               style: TextStyle(color: Colors.grey[500]),
                             ),
