@@ -732,29 +732,32 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final users = _filteredUsers;
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
-    final searchField = TextField(
-      controller: _searchController,
-      decoration: InputDecoration(
-        hintText: 'Buscar por nombre o rol...',
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: _searchQuery.isNotEmpty
-            ? IconButton(
-                icon: const Icon(Icons.clear, size: 20),
-                onPressed: () {
-                  _searchController.clear();
-                  setState(() => _searchQuery = '');
-                },
-              )
-            : null,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(24),
-          borderSide: BorderSide.none,
+    final searchField = SizedBox(
+      height: 40,
+      child: TextField(
+        controller: _searchController,
+        decoration: InputDecoration(
+          hintText: 'Buscar por nombre o rol...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
         ),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+        onChanged: (value) => setState(() => _searchQuery = value),
       ),
-      onChanged: (value) => setState(() => _searchQuery = value),
     );
 
     return Scaffold(
