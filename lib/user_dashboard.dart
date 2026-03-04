@@ -61,256 +61,290 @@ class _UserDashboardState extends State<UserDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDesktop = MediaQuery.of(context).size.width > 800;
+
+    final generalInfoCard = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.badge_outlined, color: Colors.blueGrey, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Datos del Colaborador',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (_profile?['nombre'] != null) ...[
+              _buildInfoRow(Icons.numbers, 'Número de empleado', _profile?['numero_empleado'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.fingerprint, 'CURP', _profile?['curp'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.business, 'Empresa', _profile?['empresa'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.account_tree_outlined, 'Área', _profile?['area'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.location_on_outlined, 'Ubicación', _profile?['ubicacion'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.person, 'Director', _profile?['director'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.manage_accounts, 'Gerente regional', _profile?['gerente_regional'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.person_pin, 'Jefe inmediato', _profile?['jefe_inmediato'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.groups, 'Líder', _profile?['lider'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.phone_outlined, 'Teléfono', _profile?['telefono'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.phone_android, 'Teléfono celular', _profile?['celular'] ?? '---'),
+              const SizedBox(height: 12),
+              _buildInfoRow(Icons.email, 'Correo', Supabase.instance.client.auth.currentUser?.email ?? '---'),
+            ] else ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'Sin datos de colaborador vinculados',
+                    style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final equipmentCard = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.inventory_2_outlined, color: Colors.blueGrey, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Equipo Asignado',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            if (_assignedEquipment == null || _assignedEquipment!.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text(
+                    'Sin equipo asignado registrado',
+                    style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              )
+            else
+              ..._assignedEquipment!.map((item) => _buildEquipmentItem(item, theme)),
+          ],
+        ),
+      ),
+    );
+
+    final credentialsCard = Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.key_outlined, color: Colors.blueGrey, size: 28),
+                SizedBox(width: 12),
+                Text(
+                  'Credenciales de Sistemas',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            _buildSystemAccessRow('DRP', _profile?['drp_user'], _profile?['drp_pass'], 'drp'),
+            _buildSystemAccessRow('GP', _profile?['gp_user'], _profile?['gp_pass'], 'gp'),
+            _buildSystemAccessRow('BITRIX', _profile?['bitrix_user'], _profile?['bitrix_pass'], 'bitrix'),
+            _buildSystemAccessRow('ENKONTROL', _profile?['ek_user'], _profile?['ek_pass'], 'ek'),
+            _buildSystemAccessRow('OTRO', _profile?['otro_user'], _profile?['otro_pass'], 'otro'),
+          ],
+        ),
+      ),
+    );
+
+    final actionButtons = Column(
+      children: [
+        OutlinedButton.icon(
+          onPressed: () => _showChangePasswordDialog(),
+          icon: const Icon(Icons.lock_outline),
+          label: const Text('CAMBIAR CONTRASEÑA'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: () async {
+            try {
+              final user = Supabase.instance.client.auth.currentUser;
+              await Supabase.instance.client.rpc('log_event', params: {
+                'action_type_param': 'CIERRE DE SESIÓN',
+                'target_info_param': 'Usuario: ${user?.email ?? '---'}',
+              });
+            } catch (e) {
+              debugPrint('Error logging logout: $e');
+            }
+            await Supabase.instance.client.auth.signOut();
+          },
+          icon: const Icon(Icons.logout_rounded),
+          label: const Text('CERRAR SESIÓN'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: Colors.redAccent,
+            side: const BorderSide(color: Colors.redAccent),
+            minimumSize: const Size(double.infinity, 50),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+      ],
+    );
 
     return _isLoading
         ? const Center(child: CircularProgressIndicator())
         : SingleChildScrollView(
-            child: Column(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
                   children: [
+                    Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
+                      children: [
+                        Container(
+                          height: 150,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.primary,
+                            borderRadius: const BorderRadius.only(
+                              bottomLeft: Radius.circular(32),
+                              bottomRight: Radius.circular(32),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 50,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: CircleAvatar(
+                              radius: 60,
+                              backgroundColor: theme.colorScheme.secondary.withOpacity(0.2),
+                              backgroundImage: (_profile?['foto_url'] != null && _profile?['foto_url'].toString().isNotEmpty == true)
+                                  ? NetworkImage(_profile!['foto_url'])
+                                  : null,
+                              child: (_profile?['foto_url'] == null || _profile?['foto_url'].toString().isEmpty == true)
+                                  ? Icon(Icons.person, size: 60, color: theme.colorScheme.secondary)
+                                  : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 70),
+                    Text(
+                      _profile?['full_name'] ?? 'Usuario',
+                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
                     Container(
-                      height: 150,
-                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary,
-                        borderRadius: const BorderRadius.only(
-                          bottomLeft: Radius.circular(32),
-                          bottomRight: Radius.circular(32),
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'ROL: ${(_profile?['role'] ?? 'Dato no disponible').toUpperCase()}',
+                        style: TextStyle(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 50,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: theme.colorScheme.secondary.withOpacity(0.2),
-                          backgroundImage: (_profile?['foto_url'] != null && _profile?['foto_url'].toString().isNotEmpty == true)
-                              ? NetworkImage(_profile!['foto_url'])
-                              : null,
-                          child: (_profile?['foto_url'] == null || _profile?['foto_url'].toString().isEmpty == true)
-                              ? Icon(Icons.person, size: 60, color: theme.colorScheme.secondary)
-                              : null,
-                        ),
-                      ),
+                    const SizedBox(height: 32),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: isDesktop
+                          ? Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    children: [
+                                      generalInfoCard,
+                                      const SizedBox(height: 24),
+                                      actionButtons,
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 24),
+                                Expanded(
+                                  flex: 1,
+                                  child: Column(
+                                    children: [
+                                      equipmentCard,
+                                      const SizedBox(height: 24),
+                                      credentialsCard,
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Column(
+                              children: [
+                                generalInfoCard,
+                                const SizedBox(height: 24),
+                                equipmentCard,
+                                const SizedBox(height: 24),
+                                credentialsCard,
+                                const SizedBox(height: 24),
+                                actionButtons,
+                              ],
+                            ),
                     ),
+                    const SizedBox(height: 40),
                   ],
                 ),
-                const SizedBox(height: 70),
-                Text(
-                  _profile?['full_name'] ?? 'Usuario',
-                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'ROL: ${(_profile?['role'] ?? 'Dato no disponible').toUpperCase()}',
-                    style: TextStyle(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: Colors.grey[200]!),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.badge_outlined, color: Colors.blueGrey, size: 28),
-                              SizedBox(width: 12),
-                              Text(
-                                'Datos del Colaborador',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          if (_profile?['nombre'] != null) ...[
-                            _buildInfoRow(Icons.numbers, 'Número de empleado', _profile?['numero_empleado'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.fingerprint, 'CURP', _profile?['curp'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.business, 'Empresa', _profile?['empresa'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.account_tree_outlined, 'Área', _profile?['area'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.location_on_outlined, 'Ubicación', _profile?['ubicacion'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.person, 'Director', _profile?['director'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.manage_accounts, 'Gerente regional', _profile?['gerente_regional'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.person_pin, 'Jefe inmediato', _profile?['jefe_inmediato'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.groups, 'Líder', _profile?['lider'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.phone_outlined, 'Teléfono', _profile?['telefono'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.phone_android, 'Teléfono celular', _profile?['celular'] ?? '---'),
-                            const SizedBox(height: 12),
-                            _buildInfoRow(Icons.email, 'Correo', Supabase.instance.client.auth.currentUser?.email ?? '---'),
-                          ] else ...[
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Text(
-                                  'Sin datos de colaborador vinculados',
-                                  style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Nueva Sección: Equipo Asignado
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: Colors.grey[200]!),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.inventory_2_outlined, color: Colors.blueGrey, size: 28),
-                              SizedBox(width: 12),
-                              Text(
-                                'Equipo Asignado',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          if (_assignedEquipment == null || _assignedEquipment!.isEmpty)
-                            const Center(
-                              child: Padding(
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Text(
-                                  'Sin equipo asignado registrado',
-                                  style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
-                                ),
-                              ),
-                            )
-                          else
-                            ..._assignedEquipment!.map((item) => _buildEquipmentItem(item, theme)),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Nueva Sección: Credenciales de Sistemas
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      side: BorderSide(color: Colors.grey[200]!),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.key_outlined, color: Colors.blueGrey, size: 28),
-                              SizedBox(width: 12),
-                              Text(
-                                'Credenciales de Sistemas',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 24),
-                          _buildSystemAccessRow('DRP', _profile?['drp_user'], _profile?['drp_pass'], 'drp'),
-                          _buildSystemAccessRow('GP', _profile?['gp_user'], _profile?['gp_pass'], 'gp'),
-                          _buildSystemAccessRow('BITRIX', _profile?['bitrix_user'], _profile?['bitrix_pass'], 'bitrix'),
-                          _buildSystemAccessRow('ENKONTROL', _profile?['ek_user'], _profile?['ek_pass'], 'ek'),
-                          _buildSystemAccessRow('OTRO', _profile?['otro_user'], _profile?['otro_pass'], 'otro'),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Column(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _showChangePasswordDialog(),
-                        icon: const Icon(Icons.lock_outline),
-                        label: const Text('CAMBIAR CONTRASEÑA'),
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      OutlinedButton.icon(
-                        onPressed: () async {
-                          try {
-                            final user = Supabase.instance.client.auth.currentUser;
-                            await Supabase.instance.client.rpc('log_event', params: {
-                              'action_type_param': 'CIERRE DE SESIÓN',
-                              'target_info_param': 'Usuario: ${user?.email ?? '---'}',
-                            });
-                          } catch (e) {
-                            debugPrint('Error logging logout: $e');
-                          }
-                          await Supabase.instance.client.auth.signOut();
-                        },
-                        icon: const Icon(Icons.logout_rounded),
-                        label: const Text('CERRAR SESIÓN'),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.redAccent,
-                          side: const BorderSide(color: Colors.redAccent),
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 40),
-              ],
+              ),
             ),
           );
   }
