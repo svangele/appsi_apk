@@ -291,6 +291,19 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     final theme = Theme.of(context);
     final completedYears = _calcYears();
 
+    // Map to accumulate requested days per period
+    final String currentUserId = Supabase.instance.client.auth.currentUser?.id ?? '';
+    String normalizePeriod(String? p) => (p ?? '').replaceAll(RegExp(r'\D'), '');
+    
+    final usedDaysMap = <String, int>{};
+    for (final inc in _incidencias) {
+      if (inc['usuario_id'] == currentUserId && inc['status'] != 'CANCELADA') {
+        final normP = normalizePeriod(inc['periodo'] as String?);
+        final dias = inc['dias'] as int? ?? 0;
+        usedDaysMap[normP] = (usedDaysMap[normP] ?? 0) + dias;
+      }
+    }
+
     // Build rows: from year 1 to completedYears + 1 (one future period)
     final tableRows = <Map<String, dynamic>>[];
     for (int y = 1; y <= completedYears + 1; y++) {
@@ -298,6 +311,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final anniversary = DateTime(base.year + y, base.month, base.day);
       final periodStart = anniversary.year - 1;
       final periodLabel = '$periodStart - ${anniversary.year}';
+      final normLabel = normalizePeriod(periodLabel);
 
       // Days: old law if periodStart < 2023, new law otherwise
       final int days = periodStart >= 2023
@@ -306,10 +320,12 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
       final isCurrent = y == completedYears;       // last completed year
       final isUpcoming = anniversary.isAfter(now); // anniversary not yet passed
+      final daysRequested = usedDaysMap[normLabel] ?? 0;
 
       tableRows.add({
         'periodo': periodLabel,
         'days': days,
+        'requested': daysRequested,
         'isCurrent': isCurrent,
         'isUpcoming': isUpcoming,
       });
@@ -348,9 +364,13 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text('Período', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               )),
-              SizedBox(width: 80, child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Text('Días', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              SizedBox(width: 60, child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Text('Ley', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center),
+              )),
+              SizedBox(width: 70, child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                child: Text('Pedidos', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12), textAlign: TextAlign.center),
               )),
             ]),
           ),
@@ -384,10 +404,23 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                     ),
                   ),
                 )),
-                SizedBox(width: 80, child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                SizedBox(width: 60, child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: Text(
                     '${row['days']}',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                      color: isCurrent ? theme.colorScheme.secondary : (isUpcoming ? Colors.orange[700] : null),
+                    ),
+                  ),
+                )),
+                SizedBox(width: 70, child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Text(
+                    '${row['requested']}',
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
