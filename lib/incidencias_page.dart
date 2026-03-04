@@ -370,10 +370,12 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     
     final usedDaysMap = <String, int>{};
     for (final inc in _incidencias) {
-      if (inc['usuario_id'] == targetUserId && inc['status'] != 'CANCELADA') {
+      if (inc['usuario_id'] == targetUserId && inc['status'] == 'APROBADA') {
         final normP = normalizePeriod(inc['periodo'] as String?);
         final dias = inc['dias'] as int? ?? 0;
-        usedDaysMap[normP] = (usedDaysMap[normP] ?? 0) + dias;
+        if (normP.isNotEmpty) {
+          usedDaysMap[normP] = (usedDaysMap[normP] ?? 0) + dias;
+        }
       }
     }
 
