@@ -12,6 +12,7 @@ class IncidenciasPage extends StatefulWidget {
 
 class _IncidenciasPageState extends State<IncidenciasPage> {
   List<Map<String, dynamic>> _incidencias = [];
+  List<Map<String, dynamic>> _allIncidencias = []; // all PENDIENTE for admin view
   bool _isLoading = true;
   String? _userRole;
   String? _userFullName;
@@ -519,6 +520,17 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           .select()
           .eq('usuario_id', _selectedUserId ?? Supabase.instance.client.auth.currentUser!.id)
           .order('created_at', ascending: false);
+
+      // For admin view: fetch ALL pending incidencias with profile data
+      List<Map<String, dynamic>> allPendingData = [];
+      if (_userRole == 'admin') {
+        final pendingResp = await Supabase.instance.client
+            .from('incidencias')
+            .select('*, profiles(nombre, paterno)')
+            .eq('status', 'PENDIENTE')
+            .order('created_at', ascending: false);
+        allPendingData = List<Map<String, dynamic>>.from(pendingResp);
+      }
       
       if (mounted) {
         setState(() {
@@ -530,6 +542,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               if (aOrder != bOrder) return aOrder.compareTo(bOrder);
               return (b['created_at'] as String).compareTo(a['created_at'] as String);
             });
+          _allIncidencias = allPendingData;
           _isLoading = false;
         });
       }
@@ -809,7 +822,116 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     );
   }
 
+  /// Tabla visible solo para administradores: muestra TODOS los registros con
+  /// status = 'PENDIENTE' de cualquier usuario.
+  Widget _buildPendingTable(ThemeData theme) {
+    // Gather all PENDIENTE items across all fetched incidencias 
+    // (we query from all records stored, not just the selected user's)
+    final allPending = _allIncidencias.where((inc) => inc['status'] == 'PENDIENTE').toList();
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            child: Row(
+              children: [
+                Icon(Icons.pending_actions, color: Colors.orange[700], size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'Solicitudes Pendientes (${allPending.length})',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          if (allPending.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: Text('Sin solicitudes pendientes', style: TextStyle(color: Colors.grey))),
+            )
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: WidgetStateProperty.all(Colors.orange.withOpacity(0.07)),
+                columnSpacing: 16,
+                horizontalMargin: 16,
+                dataRowMinHeight: 40,
+                dataRowMaxHeight: 48,
+                columns: const [
+                  DataColumn(label: Text('Colaborador', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Periodo', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Días', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Fecha Inicio', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                rows: allPending.map((inc) {
+                  final profile = inc['profiles'] as Map<String, dynamic>? ?? {};
+                  final nombre = '${profile['nombre'] ?? ''} ${profile['paterno'] ?? ''}'.trim();
+                  return DataRow(cells: [
+                    DataCell(Text(nombre.isEmpty ? 'Sin nombre' : nombre)),
+                    DataCell(Text(inc['tipo']?.toString() ?? '---')),
+                    DataCell(Text(inc['periodo']?.toString() ?? '---')),
+                    DataCell(Text(inc['dias']?.toString() ?? '---')),
+                    DataCell(Text(inc['fecha_inicio'] != null ? _formatDate(inc['fecha_inicio']) : '---')),
+                    DataCell(
+                      PopupMenuButton<String>(
+                        tooltip: 'Cambiar estatus',
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.orange.withOpacity(0.4), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('PENDIENTE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange[800])),
+                              const SizedBox(width: 4),
+                              Icon(Icons.arrow_drop_down, size: 14, color: Colors.orange[800]),
+                            ],
+                          ),
+                        ),
+                        onSelected: (val) async {
+                          await Supabase.instance.client
+                              .from('incidencias')
+                              .update({'status': val})
+                              .eq('id', inc['id']);
+                          await NotificationService.send(
+                            title: 'Tu incidencia fue $val',
+                            message: 'El estado de tu petición ha cambiado a $val.',
+                            userId: inc['usuario_id'],
+                            type: 'incidencia_status',
+                          );
+                          _fetchIncidencias();
+                        },
+                        itemBuilder: (_) => const [
+                          PopupMenuItem(value: 'APROBADA', child: Text('APROBADA')),
+                          PopupMenuItem(value: 'RECHAZADA', child: Text('RECHAZADA')),
+                        ],
+                      ),
+                    ),
+                  ]);
+                }).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDesktopTable(ThemeData theme) {
+
     return SizedBox(
       width: double.infinity,
       child: Card(
@@ -897,42 +1019,35 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           : null,
       body: CustomScrollView(
         slivers: [
-          // Header
+          // Header — the admin selector goes inside PageHeader trailing so it
+          // stays within the blue background strip.
           SliverToBoxAdapter(
-            child: Row(
-              children: [
-                const Expanded(
-                  child: PageHeader(
-                    title: 'Incidencias y Peticiones',
-                  ),
-                ),
-                if (_userRole == 'admin' && _adminUserList.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 24.0, top: 16.0),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedUserId,
-                          icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.secondary),
-                          items: _adminUserList.map((user) {
-                            final name = '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'.trim();
-                            return DropdownMenuItem(
-                              value: user['id'] as String,
-                              child: Text(name.isEmpty ? 'Usuario' : name, style: const TextStyle(fontSize: 14)),
-                            );
-                          }).toList(),
-                          onChanged: _onUserSelected,
-                        ),
+            child: PageHeader(
+              title: 'Incidencias y Peticiones',
+              trailing: (_userRole == 'admin' && _adminUserList.isNotEmpty)
+                ? Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedUserId,
+                        icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.secondary),
+                        items: _adminUserList.map((user) {
+                          final name = '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'.trim();
+                          return DropdownMenuItem(
+                            value: user['id'] as String,
+                            child: Text(name.isEmpty ? 'Usuario' : name, style: const TextStyle(fontSize: 14)),
+                          );
+                        }).toList(),
+                        onChanged: _onUserSelected,
                       ),
                     ),
-                  ),
-              ],
+                  )
+                : null,
             ),
           ),
           // Main content (Responsive layout)
@@ -944,25 +1059,34 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 if (isDesktop) {
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          flex: 2,
-                          child: _buildAntiguedadDesktop(),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: _buildAntiguedadDesktop(),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 2,
+                              child: _buildHistorialVacaciones(),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 5,
+                              child: _isLoading
+                                  ? const Center(child: CircularProgressIndicator())
+                                  : _buildDesktopTable(theme),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 2,
-                          child: _buildHistorialVacaciones(),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          flex: 5,
-                          child: _isLoading
-                              ? const Center(child: CircularProgressIndicator())
-                              : _buildDesktopTable(theme),
-                        ),
+                        if (_userRole == 'admin') ...[
+                          const SizedBox(height: 24),
+                          _buildPendingTable(theme),
+                        ],
                       ],
                     ),
                   );
@@ -978,6 +1102,11 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: _buildHistorialVacaciones(),
                         ),
+                        if (_userRole == 'admin')
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: _buildPendingTable(theme),
+                          ),
                         if (_isLoading)
                           const Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())
                         else if (_incidencias.isEmpty)
