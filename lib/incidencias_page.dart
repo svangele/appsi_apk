@@ -73,6 +73,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final response = await Supabase.instance.client
           .from('profiles')
           .select('id, nombre, paterno, materno, role, fecha_ingreso, fecha_reingreso')
+          .eq('status_sys', 'ACTIVO')
           .order('nombre', ascending: true);
       
       if (mounted) {
@@ -958,9 +959,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                           flex: 5,
                           child: _isLoading
                               ? const Center(child: CircularProgressIndicator())
-                              : _incidencias.isEmpty
-                                  ? const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('Sin incidencias registradas')))
-                                  : _buildDesktopTable(theme),
+                              : _buildDesktopTable(theme),
                         ),
                       ],
                     ),
