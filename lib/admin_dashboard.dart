@@ -87,6 +87,16 @@ class _AdminDashboardState extends State<AdminDashboard> {
       }
       
       if (mounted) {
+        // Sort: CAMBIO first, then by numero_empleado descending (highest first)
+        allData.sort((a, b) {
+          final aIsCambio = (a['status_sys'] == 'CAMBIO') ? 0 : 1;
+          final bIsCambio = (b['status_sys'] == 'CAMBIO') ? 0 : 1;
+          if (aIsCambio != bIsCambio) return aIsCambio.compareTo(bIsCambio);
+          // Within same group, sort by numero_empleado descending
+          final aNum = int.tryParse(a['numero_empleado']?.toString() ?? '') ?? -1;
+          final bNum = int.tryParse(b['numero_empleado']?.toString() ?? '') ?? -1;
+          return bNum.compareTo(aNum); // descending
+        });
         setState(() => _users = allData);
       }
     } catch (e) {
