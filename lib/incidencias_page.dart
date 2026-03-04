@@ -662,7 +662,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                         'fecha_inicio': fechaInicio.toIso8601String(),
                         'fecha_fin': fechaFin.toIso8601String(),
                         'fecha_regreso': fechaRegreso.toIso8601String(),
-                        if (!isEditing) 'usuario_id': Supabase.instance.client.auth.currentUser!.id,
+                        if (!isEditing) 'usuario_id': _selectedUserId ?? Supabase.instance.client.auth.currentUser!.id,
                       };
 
                       try {
