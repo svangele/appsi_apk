@@ -671,37 +671,72 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   }
 
   Widget _buildDesktopTable(ThemeData theme) {
-    return Theme(
-      data: theme.copyWith(cardColor: Colors.transparent),
-      child: PaginatedDataTable(
-        columns: const [
-          DataColumn(label: Text('Funcionario', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Detalle', style: TextStyle(fontWeight: FontWeight.bold))),
-          DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
-        ],
-        source: _IncidenciasDataSource(
-          items: _incidencias,
-          theme: theme,
-          isAdmin: _userRole == 'admin',
-          formatDate: _formatDate,
-          getStatusColor: _getStatusColor,
-          onEdit: (item) => _showIncidenciaForm(incidencia: item),
-          onStatusChange: (item, val) async {
-            await Supabase.instance.client.from('incidencias').update({'status': val}).eq('id', item['id']);
-            await NotificationService.send(
-              title: 'Tu incidencia fue $val',
-              message: 'El estado de tu petición ha cambiado a $val.',
-              userId: item['usuario_id'],
-              type: 'incidencia_status',
-            );
-            _fetchIncidencias();
-          },
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey[200]!),
         ),
-        rowsPerPage: _incidencias.isEmpty ? 1 : (_incidencias.length > 10 ? 10 : _incidencias.length),
-        showCheckboxColumn: false,
-        horizontalMargin: 16,
-        columnSpacing: 16,
-        dataRowMinHeight: 48,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Historial de Solicitudes', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ElevatedButton.icon(
+                    onPressed: () => _showIncidenciaForm(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: theme.colorScheme.secondary,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(120, 48),
+                    ),
+                    icon: const Icon(Icons.add),
+                    label: const Text('NUEVO'),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Theme(
+              data: theme.copyWith(cardColor: Colors.transparent),
+              child: PaginatedDataTable(
+                columns: const [
+                  DataColumn(label: Text('Funcionario', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Detalle', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
+                ],
+                source: _IncidenciasDataSource(
+                  items: _incidencias,
+                  theme: theme,
+                  isAdmin: _userRole == 'admin',
+                  formatDate: _formatDate,
+                  getStatusColor: _getStatusColor,
+                  onEdit: (item) => _showIncidenciaForm(incidencia: item),
+                  onStatusChange: (item, val) async {
+                    await Supabase.instance.client.from('incidencias').update({'status': val}).eq('id', item['id']);
+                    await NotificationService.send(
+                      title: 'Tu incidencia fue $val',
+                      message: 'El estado de tu petición ha cambiado a $val.',
+                      userId: item['usuario_id'],
+                      type: 'incidencia_status',
+                    );
+                    _fetchIncidencias();
+                  },
+                ),
+                rowsPerPage: _incidencias.isEmpty ? 1 : (_incidencias.length > 10 ? 10 : _incidencias.length),
+                showCheckboxColumn: false,
+                horizontalMargin: 16,
+                columnSpacing: 16,
+                dataRowMinHeight: 48,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -709,14 +744,18 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDesktopWidth = MediaQuery.of(context).size.width > 800;
+
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showIncidenciaForm(),
-        backgroundColor: theme.colorScheme.secondary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('NUEVO'),
-      ),
+      floatingActionButton: !isDesktopWidth
+          ? FloatingActionButton.extended(
+              onPressed: () => _showIncidenciaForm(),
+              backgroundColor: theme.colorScheme.secondary,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add),
+              label: const Text('NUEVO'),
+            )
+          : null,
       body: CustomScrollView(
         slivers: [
           // Header
@@ -727,38 +766,42 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           ),
           // Main content (Responsive layout)
           SliverToBoxAdapter(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1000),
-                child: Builder(
-                  builder: (context) {
-                    final isDesktop = MediaQuery.of(context).size.width > 800;
+            child: Builder(
+              builder: (context) {
+                final isDesktop = MediaQuery.of(context).size.width > 800;
 
-                    if (isDesktop) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            flex: 1,
-                            child: _buildAntiguedadCard(),
-                          ),
-                          Expanded(
-                            flex: 1,
-                            child: _buildHistorialVacaciones(),
-                          ),
-                        ],
-                      );
-                    }
+                if (isDesktop) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 1,
+                          child: _buildAntiguedadCard(),
+                        ),
+                        const SizedBox(width: 24),
+                        Expanded(
+                          flex: 1,
+                          child: _buildHistorialVacaciones(),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
-                    return Column(
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1000),
+                    child: Column(
                       children: [
                         _buildAntiguedadCard(),
                         _buildHistorialVacaciones(),
                       ],
-                    );
-                  },
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
           if (_isLoading)
@@ -767,18 +810,22 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             const SliverFillRemaining(child: Center(child: Text('Sin incidencias registradas')))
           else
             SliverToBoxAdapter(
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1000),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth > 800) {
-                        return _buildDesktopTable(theme);
-                      }
-                      return _buildMobileList(theme);
-                    },
-                  ),
-                ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isDesktop = constraints.maxWidth > 800;
+                  if (isDesktop) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                      child: _buildDesktopTable(theme),
+                    );
+                  }
+                  return Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1000),
+                      child: _buildMobileList(theme),
+                    ),
+                  );
+                },
               ),
             ),
           const SliverToBoxAdapter(child: SizedBox(height: 80)), // FAB clearance
