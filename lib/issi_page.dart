@@ -706,7 +706,6 @@ class _IssiPageState extends State<IssiPage> {
               const Divider(height: 1),
               Theme(
                 data: theme.copyWith(
-                  cardTheme: const CardTheme(elevation: 0, margin: EdgeInsets.zero),
                   cardColor: Colors.transparent,
                 ),
                 child: PaginatedDataTable(

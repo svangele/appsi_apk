@@ -909,7 +909,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
             ),
             child: Theme(
               data: theme.copyWith(
-                cardTheme: const CardTheme(elevation: 0, margin: EdgeInsets.zero),
                 cardColor: Colors.transparent, // Disable inner card color
               ),
               child: PaginatedDataTable(
