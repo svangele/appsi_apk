@@ -40,6 +40,27 @@ class _IssiPageState extends State<IssiPage> {
     'SIN REPARACION',
   ];
 
+  static const List<String> _marcas = [
+    'AASTRA',
+    'ACER',
+    'ADATA',
+    'ASUS',
+    'DELL',
+    'EDI SECURE',
+    'HP',
+    'HUAWEI',
+    'KINGGSTON',
+    'KIOCERA',
+    'LENOVO',
+    'MAC',
+    'OTROS',
+    'RICOH',
+    'SAMSUNG',
+    'VIEW SONIC',
+    'XIAOMI',
+    'ZTE',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -218,7 +239,10 @@ class _IssiPageState extends State<IssiPage> {
     
     String tipo = item?['tipo']?.toString().toUpperCase() ?? _tipos.first;
     String condicion = item?['condicion']?.toString().toUpperCase() ?? _condiciones.first;
-    
+    String marca = item?['marca']?.toString().toUpperCase() ?? _marcas.first;
+    // If saved marca doesn't match list, fall back to first
+    if (!_marcas.contains(marca)) marca = _marcas.first;
+
     String? selectedUsuarioId = item?['usuario_id'];
     String? selectedUsuarioNombre = item?['usuario_nombre'];
 
@@ -290,12 +314,15 @@ class _IssiPageState extends State<IssiPage> {
                       onChanged: (val) => setDialogState(() => tipo = val!),
                     ),
                     const SizedBox(height: 16),
-                    TextField(
-                      controller: marcaController,
+                    DropdownButtonFormField<String>(
+                      value: marca,
                       decoration: const InputDecoration(
                         labelText: 'Marca *',
                         prefixIcon: Icon(Icons.business_outlined),
                       ),
+                      isExpanded: true,
+                      items: _marcas.map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+                      onChanged: (val) => setDialogState(() => marca = val!),
                     ),
                     const SizedBox(height: 16),
                     TextField(
@@ -431,7 +458,7 @@ class _IssiPageState extends State<IssiPage> {
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () async {
-                              if (ubicacionController.text.isEmpty || marcaController.text.isEmpty || 
+                              if (ubicacionController.text.isEmpty || marca.isEmpty ||
                                   modeloController.text.isEmpty || selectedUsuarioId == null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Completa los campos obligatorios (*)')),
@@ -441,14 +468,14 @@ class _IssiPageState extends State<IssiPage> {
 
                               try {
                                 final data = {
-                                  'ubicacion': ubicacionController.text.trim(),
+                                  'ubicacion': ubicacionController.text.trim().toUpperCase(),
                                   'tipo': tipo,
-                                  'marca': marcaController.text.trim(),
-                                  'modelo': modeloController.text.trim(),
-                                  'n_s': nsController.text.trim().isEmpty ? null : nsController.text.trim(),
-                                  'imei': imeiController.text.trim().isEmpty ? null : imeiController.text.trim(),
-                                  'cpu': cpuController.text.trim().isEmpty ? null : cpuController.text.trim(),
-                                  'ssd': ssdController.text.trim().isEmpty ? null : ssdController.text.trim(),
+                                  'marca': marca,
+                                  'modelo': modeloController.text.trim().toUpperCase(),
+                                  'n_s': nsController.text.trim().isEmpty ? null : nsController.text.trim().toUpperCase(),
+                                  'imei': imeiController.text.trim().isEmpty ? null : imeiController.text.trim().toUpperCase(),
+                                  'cpu': cpuController.text.trim().isEmpty ? null : cpuController.text.trim().toUpperCase(),
+                                  'ssd': ssdController.text.trim().isEmpty ? null : ssdController.text.trim().toUpperCase(),
                                   'ram': ramController.text.trim().isEmpty ? null : ramController.text.trim().toUpperCase(),
                                   'gpu': gpuController.text.trim().isEmpty ? null : gpuController.text.trim().toUpperCase(),
                                   'fecha_actualizacion': fechaActController.text.isEmpty ? null : fechaActController.text,
