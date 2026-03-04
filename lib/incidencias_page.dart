@@ -521,9 +521,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               child: Row(children: [
                 _cell(row['periodo'] as String, color: textColor, weight: weight, align: TextAlign.left),
                 _cell('${row['days']}', color: textColor, weight: weight, width: wLey),
-                _cell(proporcional.toStringAsFixed(2), color: textColor, weight: weight, width: wProp),
+                _cell('${proporcional.toInt()}', color: textColor, weight: weight, width: wProp),
                 _cell(row['requested'] > 0 ? '${row['requested']}' : '', color: textColor, weight: weight, width: wPedidos),
-                _cell(proporcional == 0 && row['requested'] == 0 ? '' : saldo.toStringAsFixed(2),
+                _cell(proporcional == 0 && row['requested'] == 0 ? '' : '${saldo.toInt()}',
                     color: saldoColor, weight: FontWeight.bold, width: wSaldo),
               ]),
             );
@@ -536,7 +536,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               _cell('', width: wLey),
               _cell('', width: wProp),
               _cell('', width: wPedidos),
-              _cell('${totalSaldo.toStringAsFixed(2)} días.', weight: FontWeight.bold,
+              _cell('${totalSaldo.toInt()} días.', weight: FontWeight.bold,
                   color: totalSaldo < 0 ? Colors.red : Colors.green[700], width: wSaldo),
             ]),
           ),
