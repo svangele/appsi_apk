@@ -178,7 +178,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   void _showUserForm({Map<String, dynamic>? user}) {
     final isEditing = user != null;
-    final isGrantingAccess = isEditing && (user['email'] == null || user['email'].toString().isEmpty);
+    // isGrantingAccess = profile exists (isEditing) but has NO auth account yet.
+    // We use has_auth_account (set by the handle_new_user trigger) as the reliable signal.
+    final isGrantingAccess = isEditing && (user['has_auth_account'] != true);
     final theme = Theme.of(context);
     final nombreController = TextEditingController(text: user?['nombre']);
     final paternoController = TextEditingController(text: user?['paterno']);
