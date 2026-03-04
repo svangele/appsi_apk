@@ -463,18 +463,26 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 }).eq('id', user['id']);
                               } else {
                                 // Creating new user
-                                final response = await Supabase.instance.client.rpc('create_user_admin', params: {
-                                  'email': emailController.text.trim(),
-                                  'password': passwordController.text.trim(),
-                                  'full_name': '${nombreController.text} ${paternoController.text} ${maternoController.text}'.trim(),
-                                  'user_role': role,
-                                  'user_id_param': null, // No existing profile to link
-                                });
+                                // NOTE: Do NOT pass user_id_param when it is null,
+                                // to avoid PostgREST ambiguity with older function overloads.
+                                final response = await Supabase.instance.client.rpc(
+                                  'create_user_admin',
+                                  params: {
+                                    'email': emailController.text.trim(),
+                                    'password': passwordController.text.trim(),
+                                    'full_name': '${nombreController.text.trim()} ${paternoController.text.trim()} ${maternoController.text.trim()}'.trim(),
+                                    'user_role': role,
+                                  },
+                                );
 
                                 final userId = response as String?;
                                 if (userId != null) {
-                                  // Update profile with extra data (credentials)
+                                  // Update profile with extra data
                                   await Supabase.instance.client.from('profiles').update({
+                                    'nombre': nombreController.text.trim(),
+                                    'paterno': paternoController.text.trim(),
+                                    'materno': maternoController.text.trim(),
+                                    'email': emailController.text.trim(),
                                     'numero_empleado': employeeNumberController.text.trim(),
                                     'drp_user': drpUser.text.trim(),
                                     'drp_pass': drpPass.text.trim(),
@@ -487,6 +495,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     'otro_user': otroUser.text.trim(),
                                     'otro_pass': otroPass.text.trim(),
                                     'status_sys': statusSys,
+                                    'permissions': permissions,
+                                    'role': role,
                                   }).eq('id', userId);
 
                                   // Send notification if status is not ACTIVO
