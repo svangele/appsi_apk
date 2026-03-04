@@ -402,7 +402,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
     // Helper: proportional days for the current in-progress period
     int _calcProporcional(int y, int days, DateTime anniversary) {
-      if (anniversary.isAfter(now)) return 0; // future — not started yet
+      if (anniversary.isAfter(now)) return days; // future — show full entitlement
       // Check if anniversary for this period has passed to get the NEXT anniversary
       final nextAnniversary = DateTime(base.year + y + 1, base.month, base.day);
       if (nextAnniversary.isBefore(now)) return days; // past — full days earned
@@ -527,9 +527,10 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           Container(
             color: Colors.grey[200],
             child: Row(children: [
-              _cell('Gran Total', weight: FontWeight.bold, align: TextAlign.left),
-              _cell('$totalProp días.', weight: FontWeight.bold, width: wLey + wProp - 20),
-              _cell('$totalReq días.', weight: FontWeight.bold, width: wPedidos + 20),
+              _cell('Saldo Actual Total', weight: FontWeight.bold, align: TextAlign.left),
+              _cell('', width: wLey),
+              _cell('', width: wProp),
+              _cell('', width: wPedidos),
               _cell('$totalSaldo días.', weight: FontWeight.bold,
                   color: totalSaldo < 0 ? Colors.red : Colors.green[700], width: wSaldo),
             ]),
