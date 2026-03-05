@@ -79,73 +79,93 @@ class _SocialPageState extends State<SocialPage> {
     final upcoming = _filteredBirthdays;
 
     return Scaffold(
-      body: Column(
-        children: [
-          PageHeader(
-            title: 'Cumpleaños 🎂',
-            subtitle: 'Celebrando a nuestros colaboradores en ${_months[_selectedMonth - 1]}',
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(20),
+      backgroundColor: Colors.grey[50],
+      body: _isLoading
+          ? Center(
+              child: Image.asset(
+                'assets/sisol_loader.gif',
+                width: 150,
+                errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+                    frame == null ? const CircularProgressIndicator() : child,
               ),
-              child: DropdownButton<int>(
-                value: _selectedMonth,
-                dropdownColor: theme.colorScheme.primary,
-                underline: const SizedBox(),
-                icon: const Icon(Icons.calendar_month, color: Colors.white, size: 20),
-                items: List.generate(12, (index) => DropdownMenuItem(
-                  value: index + 1,
-                  child: Text(
-                    _months[index],
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                )),
-                onChanged: (val) {
-                  if (val != null) setState(() => _selectedMonth = val);
-                },
-              ),
-            ),
-          ),
-          Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: _isLoading
-                    ? Center(
-                        child: Image.asset(
-                          'assets/sisol_loader.gif',
-                          width: 150,
-                          errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                              frame == null ? const CircularProgressIndicator() : child,
+            )
+          : ListView(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              children: [
+                Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Birthday Section Header
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Cumpleaños 🎂',
+                              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF344092)),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<int>(
+                                  value: _selectedMonth,
+                                  dropdownColor: Colors.white,
+                                  icon: const Icon(Icons.calendar_month, color: Color(0xFF344092), size: 20),
+                                  items: List.generate(12, (index) => DropdownMenuItem(
+                                    value: index + 1,
+                                    child: Text(
+                                      _months[index],
+                                      style: const TextStyle(color: Color(0xFF344092), fontWeight: FontWeight.bold, fontSize: 13),
+                                    ),
+                                  )),
+                                  onChanged: (val) {
+                                    if (val != null) setState(() => _selectedMonth = val);
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      )
-                    : upcoming.isEmpty
-                        ? _buildEmptyState()
-                        : _buildBirthdayList(upcoming, theme),
-              ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Celebrando a nuestros colaboradores en ${_months[_selectedMonth - 1]}',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // Birthday List or Empty State
+                        upcoming.isEmpty
+                            ? _buildEmptyState()
+                            : _buildBirthdayList(upcoming, theme),
+                            
+                        // Space for future sections
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 
-
   Widget _buildBirthdayList(List<Map<String, dynamic>> items, ThemeData theme) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          elevation: 2,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Column(
-            children: List.generate(items.length, (index) {
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Column(
+        children: List.generate(items.length, (index) {
               final item = items[index];
               final date = DateTime.parse(item['fecha_nacimiento']);
               final isToday = date.day == DateTime.now().day && date.month == DateTime.now().month;
