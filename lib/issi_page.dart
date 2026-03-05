@@ -541,6 +541,9 @@ class _IssiPageState extends State<IssiPage> {
       child: Image.asset(
         'assets/sisol_loader.gif',
         width: 150,
+        errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+            frame == null ? const CircularProgressIndicator() : child,
       ),
     );
   }
