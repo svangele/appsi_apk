@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/services.dart';
 import 'widgets/page_header.dart';
 
 class ExternalContactsPage extends StatefulWidget {
@@ -365,8 +366,8 @@ class _ExternalContactsPageState extends State<ExternalContactsPage> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (c['empresa'] != null && c['empresa'].toString().isNotEmpty)
-                    Text('🏢 ${c['empresa']}'),
+                  if (c['correo'] != null && c['correo'].toString().isNotEmpty)
+                    Text('✉️ ${c['correo']}'),
                   if (c['telefono'] != null && c['telefono'].toString().isNotEmpty)
                     Text('📞 ${c['telefono']}'),
                 ],
@@ -405,7 +406,24 @@ class _ContactsDataSource extends DataTableSource {
       cells: [
         DataCell(Text(c['nombre'] ?? '')),
         DataCell(Text(c['empresa'] ?? '')),
-        DataCell(Text(c['correo'] ?? '')),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(c['correo'] ?? ''),
+              if (c['correo'] != null && c['correo'].toString().isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 16, color: Colors.grey),
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: c['correo']));
+                    // We don't have access to context here easily to show a snackbar via ScaffoldMessenger
+                    // But we can use an overlay if needed, or better, pass the onCopy callback.
+                  },
+                  tooltip: 'Copiar correo',
+                ),
+            ],
+          ),
+        ),
         DataCell(Text(c['telefono'] ?? '')),
         DataCell(Text(c['otro'] ?? '')),
         DataCell(
