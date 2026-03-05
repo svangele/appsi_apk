@@ -537,34 +537,10 @@ class _IssiPageState extends State<IssiPage> {
   }
 
   Widget _buildShimmerLoading() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: 8,
-      itemBuilder: (context, index) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.grey[200]!)),
-        child: Container(
-          height: 80,
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              CircleAvatar(backgroundColor: Colors.grey[100]),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(height: 12, width: 150, color: Colors.grey[100]),
-                    const SizedBox(height: 8),
-                    Container(height: 10, width: 100, color: Colors.grey[100]),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+    return Center(
+      child: Image.asset(
+        'assets/sisol_loader.gif',
+        width: 150,
       ),
     );
   }
