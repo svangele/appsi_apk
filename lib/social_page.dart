@@ -316,4 +316,3 @@ class _SocialPageState extends State<SocialPage> {
     );
   }
 }
-}
