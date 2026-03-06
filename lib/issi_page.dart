@@ -860,7 +860,6 @@ class _IssiPageState extends State<IssiPage> {
       final u = (item['ubicacion'] ?? 'SIN UBICACIÓN').toString();
       ubiCounts[u] = (ubiCounts[u] ?? 0) + 1;
     }
-    // Sort each by count descending
     final tipoSorted = tipoCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final condSorted = condCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
     final ubiSorted = ubiCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
@@ -870,41 +869,17 @@ class _IssiPageState extends State<IssiPage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(child: _buildSummaryCard(
-            title: 'Por Tipo',
-            icon: Icons.devices,
-            entries: tipoSorted,
-            total: _items.length,
-            color: theme.colorScheme.primary,
-          )),
+          Expanded(child: _buildTipoCard(tipoSorted, theme)),
           const SizedBox(width: 16),
-          Expanded(child: _buildSummaryCard(
-            title: 'Por Condición',
-            icon: Icons.health_and_safety,
-            entries: condSorted,
-            total: _items.length,
-            color: const Color(0xFFB1CB34),
-          )),
+          Expanded(child: _buildCondicionCard(condSorted, theme)),
           const SizedBox(width: 16),
-          Expanded(child: _buildSummaryCard(
-            title: 'Por Ubicación',
-            icon: Icons.location_on,
-            entries: ubiSorted,
-            total: _items.length,
-            color: Colors.orange,
-          )),
+          Expanded(child: _buildUbicacionCard(ubiSorted, theme)),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryCard({
-    required String title,
-    required IconData icon,
-    required List<MapEntry<String, int>> entries,
-    required int total,
-    required Color color,
-  }) {
+  Widget _cardShell({required String title, required IconData icon, required Color accent, required Widget child}) {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -918,61 +893,185 @@ class _IssiPageState extends State<IssiPage> {
           children: [
             Row(
               children: [
-                Icon(icon, size: 20, color: color),
-                const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: accent.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
+                  child: Icon(icon, size: 18, color: accent),
+                ),
+                const SizedBox(width: 10),
+                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text(
+                  '${_items.length}',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: accent),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- TIPO card: icon + name + progress bar ---
+  Widget _buildTipoCard(List<MapEntry<String, int>> entries, ThemeData theme) {
+    final maxVal = entries.isEmpty ? 1 : entries.first.value;
+    final color = theme.colorScheme.primary;
+
+    return _cardShell(
+      title: 'Por Tipo',
+      icon: Icons.devices,
+      accent: color,
+      child: Column(
+        children: entries.map((e) {
+          final fraction = e.value / maxVal;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Icon(_getIconForType(e.key), size: 18, color: color.withOpacity(0.7)),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 70,
                   child: Text(
-                    'Total: $total',
+                    e.key,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: fraction,
+                      minHeight: 8,
+                      backgroundColor: Colors.grey[100],
+                      valueColor: AlwaysStoppedAnimation(color.withOpacity(0.6 + 0.4 * fraction)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    '${e.value}',
+                    textAlign: TextAlign.right,
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: entries.map((e) {
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        e.key,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                      ),
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          '${e.value}',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }).toList(),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // --- CONDICIÓN card: horizontal colored bars ---
+  Widget _buildCondicionCard(List<MapEntry<String, int>> entries, ThemeData theme) {
+    final total = _items.length;
+    final condColors = <String, Color>{
+      'NUEVO': const Color(0xFF4CAF50),
+      'USADO': const Color(0xFFF9A825),
+      'DAÑADO': const Color(0xFFFF7043),
+      'SIN REPARACION': const Color(0xFFE53935),
+    };
+
+    return _cardShell(
+      title: 'Por Condición',
+      icon: Icons.health_and_safety,
+      accent: const Color(0xFFB1CB34),
+      child: Column(
+        children: [
+          // Stacked bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: SizedBox(
+              height: 14,
+              child: Row(
+                children: entries.map((e) {
+                  final c = condColors[e.key] ?? Colors.grey;
+                  return Expanded(
+                    flex: e.value,
+                    child: Container(color: c),
+                  );
+                }).toList(),
+              ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+          // Legend
+          ...entries.map((e) {
+            final c = condColors[e.key] ?? Colors.grey;
+            final pct = total > 0 ? (e.value * 100 / total).round() : 0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                children: [
+                  Container(
+                    width: 10, height: 10,
+                    decoration: BoxDecoration(color: c, borderRadius: BorderRadius.circular(3)),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(e.key, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500)),
+                  const Spacer(),
+                  Text('$pct%', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                  const SizedBox(width: 6),
+                  Text('${e.value}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: c)),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  // --- UBICACIÓN card: compact chips ---
+  Widget _buildUbicacionCard(List<MapEntry<String, int>> entries, ThemeData theme) {
+    final color = Colors.orange;
+    final top = entries.take(8).toList(); // Show top 8
+
+    return _cardShell(
+      title: 'Por Ubicación',
+      icon: Icons.location_on,
+      accent: color,
+      child: Column(
+        children: top.map((e) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Icon(Icons.place, size: 14, color: color.withOpacity(0.5)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    e.key,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${e.value}',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
