@@ -99,13 +99,10 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
       children: [
         PageHeader(
           title: 'Logs del Sistema',
-          subtitle: 'Actividad real capturada desde la base de datos',
           trailing: _isLoading 
             ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
             : const Icon(Icons.show_chart, color: Colors.white),
           bottom: [
-            _buildChartSection(theme),
-            const SizedBox(height: 16),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
@@ -167,6 +164,7 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
             ),
           ],
         ),
+        _buildChartCard(theme),
         Expanded(
           child: _isLoading 
             ? Center(
@@ -221,6 +219,29 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                 ),
         ),
       ],
+    );
+  }
+  Widget _buildChartCard(ThemeData theme) {
+    if (_dailyLogins.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: Card(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.grey[200]!),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.85)],
+            ),
+          ),
+          child: _buildChartSection(theme),
+        ),
+      ),
     );
   }
 
