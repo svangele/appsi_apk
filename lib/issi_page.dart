@@ -799,6 +799,14 @@ class _IssiPageState extends State<IssiPage> {
               );
             },
           ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              if (constraints.maxWidth > 800 && !_isLoading && _items.isNotEmpty) {
+                return _buildDashboardCards(Theme.of(context));
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           Expanded(
             child: _isLoading
                 ? _buildShimmerLoading()
@@ -829,6 +837,142 @@ class _IssiPageState extends State<IssiPage> {
                       ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardCards(ThemeData theme) {
+    // Count by tipo
+    final tipoCounts = <String, int>{};
+    for (final item in _items) {
+      final t = (item['tipo'] ?? 'OTRO').toString();
+      tipoCounts[t] = (tipoCounts[t] ?? 0) + 1;
+    }
+    // Count by condicion
+    final condCounts = <String, int>{};
+    for (final item in _items) {
+      final c = (item['condicion'] ?? 'OTRO').toString();
+      condCounts[c] = (condCounts[c] ?? 0) + 1;
+    }
+    // Count by ubicacion
+    final ubiCounts = <String, int>{};
+    for (final item in _items) {
+      final u = (item['ubicacion'] ?? 'SIN UBICACIÓN').toString();
+      ubiCounts[u] = (ubiCounts[u] ?? 0) + 1;
+    }
+    // Sort each by count descending
+    final tipoSorted = tipoCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final condSorted = condCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    final ubiSorted = ubiCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: _buildSummaryCard(
+            title: 'Por Tipo',
+            icon: Icons.devices,
+            entries: tipoSorted,
+            total: _items.length,
+            color: theme.colorScheme.primary,
+          )),
+          const SizedBox(width: 16),
+          Expanded(child: _buildSummaryCard(
+            title: 'Por Condición',
+            icon: Icons.health_and_safety,
+            entries: condSorted,
+            total: _items.length,
+            color: const Color(0xFFB1CB34),
+          )),
+          const SizedBox(width: 16),
+          Expanded(child: _buildSummaryCard(
+            title: 'Por Ubicación',
+            icon: Icons.location_on,
+            entries: ubiSorted,
+            total: _items.length,
+            color: Colors.orange,
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required IconData icon,
+    required List<MapEntry<String, int>> entries,
+    required int total,
+    required Color color,
+  }) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 20, color: color),
+                const SizedBox(width: 8),
+                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Total: $total',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: color),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: entries.map((e) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[200]!),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        e.key,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${e.value}',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
