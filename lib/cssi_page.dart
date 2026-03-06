@@ -138,7 +138,7 @@ class _CssiPageState extends State<CssiPage> {
     
     final telCtrl = TextEditingController(text: item?['telefono']);
     final celCtrl = TextEditingController(text: item?['celular']);
-    final correoCtrl = TextEditingController(text: item?['correo_personal']);
+    final correoCtrl = TextEditingController(text: item?['email']);
     
     final bancoCtrl = TextEditingController(text: item?['banco']);
     final cuentaCtrl = TextEditingController(text: item?['cuenta']);
@@ -369,7 +369,7 @@ class _CssiPageState extends State<CssiPage> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(controller: correoCtrl, decoration: const InputDecoration(labelText: 'Correo Personal')),
+                TextField(controller: correoCtrl, decoration: const InputDecoration(labelText: 'Email')),
 
                 const SizedBox(height: 24),
                 _sectionTitle('Datos Bancarios'),
@@ -578,7 +578,7 @@ class _CssiPageState extends State<CssiPage> {
                               'codigo_postal': toUpper(cpCtrl.text),
                               'telefono': toUpper(telCtrl.text),
                               'celular': toUpper(celCtrl.text), // Celular logic
-                              'correo_personal': toUpper(correoCtrl.text),
+                              'email': correoCtrl.text.trim().isEmpty ? null : correoCtrl.text.trim().toLowerCase(),
                               'banco': toUpper(bancoCtrl.text),
                               'cuenta': toUpper(cuentaCtrl.text),
                               'clabe': toUpper(clabeCtrl.text),
