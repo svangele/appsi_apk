@@ -811,7 +811,7 @@ class _CssiPageState extends State<CssiPage> {
                     DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('Puesto', style: TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('Ubicación', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   source: _CssiDataSource(
@@ -967,7 +967,7 @@ class _CssiDataSource extends DataTableSource {
         ),
         DataCell(Text(item['puesto'] ?? '---')),
         DataCell(Text(item['ubicacion'] ?? '---')),
-        DataCell(Text(item['correo_personal'] ?? '---')),
+        DataCell(Text(item['email'] ?? '---')),
         DataCell(
           isAdmin
               ? PopupMenuButton<String>(
