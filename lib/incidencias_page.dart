@@ -424,9 +424,20 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final periodLabel = '${periodStart.year} - ${periodEnd.year}';
       final normLabel = normalizePeriod(periodLabel);
 
-      final int days = periodStart.year >= 2023
-          ? _getDaysByYears(y)
-          : (6 + (y - 1) * 2).clamp(0, 14);
+      final int days;
+      if (periodStart.year >= 2023) {
+        days = _getDaysByYears(y);
+      } else {
+        // Ley anterior: depende de la fecha de ingreso del colaborador
+        final cutoff = DateTime(2017, 5, 2);
+        if (base.isBefore(cutoff)) {
+          // Ingreso antes de 2017-05-02: empieza en 6, máximo 14
+          days = (6 + (y - 1) * 2).clamp(0, 14);
+        } else {
+          // Ingreso en o después de 2017-05-02: empieza en 8, máximo 16
+          days = (8 + (y - 1) * 2).clamp(0, 16);
+        }
+      }
 
       final isCurrent = y == completedYears;
       final isUpcoming = periodEnd.isAfter(now) && periodStart.isAfter(now);
