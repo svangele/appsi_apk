@@ -911,7 +911,10 @@ class _IssiPageState extends State<IssiPage> {
               ],
             ),
             const SizedBox(height: 14),
-            child,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(child: child),
+            ),
           ],
         ),
       ),
