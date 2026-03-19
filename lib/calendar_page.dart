@@ -108,7 +108,10 @@ class _CalendarPageState extends State<CalendarPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => const EventFormDialog(),
+      builder: (context) => EventFormDialog(
+        initialDate: _calendarController.selectedDate ?? DateTime.now(),
+        isPublic: _calendarMode == 1,
+      ),
     ).then((_) => _fetchEvents());
   }
 

@@ -6,7 +6,9 @@ import 'package:url_launcher/url_launcher.dart';
 
 class EventFormDialog extends StatefulWidget {
   final String? eventId;
-  const EventFormDialog({super.key, this.eventId});
+  final DateTime? initialDate;
+  final bool? isPublic;
+  const EventFormDialog({super.key, this.eventId, this.initialDate, this.isPublic});
 
   @override
   State<EventFormDialog> createState() => _EventFormDialogState();
@@ -47,6 +49,14 @@ class _EventFormDialogState extends State<EventFormDialog> {
     _isViewingData = _isEditMode;
     if (_isEditMode) {
       _isFetchingEvent = true;
+    } else {
+      if (widget.initialDate != null) {
+        _startDate = widget.initialDate!;
+        _endDate = widget.initialDate!.add(const Duration(hours: 1));
+      }
+      if (widget.isPublic != null) {
+        _isPublic = widget.isPublic!;
+      }
     }
     _fetchUsers().then((_) {
       if (_isEditMode) {
