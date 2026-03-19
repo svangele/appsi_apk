@@ -33,6 +33,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
   bool _isFetchingEvent = false;
   String? _creatorId;
   late bool _isViewingData;
+  final Map<String, dynamic> _userLookup = {};
 
   bool get _isEditMode => widget.eventId != null;
   bool get _canEdit => !_isEditMode || _creatorId == _supabase.auth.currentUser?.id;
@@ -93,7 +94,6 @@ class _EventFormDialogState extends State<EventFormDialog> {
         final data = await _supabase
             .from('profiles')
             .select('id, full_name, email, permissions')
-            .neq('id', currentUserId ?? '')
             .range(offset, offset + limit - 1);
             
         allUsers.addAll(List<Map<String, dynamic>>.from(data));
@@ -103,7 +103,15 @@ class _EventFormDialogState extends State<EventFormDialog> {
       
       if (mounted) {
         setState(() {
+          // Llenar el diccionario de búsqueda para todos los usuarios (incluso yo)
+          for (var u in allUsers) {
+            _userLookup[u['id'] as String] = u;
+          }
+
+          // La lista de _profiles solo debe tener a los usuarios SELECCIONABLES (excluyendo a mi mismo)
           _profiles = allUsers.where((user) {
+             if (user['id'] == currentUserId) return false;
+             
              final perms = user['permissions'] as Map<String, dynamic>?;
              if (perms == null) return false;
              
@@ -339,10 +347,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
             // 1. Mostrar el creador primero
             if (_creatorId != null)
               Builder(builder: (context) {
-                final p = _profiles.firstWhere(
-                  (profile) => profile['id'] == _creatorId, 
-                  orElse: () => {'full_name': 'Usuario'}
-                );
+                final p = _userLookup[_creatorId] ?? {'full_name': 'Usuario'};
                 final name = p['full_name'] ?? p['email'] ?? 'Usuario';
                 
                 return ListTile(
@@ -365,12 +370,8 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 final id = _selectedUserIds[index];
                 if (id == _creatorId) return const SizedBox.shrink(); // evitar duplicado
 
-                // Buscar perfil por ID
-                final p = _profiles.firstWhere(
-                  (profile) => profile['id'] == id, 
-                  orElse: () => {'full_name': 'Usuario'}
-                );
-                
+                // Buscar perfil por ID usando el diccionario global
+                final p = _userLookup[id] ?? {'full_name': 'Usuario'};
                 final name = p['full_name'] ?? p['email'] ?? 'Usuario';
                 
                 return ListTile(
