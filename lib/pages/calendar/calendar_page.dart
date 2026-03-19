@@ -16,15 +16,38 @@ class _CalendarPageState extends State<CalendarPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
   final CalendarController _calendarController = CalendarController();
   
-  // 0 = Personal, 1 = Grupal, 2 = Invitaciones (optional)
   int _calendarMode = 0; 
   List<Appointment> _events = [];
   bool _isLoading = true;
+  CalendarView _currentView = CalendarView.month;
+  DateTime _currentDisplayDate = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _fetchEvents();
+  }
+
+  void _onViewChanged(ViewChangedDetails details) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final view = _calendarController.view ?? CalendarView.month;
+      final date = details.visibleDates[details.visibleDates.length ~/ 2];
+      
+      bool shouldUpdate = false;
+      if (_currentView != view) {
+        _currentView = view;
+        shouldUpdate = true;
+      }
+      if (_currentDisplayDate.month != date.month || _currentDisplayDate.year != date.year) {
+        _currentDisplayDate = date;
+        shouldUpdate = true;
+      }
+      
+      if (shouldUpdate) {
+        setState(() {});
+      }
+    });
   }
 
   Future<void> _fetchEvents() async {
@@ -109,21 +132,83 @@ class _CalendarPageState extends State<CalendarPage> {
     }
   }
 
-  void _jumpToToday() {
-    _calendarController.displayDate = DateTime.now();
-    // Cambia vista a Dia cuando tocas Hoy
-    _calendarController.view = CalendarView.day; 
+  String get _bottomLeftButtonText {
+    if (_currentView == CalendarView.month) return 'Hoy';
+    if (_currentView == CalendarView.day) return 'Semana';
+    if (_currentView == CalendarView.week) return 'Mes';
+    return 'Hoy';
   }
 
-  void _toggleCalendarView() {
-    final current = _calendarController.view;
-    if (current == CalendarView.month) {
-      _calendarController.view = CalendarView.week;
-    } else if (current == CalendarView.week) {
-      _calendarController.view = CalendarView.day;
-    } else {
-      _calendarController.view = CalendarView.month;
-    }
+  void _onBottomLeftButtonPressed() {
+    setState(() {
+      if (_currentView == CalendarView.month) {
+        _calendarController.displayDate = DateTime.now();
+        _calendarController.view = CalendarView.day;
+      } else if (_currentView == CalendarView.day) {
+        _calendarController.view = CalendarView.week;
+      } else if (_currentView == CalendarView.week) {
+        _calendarController.view = CalendarView.month;
+      }
+    });
+  }
+
+  void _showMonthsGrid() {
+    final year = _currentDisplayDate.year;
+    final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+     
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(year.toString(), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 24),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3, 
+                  childAspectRatio: 2,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                ),
+                itemCount: 12,
+                itemBuilder: (context, index) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          _currentView = CalendarView.month;
+                          _calendarController.view = CalendarView.month;
+                          _calendarController.displayDate = DateTime(year, index + 1, 1);
+                        });
+                      },
+                      child: Center(
+                        child: Text(
+                          months[index], 
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      }
+    );
   }
 
   Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
@@ -153,7 +238,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentYear = _calendarController.displayDate?.year ?? DateTime.now().year;
+    final currentYear = _currentDisplayDate.year;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -167,6 +252,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   : SfCalendar(
                       controller: _calendarController,
                       view: CalendarView.month,
+                      onViewChanged: _onViewChanged,
                       allowedViews: const [
                         CalendarView.day,
                         CalendarView.week,
@@ -198,17 +284,20 @@ class _CalendarPageState extends State<CalendarPage> {
             Positioned(
               top: 16,
               left: 16,
-              child: _buildGlassPill(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
-                    const SizedBox(width: 4),
-                    Text(
-                      '$currentYear',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-                    ),
-                  ],
+              child: GestureDetector(
+                onTap: _showMonthsGrid,
+                child: _buildGlassPill(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
+                      const SizedBox(width: 4),
+                      Text(
+                        '$currentYear',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -223,7 +312,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     GestureDetector(
-                      onTap: _toggleCalendarView,
+                      onTap: _onBottomLeftButtonPressed, // Mismo efecto que cambiar la vista
                       child: const Icon(Icons.view_agenda_outlined, color: Colors.black87),
                     ),
                     const SizedBox(width: 16),
@@ -243,16 +332,16 @@ class _CalendarPageState extends State<CalendarPage> {
               ),
             ),
 
-            // Bottom Left Pill: Hoy
+            // Bottom Left Pill: Hoy / Vista
             Positioned(
               bottom: 16,
               left: 16,
               child: GestureDetector(
-                onTap: _jumpToToday,
+                onTap: _onBottomLeftButtonPressed,
                 child: _buildGlassPill(
-                  child: const Text(
-                    'Hoy',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  child: Text(
+                    _bottomLeftButtonText,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
                   ),
                 ),
               ),
