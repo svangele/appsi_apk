@@ -103,8 +103,10 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _showAddEventDialog() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (context) => const EventFormDialog(),
     ).then((_) => _fetchEvents());
   }
