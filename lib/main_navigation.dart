@@ -9,6 +9,7 @@ import 'incidencias_page.dart';
 import 'social_page.dart';
 import 'external_contacts_page.dart';
 import 'widgets/notification_bell.dart';
+import 'pages/calendar/calendar_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
@@ -39,6 +40,14 @@ class _MainNavigationState extends State<MainNavigation> {
       'icon': Icons.diversity_3_outlined,
       'activeIcon': Icons.diversity_3,
       'widget': const SocialPage(),
+    });
+
+    // Calendario siempre disponible
+    pages.add({
+      'title': 'Calendario',
+      'icon': Icons.calendar_month_outlined,
+      'activeIcon': Icons.calendar_month,
+      'widget': const CalendarPage(),
     });
 
     // Incidencias disponible según permisos
