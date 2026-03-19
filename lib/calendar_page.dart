@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'event_form_dialog.dart';
-import 'event_search_dialog.dart';
+import 'calendar_event_form_dialog.dart';
+import 'calendar_event_search_dialog.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
