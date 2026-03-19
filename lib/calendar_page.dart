@@ -126,10 +126,10 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   String get _bottomLeftButtonText {
-    if (_currentView == CalendarView.month) return 'DIA';
+    if (_currentView == CalendarView.month) return 'Día';
     if (_currentView == CalendarView.day) return 'Semana';
     if (_currentView == CalendarView.week) return 'Mes';
-    return 'DIA';
+    return 'Día';
   }
 
   void _onBottomLeftButtonPressed() {
