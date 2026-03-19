@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import 'dart:math';
 import 'widgets/page_header.dart';
+import 'calendar_event_form_dialog.dart';
 
 class SocialPage extends StatefulWidget {
   const SocialPage({super.key});
@@ -12,7 +14,9 @@ class SocialPage extends StatefulWidget {
 
 class _SocialPageState extends State<SocialPage> {
   List<Map<String, dynamic>> _allBirthdays = [];
+  List<Map<String, dynamic>> _weeklyEvents = [];
   bool _isLoading = true;
+  bool _isLoadingEvents = false;
   int _selectedMonth = DateTime.now().month;
 
   final List<String> _months = [
@@ -24,6 +28,7 @@ class _SocialPageState extends State<SocialPage> {
   void initState() {
     super.initState();
     _fetchBirthdays();
+    _fetchWeeklyEvents();
   }
 
   Future<void> _fetchBirthdays() async {
@@ -52,6 +57,37 @@ class _SocialPageState extends State<SocialPage> {
           SnackBar(content: Text('Error al cargar cumpleaños: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<void> _fetchWeeklyEvents() async {
+    setState(() => _isLoadingEvents = true);
+    try {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final now = DateTime.now();
+      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+      final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59));
+
+      // Personal events (created by user or invited)
+      final response = await Supabase.instance.client
+          .from('events')
+          .select('id, title, start_time, end_time, location, is_public')
+          .gte('start_time', startOfWeek.toUtc().toIso8601String())
+          .lte('start_time', endOfWeek.toUtc().toIso8601String())
+          .or('creator_id.eq.$userId,is_public.eq.true')
+          .order('start_time');
+
+      if (mounted) {
+        setState(() {
+          _weeklyEvents = List<Map<String, dynamic>>.from(response);
+          _isLoadingEvents = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching weekly events: $e');
+      if (mounted) setState(() => _isLoadingEvents = false);
     }
   }
 
@@ -106,10 +142,10 @@ class _SocialPageState extends State<SocialPage> {
                             child: _buildBirthdaySection(upcoming, theme),
                           ),
                           const SizedBox(width: 24),
-                          // Middle Column (Future Section)
+                          // Middle Column (Weekly Events)
                           Expanded(
                             flex: 1,
-                            child: _buildPlaceholderSection('Próximamente', Icons.auto_awesome_outlined),
+                            child: _buildWeeklyEventsSection(),
                           ),
                           const SizedBox(width: 24),
                           // Right Column (Future Section)
@@ -123,12 +159,152 @@ class _SocialPageState extends State<SocialPage> {
                         children: [
                           _buildBirthdaySection(upcoming, theme),
                           const SizedBox(height: 24),
-                          _buildPlaceholderSection('Próximamente', Icons.auto_awesome_outlined),
+                          _buildWeeklyEventsSection(),
                         ],
                       ),
                 ),
               ),
             ),
+    );
+  }
+
+
+  Widget _buildWeeklyEventsSection() {
+    final now = DateTime.now();
+    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
+    final endOfWeek = startOfWeek.add(const Duration(days: 6));
+    final dateRange = '${DateFormat('dd MMM', 'es_MX').format(startOfWeek)} – ${DateFormat('dd MMM', 'es_MX').format(endOfWeek)}';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFB1CB34), Color(0xFF8FAA20)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFB1CB34).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Eventos esta semana 📅',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+              Text(
+                dateRange,
+                style: const TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+            border: Border.all(color: Colors.grey[200]!),
+          ),
+          child: _isLoadingEvents
+              ? Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/sisol_loader.gif',
+                      width: 80,
+                      errorBuilder: (ctx, e, s) => const CircularProgressIndicator(),
+                      frameBuilder: (ctx, child, frame, _) =>
+                          frame == null ? const CircularProgressIndicator() : child,
+                    ),
+                  ),
+                )
+              : _weeklyEvents.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.event_available_outlined, size: 40, color: Colors.grey[300]),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Sin eventos esta semana',
+                              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Column(
+                      children: List.generate(_weeklyEvents.length, (index) {
+                        final ev = _weeklyEvents[index];
+                        final start = DateTime.parse(ev['start_time']).toLocal();
+                        final isToday = start.day == now.day && start.month == now.month && start.year == now.year;
+                        final isPublic = ev['is_public'] == true;
+                        return Column(
+                          children: [
+                            ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: isPublic
+                                      ? Colors.blue.shade50
+                                      : Colors.redAccent.shade100.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  isPublic ? Icons.groups : Icons.person,
+                                  size: 22,
+                                  color: isPublic ? Colors.blue.shade400 : Colors.redAccent,
+                                ),
+                              ),
+                              title: Text(
+                                ev['title'] ?? 'Sin título',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              subtitle: Text(
+                                DateFormat('EEE dd MMM, HH:mm', 'es_MX').format(start),
+                                style: TextStyle(fontSize: 11, color: isToday ? Colors.orange : Colors.grey[600]),
+                              ),
+                              trailing: isToday
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Text('HOY', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
+                                    )
+                                  : null,
+                              onTap: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => EventFormDialog(eventId: ev['id'].toString()),
+                                );
+                              },
+                            ),
+                            if (index < _weeklyEvents.length - 1)
+                              Divider(height: 1, indent: 64, endIndent: 12, color: Colors.grey[100]),
+                          ],
+                        );
+                      }),
+                    ),
+        ),
+      ],
     );
   }
 
