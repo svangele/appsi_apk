@@ -4,6 +4,7 @@ import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'event_form_dialog.dart';
+import 'event_search_dialog.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -297,7 +298,14 @@ class _CalendarPageState extends State<CalendarPage> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buscador no implementado aún')));
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) => EventSearchDialog(
+                                    calendarMode: _calendarMode,
+                                  ),
+                                ).then((_) => _fetchEvents());
                               },
                               child: const Icon(Icons.search, color: Colors.black87),
                             ),
