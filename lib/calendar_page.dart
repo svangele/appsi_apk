@@ -17,7 +17,7 @@ class _CalendarPageState extends State<CalendarPage> {
   final CalendarController _calendarController = CalendarController();
   
   int _calendarMode = 0; 
-  List<Appointment> _events = [];
+  late EventDataSource _dataSource;
   bool _isLoading = true;
   CalendarView _currentView = CalendarView.month;
   DateTime _currentDisplayDate = DateTime.now();
@@ -25,6 +25,7 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   void initState() {
     super.initState();
+    _dataSource = EventDataSource([]);
     _fetchEvents();
   }
 
@@ -90,8 +91,8 @@ class _CalendarPageState extends State<CalendarPage> {
       }
 
       if (mounted) {
+        _dataSource.updateAppointments(loadedEvents);
         setState(() {
-          _events = loadedEvents;
           _isLoading = false;
         });
       }
@@ -331,7 +332,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             CalendarView.week,
                             CalendarView.month,
                           ],
-                          dataSource: EventDataSource(_events),
+                          dataSource: _dataSource,
                           onTap: _onAppointmentTap,
                           headerHeight: 0, 
                           cellBorderColor: Colors.transparent, // Remove all default borders
@@ -475,5 +476,10 @@ class _CalendarPageState extends State<CalendarPage> {
 class EventDataSource extends CalendarDataSource {
   EventDataSource(List<Appointment> source) {
     appointments = source;
+  }
+
+  void updateAppointments(List<Appointment> newAppointments) {
+    appointments = newAppointments;
+    notifyListeners(CalendarDataSourceAction.reset, newAppointments);
   }
 }
