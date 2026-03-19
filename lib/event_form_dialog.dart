@@ -3,7 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 class EventFormDialog extends StatefulWidget {
-  const EventFormDialog({super.key});
+  final String? eventId;
+  const EventFormDialog({super.key, this.eventId});
 
   @override
   State<EventFormDialog> createState() => _EventFormDialogState();
@@ -22,18 +23,60 @@ class _EventFormDialogState extends State<EventFormDialog> {
     hour: (TimeOfDay.now().hour + 1) % 24,
   );
 
-  bool _isPublic = true; // Empieza con la opción público o personal
+  bool _isPublic = true; 
   String _recurrence = 'No repetir';
   final List<String> _recurrenceOptions = ['No repetir', 'Diariamente', 'Semanalmente', 'Mensualmente', 'Anualmente'];
 
   List<Map<String, dynamic>> _profiles = [];
   final List<String> _selectedUserIds = [];
   bool _isLoading = false;
+  bool _isFetchingEvent = false;
+  String? _creatorId;
+
+  bool get _isEditMode => widget.eventId != null;
+  bool get _canEdit => !_isEditMode || _creatorId == _supabase.auth.currentUser?.id;
 
   @override
   void initState() {
     super.initState();
-    _fetchUsers();
+    _fetchUsers().then((_) {
+      if (_isEditMode) {
+        _fetchEventData();
+      }
+    });
+  }
+
+  Future<void> _fetchEventData() async {
+    setState(() => _isFetchingEvent = true);
+    try {
+      final eventResponse = await _supabase.from('events').select().eq('id', widget.eventId!).single();
+      final invResponse = await _supabase.from('event_invitations').select('user_id').eq('event_id', widget.eventId!);
+
+      if (mounted) {
+        setState(() {
+          _titleController.text = eventResponse['title'] ?? '';
+          _locationController.text = eventResponse['location'] ?? '';
+          _isPublic = eventResponse['is_public'] ?? true;
+          _recurrence = eventResponse['recurrence'] ?? 'No repetir';
+          _creatorId = eventResponse['creator_id'];
+
+          final st = DateTime.parse(eventResponse['start_time']).toLocal();
+          final et = DateTime.parse(eventResponse['end_time']).toLocal();
+          _startDate = DateTime(st.year, st.month, st.day);
+          _startTime = TimeOfDay.fromDateTime(st);
+          _endDate = DateTime(et.year, et.month, et.day);
+          _endTime = TimeOfDay.fromDateTime(et);
+
+          for (var inv in invResponse) {
+            _selectedUserIds.add(inv['user_id'] as String);
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching event data: $e');
+    } finally {
+      if (mounted) setState(() => _isFetchingEvent = false);
+    }
   }
 
   Future<void> _fetchUsers() async {
@@ -103,35 +146,62 @@ class _EventFormDialogState extends State<EventFormDialog> {
         throw Exception('La fecha de fin no puede ser anterior al inicio');
       }
 
-      // Insert event
-      final eventResponse = await _supabase.from('events').insert({
-        'title': _titleController.text.trim(),
-        'description': '', // Si quieres añadirlo después
-        'location': _locationController.text.trim(),
-        'recurrence': _recurrence,
-        'start_time': startDateTime.toUtc().toIso8601String(),
-        'end_time': endDateTime.toUtc().toIso8601String(),
-        'creator_id': currentUserId,
-        'is_public': _isPublic,
-      }).select().single();
+      if (_isEditMode) {
+        // Update event
+        await _supabase.from('events').update({
+          'title': _titleController.text.trim(),
+          'description': '', 
+          'location': _locationController.text.trim(),
+          'recurrence': _recurrence,
+          'start_time': startDateTime.toUtc().toIso8601String(),
+          'end_time': endDateTime.toUtc().toIso8601String(),
+          'is_public': _isPublic,
+        }).eq('id', widget.eventId!);
 
-      final eventId = eventResponse['id'];
+        final eventId = widget.eventId!;
 
-      // Insert invitations if private
-      if (!_isPublic && _selectedUserIds.isNotEmpty) {
-        final invitations = _selectedUserIds.map((userId) => {
-          'event_id': eventId,
-          'user_id': userId,
-          'status': 'pending',
-        }).toList();
+        // Update invitations if private by clearing and inserting again
+        await _supabase.from('event_invitations').delete().eq('event_id', eventId);
+        if (!_isPublic && _selectedUserIds.isNotEmpty) {
+          final invitations = _selectedUserIds.map((userId) => {
+            'event_id': eventId,
+            'user_id': userId,
+            'status': 'pending',
+          }).toList();
 
-        await _supabase.from('event_invitations').insert(invitations);
+          await _supabase.from('event_invitations').insert(invitations);
+        }
+      } else {
+        // Insert event
+        final eventResponse = await _supabase.from('events').insert({
+          'title': _titleController.text.trim(),
+          'description': '', 
+          'location': _locationController.text.trim(),
+          'recurrence': _recurrence,
+          'start_time': startDateTime.toUtc().toIso8601String(),
+          'end_time': endDateTime.toUtc().toIso8601String(),
+          'creator_id': currentUserId,
+          'is_public': _isPublic,
+        }).select().single();
+
+        final eventId = eventResponse['id'];
+
+        // Insert invitations if private
+        if (!_isPublic && _selectedUserIds.isNotEmpty) {
+          final invitations = _selectedUserIds.map((userId) => {
+            'event_id': eventId,
+            'user_id': userId,
+            'status': 'pending',
+          }).toList();
+
+          await _supabase.from('event_invitations').insert(invitations);
+        }
       }
 
       if (mounted) {
         Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Evento creado exitosamente')),
+          SnackBar(content: Text(_isEditMode ? 'Evento actualizado exitosamente' : 'Evento creado exitosamente')),
         );
       }
     } catch (e) {
@@ -201,7 +271,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 60.0), // Space for handle and header
-            child: SingleChildScrollView(
+            child: _isFetchingEvent ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
               padding: EdgeInsets.only(
                 left: 20, 
                 right: 20, 
@@ -222,7 +292,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                         children: [
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => setState(() => _isPublic = true),
+                              onTap: _canEdit ? () => setState(() => _isPublic = true) : null,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
@@ -240,7 +310,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                           ),
                           Expanded(
                             child: GestureDetector(
-                              onTap: () => setState(() => _isPublic = false),
+                              onTap: _canEdit ? () => setState(() => _isPublic = false) : null,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 12),
                                 decoration: BoxDecoration(
@@ -265,6 +335,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                     TextFormField(
                       controller: _titleController,
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      readOnly: !_canEdit,
                       decoration: InputDecoration(
                         hintText: 'Título del evento',
                         hintStyle: TextStyle(color: Colors.grey.shade400),
@@ -277,6 +348,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                     // 3. Ubicación o URL
                     TextFormField(
                       controller: _locationController,
+                      readOnly: !_canEdit,
                       decoration: const InputDecoration(
                         hintText: 'Añadir ubicación o URL',
                         icon: Icon(Icons.location_on_outlined, color: Colors.grey),
@@ -298,7 +370,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                         ),
                         child: Text(format.format(DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
                       ),
-                      onTap: () => _pickDateTime(true),
+                      onTap: _canEdit ? () => _pickDateTime(true) : null,
                     ),
                     ListTile(
                       contentPadding: EdgeInsets.zero,
@@ -312,7 +384,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                         ),
                         child: Text(format.format(DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
                       ),
-                      onTap: () => _pickDateTime(false),
+                      onTap: _canEdit ? () => _pickDateTime(false) : null,
                     ),
                     Divider(color: Colors.grey.shade300),
 
@@ -328,11 +400,11 @@ class _EventFormDialogState extends State<EventFormDialog> {
                         items: _recurrenceOptions.map((e) {
                           return DropdownMenuItem(value: e, child: Text(e));
                         }).toList(),
-                        onChanged: (val) {
+                        onChanged: _canEdit ? (val) {
                           if (val != null) {
                             setState(() => _recurrence = val);
                           }
-                        },
+                        } : null,
                       ),
                     ),
                     Divider(color: Colors.grey.shade300),
@@ -368,7 +440,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                               trailing: Switch(
                                 value: isSelected,
                                 activeColor: Colors.blue,
-                                onChanged: (val) {
+                                onChanged: _canEdit ? (val) {
                                   setState(() {
                                     if (val == true) {
                                       _selectedUserIds.add(id);
@@ -376,9 +448,9 @@ class _EventFormDialogState extends State<EventFormDialog> {
                                       _selectedUserIds.remove(id);
                                     }
                                   });
-                                },
+                                } : null,
                               ),
-                              onTap: () {
+                              onTap: _canEdit ? () {
                                 setState(() {
                                   if (isSelected) {
                                     _selectedUserIds.remove(id);
@@ -386,7 +458,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                                     _selectedUserIds.add(id);
                                   }
                                 });
-                              },
+                              } : null,
                             );
                           },
                         ),
@@ -418,13 +490,19 @@ class _EventFormDialogState extends State<EventFormDialog> {
                     onPressed: () => Navigator.pop(context),
                     child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: Colors.grey)),
                   ),
-                  const Text('Nuevo Evento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  TextButton(
-                    onPressed: _isLoading ? null : _saveEvent,
-                    child: _isLoading 
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Añadir', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                  Text(
+                    _isEditMode ? 'Detalle del Evento' : 'Nuevo Evento', 
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                   ),
+                  if (_canEdit)
+                    TextButton(
+                      onPressed: _isLoading ? null : _saveEvent,
+                      child: _isLoading 
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text(_isEditMode ? 'Guardar' : 'Añadir', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    )
+                  else
+                    const SizedBox(width: 60),
                 ],
               ),
             ),

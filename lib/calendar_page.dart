@@ -114,23 +114,13 @@ class _CalendarPageState extends State<CalendarPage> {
   void _onAppointmentTap(CalendarTapDetails details) {
     if (details.targetElement == CalendarElement.appointment) {
       final Appointment appointment = details.appointments!.first;
-      showDialog(
+      
+      showModalBottomSheet(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text(appointment.subject),
-          content: Text(
-            'Inicio: ${appointment.startTime.toString().substring(0, 16)}\n'
-            'Fin: ${appointment.endTime.toString().substring(0, 16)}\n\n'
-            '${appointment.notes}',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cerrar'),
-            ),
-          ],
-        ),
-      );
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => EventFormDialog(eventId: appointment.id.toString()),
+      ).then((_) => _fetchEvents());
     }
   }
 
