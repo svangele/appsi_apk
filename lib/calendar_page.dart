@@ -91,8 +91,8 @@ class _CalendarPageState extends State<CalendarPage> {
       }
 
       if (mounted) {
+        _dataSource.updateAppointments(loadedEvents);
         setState(() {
-          _dataSource = EventDataSource(loadedEvents);
           _isLoading = false;
         });
       }
@@ -321,17 +321,9 @@ class _CalendarPageState extends State<CalendarPage> {
 
                         // Calendar Body
                 Expanded(
-                  child: _isLoading
-                      ? Center(
-                          child: Image.asset(
-                            'assets/sisol_loader.gif',
-                            width: 150,
-                            errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                                frame == null ? const CircularProgressIndicator() : child,
-                          ),
-                        )
-                      : SfCalendar(
+                  child: Stack(
+                    children: [
+                      SfCalendar(
                           controller: _calendarController,
                           view: CalendarView.month,
                           onViewChanged: _onViewChanged,
@@ -421,6 +413,23 @@ class _CalendarPageState extends State<CalendarPage> {
                             color: Colors.transparent,
                           ),
                         ),
+                      if (_isLoading)
+                        Positioned.fill(
+                          child: Container(
+                            color: Colors.white.withOpacity(0.6),
+                            child: Center(
+                              child: Image.asset(
+                                'assets/sisol_loader.gif',
+                                width: 150,
+                                errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+                                    frame == null ? const CircularProgressIndicator() : child,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),
