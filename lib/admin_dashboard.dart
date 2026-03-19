@@ -202,6 +202,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     String? statusSys = user?['status_sys'] ?? 'ACTIVO';
     bool isBlocked = user?['is_blocked'] ?? false;
     final permissions = Map<String, bool>.from(user?['permissions'] ?? {
+      'show_calendar': false,
       'show_users': false,
       'show_issi': false,
       'show_cssi': false,
@@ -296,6 +297,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               children: [
                 Text('ACCESOS (VISIBILIDAD)', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
                 const SizedBox(height: 16),
+                _buildPermissionSwitch('Calendario', 'show_calendar', Icons.calendar_month, permissions, setDialogState),
                 _buildPermissionSwitch('Gestión de Usuarios', 'show_users', Icons.group, permissions, setDialogState),
                 _buildPermissionSwitch('Inventario ISSI', 'show_issi', Icons.inventory_2, permissions, setDialogState),
                 _buildPermissionSwitch('Colaboradores CSSI', 'show_cssi', Icons.badge, permissions, setDialogState),
