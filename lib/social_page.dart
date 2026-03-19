@@ -67,15 +67,16 @@ class _SocialPageState extends State<SocialPage> {
       if (userId == null) return;
 
       final now = DateTime.now();
-      final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-      final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59));
+      // Compute exact Monday 00:00:00 and Sunday 23:59:59 in LOCAL time
+      final monday = DateTime(now.year, now.month, now.day - (now.weekday - 1), 0, 0, 0);
+      final sunday = DateTime(now.year, now.month, now.day - (now.weekday - 1) + 6, 23, 59, 59);
 
       // Personal events (created by user or invited)
       final response = await Supabase.instance.client
           .from('events')
           .select('id, title, start_time, end_time, location, is_public')
-          .gte('start_time', startOfWeek.toUtc().toIso8601String())
-          .lte('start_time', endOfWeek.toUtc().toIso8601String())
+          .gte('start_time', monday.toUtc().toIso8601String())
+          .lte('start_time', sunday.toUtc().toIso8601String())
           .or('creator_id.eq.$userId,is_public.eq.true')
           .order('start_time');
 
@@ -171,9 +172,9 @@ class _SocialPageState extends State<SocialPage> {
 
   Widget _buildWeeklyEventsSection() {
     final now = DateTime.now();
-    final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-    final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    final dateRange = '${DateFormat('dd MMM', 'es_MX').format(startOfWeek)} – ${DateFormat('dd MMM', 'es_MX').format(endOfWeek)}';
+    final monday = DateTime(now.year, now.month, now.day - (now.weekday - 1));
+    final sunday = DateTime(now.year, now.month, now.day - (now.weekday - 1) + 6);
+    final dateRange = '${DateFormat('dd MMM', 'es_MX').format(monday)} – ${DateFormat('dd MMM', 'es_MX').format(sunday)}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
