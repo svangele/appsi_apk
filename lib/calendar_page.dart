@@ -358,47 +358,49 @@ class _CalendarPageState extends State<CalendarPage> {
                               decoration: BoxDecoration(
                                 border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const SizedBox(height: 2),
-                                  Center(
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Text(
-                                        details.date.day.toString(),
-                                        style: TextStyle(
-                                          color: isToday ? Colors.white : Colors.black87,
-                                          fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                                          fontSize: 14,
+                              child: ClipRect(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    const SizedBox(height: 2),
+                                    Center(
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Text(
+                                          details.date.day.toString(),
+                                          style: TextStyle(
+                                            color: isToday ? Colors.white : Colors.black87,
+                                            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                            fontSize: 14,
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  if (details.appointments.isNotEmpty)
-                                    ...details.appointments.take(3).map((app) {
-                                      final appointment = app as Appointment;
-                                      return Container(
-                                        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: appointment.color,
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          appointment.subject,
-                                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      );
-                                    }),
-                                ],
+                                    const SizedBox(height: 2),
+                                    if (details.appointments.isNotEmpty)
+                                      ...details.appointments.take(2).map((app) {
+                                        final appointment = app as Appointment;
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: appointment.color,
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            appointment.subject,
+                                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        );
+                                      }),
+                                  ],
+                                ),
                               ),
                             );
                           },
