@@ -39,18 +39,40 @@ class _EventFormDialogState extends State<EventFormDialog> {
   Future<void> _fetchUsers() async {
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
-      final response = await _supabase
-          .from('profiles')
-          .select('id, full_name, email, permissions')
-          .neq('id', currentUserId ?? '')
-          .order('full_name');
+      
+      List<Map<String, dynamic>> allUsers = [];
+      int offset = 0;
+      const int limit = 1000;
+      
+      while (true) {
+        final data = await _supabase
+            .from('profiles')
+            .select('id, full_name, email, permissions')
+            .neq('id', currentUserId ?? '')
+            .range(offset, offset + limit - 1);
+            
+        allUsers.addAll(List<Map<String, dynamic>>.from(data));
+        if (data.length < limit) break;
+        offset += limit;
+      }
       
       if (mounted) {
         setState(() {
-          _profiles = List<Map<String, dynamic>>.from(response).where((user) {
+          _profiles = allUsers.where((user) {
              final perms = user['permissions'] as Map<String, dynamic>?;
-             return perms != null && perms['show_calendar'] == true;
+             if (perms == null) return false;
+             
+             // Check robustly for true or "true"
+             final hasPerm = perms['show_calendar'];
+             return hasPerm == true || hasPerm == 'true';
           }).toList();
+          
+          // Sort alphabetically locally
+          _profiles.sort((a, b) {
+             final nameA = (a['full_name'] ?? a['email'] ?? '').toString().toLowerCase();
+             final nameB = (b['full_name'] ?? b['email'] ?? '').toString().toLowerCase();
+             return nameA.compareTo(nameB);
+          });
         });
       }
     } catch (e) {
@@ -343,7 +365,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                                 child: Text(name[0].toUpperCase(), style: TextStyle(color: isSelected ? Colors.white : Colors.black54)),
                               ),
                               title: Text(name),
-                              trailing: Checkbox(
+                              trailing: Switch(
                                 value: isSelected,
                                 activeColor: Colors.blue,
                                 onChanged: (val) {
