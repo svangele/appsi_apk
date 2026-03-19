@@ -1,6 +1,8 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_calendar/calendar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import 'event_form_dialog.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -12,7 +14,10 @@ class CalendarPage extends StatefulWidget {
 
 class _CalendarPageState extends State<CalendarPage> {
   final SupabaseClient _supabase = Supabase.instance.client;
-  bool _isGroupCalendar = true; // true = Grupal, false = Personal
+  final CalendarController _calendarController = CalendarController();
+  
+  // 0 = Personal, 1 = Grupal, 2 = Invitaciones (optional)
+  int _calendarMode = 0; 
   List<Appointment> _events = [];
   bool _isLoading = true;
 
@@ -29,17 +34,13 @@ class _CalendarPageState extends State<CalendarPage> {
       if (userId == null) return;
 
       List<dynamic> response;
-      if (_isGroupCalendar) {
-        // Fetch public events
+      if (_calendarMode == 1) { // Grupal
         response = await _supabase
             .from('events')
             .select('*, profiles(full_name)')
             .eq('is_public', true)
             .order('start_time');
-      } else {
-        // Fetch personal events (created by user OR user invited)
-        // Since we have RLS, we can just fetch all events we have access to where is_public is false
-        // RLS policy: "Private events viewable by creator" & "Invited users can view the event"
+      } else { // Personal e invitados
         response = await _supabase
             .from('events')
             .select('*, profiles(full_name)')
@@ -60,7 +61,7 @@ class _CalendarPageState extends State<CalendarPage> {
           endTime: endTime,
           subject: ev['title'],
           notes: '${ev['description'] ?? ''}\nCreado por: $creatorName',
-          color: _isGroupCalendar ? Colors.blue.shade600 : Colors.teal.shade500,
+          color: _calendarMode == 1 ? Colors.blue.shade500 : Colors.redAccent.shade400,
           isAllDay: isAllDay,
         ));
       }
@@ -73,9 +74,6 @@ class _CalendarPageState extends State<CalendarPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar eventos: $e')),
-        );
         setState(() => _isLoading = false);
       }
     }
@@ -85,10 +83,7 @@ class _CalendarPageState extends State<CalendarPage> {
     showDialog(
       context: context,
       builder: (context) => const EventFormDialog(),
-    ).then((_) {
-      // Refresh events when dialog closes
-      _fetchEvents();
-    });
+    ).then((_) => _fetchEvents());
   }
 
   void _onAppointmentTap(CalendarTapDetails details) {
@@ -114,79 +109,191 @@ class _CalendarPageState extends State<CalendarPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Calendario'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment<bool>(
-                        value: true,
-                        label: Text('Grupal'),
-                        icon: Icon(Icons.groups),
-                      ),
-                      ButtonSegment<bool>(
-                        value: false,
-                        label: Text('Personal'),
-                        icon: Icon(Icons.person),
-                      ),
-                    ],
-                    selected: {_isGroupCalendar},
-                    onSelectionChanged: (Set<bool> newSelection) {
-                      setState(() {
-                        _isGroupCalendar = newSelection.first;
-                      });
-                      _fetchEvents();
-                    },
-                  ),
-                ),
-              ],
-            ),
+  void _jumpToToday() {
+    _calendarController.displayDate = DateTime.now();
+    // Cambia vista a Dia cuando tocas Hoy
+    _calendarController.view = CalendarView.day; 
+  }
+
+  void _toggleCalendarView() {
+    final current = _calendarController.view;
+    if (current == CalendarView.month) {
+      _calendarController.view = CalendarView.week;
+    } else if (current == CalendarView.week) {
+      _calendarController.view = CalendarView.day;
+    } else {
+      _calendarController.view = CalendarView.month;
+    }
+  }
+
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ]
           ),
+          child: child,
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SfCalendar(
-              view: CalendarView.month,
-              allowedViews: const [
-                CalendarView.day,
-                CalendarView.week,
-                CalendarView.workWeek,
-                CalendarView.month,
-                CalendarView.schedule
-              ],
-              dataSource: EventDataSource(_events),
-              onTap: _onAppointmentTap,
-              monthViewSettings: const MonthViewSettings(
-                showAgenda: true,
-                appointmentDisplayMode: MonthAppointmentDisplayMode.appointment,
-              ),
-              timeSlotViewSettings: const TimeSlotViewSettings(
-                startHour: 7,
-                endHour: 22,
-              ),
-              selectionDecoration: BoxDecoration(
-                color: Colors.transparent,
-                border: Border.all(color: theme.colorScheme.primary, width: 2),
-                borderRadius: const BorderRadius.all(Radius.circular(4)),
-                shape: BoxShape.rectangle,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final currentYear = _calendarController.displayDate?.year ?? DateTime.now().year;
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Calendar Body
+            Positioned.fill(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SfCalendar(
+                      controller: _calendarController,
+                      view: CalendarView.month,
+                      allowedViews: const [
+                        CalendarView.day,
+                        CalendarView.week,
+                        CalendarView.month,
+                      ],
+                      dataSource: EventDataSource(_events),
+                      onTap: _onAppointmentTap,
+                      headerHeight: 0, // Ocultar el header por defecto para usar nuestro diseño
+                      viewHeaderStyle: const ViewHeaderStyle(
+                        dayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                      ),
+                      monthViewSettings: const MonthViewSettings(
+                        showAgenda: true,
+                        appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+                      ),
+                      timeSlotViewSettings: const TimeSlotViewSettings(
+                        startHour: 7,
+                        endHour: 22,
+                      ),
+                      selectionDecoration: BoxDecoration(
+                        color: Colors.transparent,
+                        border: Border.all(color: Colors.redAccent, width: 2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+            ),
+
+            // Top Left Pill: Year
+            Positioned(
+              top: 16,
+              left: 16,
+              child: _buildGlassPill(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  children: [
+                    const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$currentYear',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                    ),
+                  ],
+                ),
               ),
             ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddEventDialog,
-        icon: const Icon(Icons.add),
-        label: const Text('Nuevo Evento'),
+
+            // Top Right Pill: Controls
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildGlassPill(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    GestureDetector(
+                      onTap: _toggleCalendarView,
+                      child: const Icon(Icons.view_agenda_outlined, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buscador no implementado aún')));
+                      },
+                      child: const Icon(Icons.search, color: Colors.black87),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: _showAddEventDialog,
+                      child: const Icon(Icons.add, color: Colors.black87),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bottom Left Pill: Hoy
+            Positioned(
+              bottom: 16,
+              left: 16,
+              child: GestureDetector(
+                onTap: _jumpToToday,
+                child: _buildGlassPill(
+                  child: const Text(
+                    'Hoy',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                  ),
+                ),
+              ),
+            ),
+
+            // Bottom Right Pill: Tabs (Personal / Grupal)
+            Positioned(
+              bottom: 16,
+              right: 16,
+              child: _buildGlassPill(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildTabIcon(Icons.person, 0),
+                    const SizedBox(width: 8),
+                    _buildTabIcon(Icons.groups, 1),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTabIcon(IconData icon, int mode) {
+    final isSelected = _calendarMode == mode;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _calendarMode = mode);
+        _fetchEvents();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.grey.shade200 : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Icon(icon, color: isSelected ? Colors.black : Colors.grey.shade600),
       ),
     );
   }
