@@ -20,6 +20,9 @@ dependencies:
   csv: ^6.0.0
   syncfusion_flutter_calendar: any
   url_launcher: ^6.3.0
+  http: ^1.2.0
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:

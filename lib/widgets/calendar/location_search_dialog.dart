@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 
 class LocationSearchDialog extends StatefulWidget {
   final String initialValue;
@@ -19,6 +23,9 @@ class LocationSearchDialog extends StatefulWidget {
 class _LocationSearchDialogState extends State<LocationSearchDialog> {
   late TextEditingController _controller;
   String _query = '';
+  List<String> _suggestions = [];
+  bool _isSearching = false;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -29,6 +36,7 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
       setState(() {
         _query = _controller.text;
       });
+      _onSearchChanged();
     });
   }
 
@@ -36,6 +44,68 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _onSearchChanged() async {
+    if (_query.trim().isEmpty || _isUrl(_query)) {
+      setState(() => _suggestions = []);
+      return;
+    }
+    
+    // De-bounce using a simple delay could be added here, but for simplicity:
+    setState(() => _isSearching = true);
+    try {
+      final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(_query)}&format=json&addressdetails=1&limit=5');
+      final response = await http.get(url, headers: {'User-Agent': 'appsi_apk/1.0'});
+      if (response.statusCode == 200) {
+        final List data = json.decode(response.body);
+        final List<String> results = data.map((e) => e['display_name'] as String).toList();
+        if (mounted) {
+          setState(() {
+            _suggestions = results;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error searching location: $e');
+    } finally {
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLoadingLocation = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Permisos de ubicación denegados');
+        }
+      }
+      
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Permisos de ubicación denegados permanentemente');
+      }
+
+      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
+      
+      final placemarks = await geocoding.placemarkFromCoordinates(position.latitude, position.longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        final address = '${place.street ?? ''} ${place.subThoroughfare ?? ''}, ${place.locality ?? ''}, ${place.country ?? ''}'.trim();
+        // Return cleaned up address, or uncleaned if failed
+        Navigator.pop(context, address.isNotEmpty ? address.replaceAll(RegExp(r'^,\s*'), '') : 'Lat: ${position.latitude}, Lng: ${position.longitude}');
+      } else {
+        Navigator.pop(context, '${position.latitude}, ${position.longitude}');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingLocation = false);
+    }
   }
 
   bool _isUrl(String text) {
@@ -100,7 +170,6 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
           ),
           title: const Text('Compartir URL'),
           onTap: () {
-            // Share logic would normally use share_plus, but we simulate it here or just copy for now
             _copyToClipboard(url);
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Compartir no disponible, enlace copiado en su lugar')),
@@ -111,40 +180,60 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
     );
   }
 
-  Widget _buildMockMapSuggestions() {
+  Widget _buildMapSuggestions() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_query.isNotEmpty) ...[
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Ubicaciones en mapa', style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
+            child: Text('Escriba para buscar o seleccione una opción', style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
           ),
-          ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Colors.redAccent.shade400,
-              child: const Icon(Icons.location_on, color: Colors.white, size: 20),
+          if (_isSearching && _suggestions.isEmpty)
+             const Padding(
+               padding: EdgeInsets.all(16.0),
+               child: Center(child: CircularProgressIndicator()),
+             ),
+          for (var suggestion in _suggestions) ...[
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.redAccent.shade400,
+                child: const Icon(Icons.location_on, color: Colors.white, size: 20),
+              ),
+              title: Text(suggestion, maxLines: 2, overflow: TextOverflow.ellipsis),
+              onTap: () => Navigator.pop(context, suggestion),
             ),
-            title: Text(_query, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('Ubicación personalizada'),
-            onTap: () => Navigator.pop(context, _query.trim()),
-          ),
-          const Divider(height: 1, indent: 64),
+            const Divider(height: 1, indent: 64),
+          ],
+          
+          if (_suggestions.isEmpty && !_isSearching) ...[
+            ListTile(
+              leading: CircleAvatar(
+                backgroundColor: Colors.grey.shade300,
+                child: const Icon(Icons.location_on, color: Colors.white, size: 20),
+              ),
+              title: Text(_query, style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('Usar texto tal y como está...'),
+              onTap: () => Navigator.pop(context, _query.trim()),
+            ),
+            const Divider(height: 1, indent: 64),
+          ]
         ],
         
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('Recientes', style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
+          child: Text('Opciones', style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
         ),
         ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.blue.shade100,
-            child: const Icon(Icons.my_location, color: Colors.blue, size: 20),
+            child: _isLoadingLocation 
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.my_location, color: Colors.blue, size: 20),
           ),
           title: const Text('Ubicación actual'),
-          onTap: () {
-            Navigator.pop(context, 'Ubicación actual');
-          },
+          subtitle: const Text('Usar el GPS de tu dispositivo'),
+          onTap: _isLoadingLocation ? null : _getCurrentLocation,
         ),
       ],
     );
@@ -234,7 +323,7 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
                   if (isUrl) 
                     _buildUrlActions(_query)
                   else if (!widget.isReadOnly) 
-                    _buildMockMapSuggestions()
+                    _buildMapSuggestions()
                 ],
               ),
             ),
