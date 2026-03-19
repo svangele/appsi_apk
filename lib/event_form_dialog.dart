@@ -45,6 +45,9 @@ class _EventFormDialogState extends State<EventFormDialog> {
   void initState() {
     super.initState();
     _isViewingData = _isEditMode;
+    if (_isEditMode) {
+      _isFetchingEvent = true;
+    }
     _fetchUsers().then((_) {
       if (_isEditMode) {
         _fetchEventData();
