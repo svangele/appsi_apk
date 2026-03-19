@@ -91,8 +91,8 @@ class _CalendarPageState extends State<CalendarPage> {
       }
 
       if (mounted) {
-        _dataSource.updateAppointments(loadedEvents);
         setState(() {
+          _dataSource = EventDataSource(loadedEvents);
           _isLoading = false;
         });
       }
