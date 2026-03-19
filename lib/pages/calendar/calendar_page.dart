@@ -133,10 +133,10 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   String get _bottomLeftButtonText {
-    if (_currentView == CalendarView.month) return 'Hoy';
+    if (_currentView == CalendarView.month) return 'DIA';
     if (_currentView == CalendarView.day) return 'Semana';
     if (_currentView == CalendarView.week) return 'Mes';
-    return 'Hoy';
+    return 'DIA';
   }
 
   void _onBottomLeftButtonPressed() {
@@ -348,7 +348,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           ),
                           monthViewSettings: const MonthViewSettings(
                             dayFormat: 'EEEEE', // Single letter format
-                            showAgenda: false, // Turn off default agenda since we are customizing cells (or keep it if dragging is needed, but iOS clicks to show list below, we'll keep default tap behavior)
+                            showAgenda: true, // Show events list below calendar when a day is tapped
                             showTrailingAndLeadingDates: false,
                             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
                           ),
@@ -367,39 +367,45 @@ class _CalendarPageState extends State<CalendarPage> {
                                 border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
                               ),
                               child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  const SizedBox(height: 4),
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Text(
-                                      details.date.day.toString(),
-                                      style: TextStyle(
-                                        color: isToday ? Colors.white : Colors.black87,
-                                        fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                  const SizedBox(height: 2),
+                                  Center(
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Text(
+                                        details.date.day.toString(),
+                                        style: TextStyle(
+                                          color: isToday ? Colors.white : Colors.black87,
+                                          fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                          fontSize: 14,
+                                        ),
                                       ),
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   if (details.appointments.isNotEmpty)
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: details.appointments.take(4).map((app) {
-                                        final appointment = app as Appointment;
-                                        return Container(
-                                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                                          width: 6,
-                                          height: 6,
-                                          decoration: BoxDecoration(
-                                            color: appointment.color,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        );
-                                      }).toList(),
-                                    ),
+                                    ...details.appointments.take(3).map((app) {
+                                      final appointment = app as Appointment;
+                                      return Container(
+                                        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: appointment.color,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          appointment.subject,
+                                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      );
+                                    }),
                                 ],
                               ),
                             );
