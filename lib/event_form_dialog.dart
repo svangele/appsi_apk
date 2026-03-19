@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'widgets/calendar/location_search_dialog.dart';
 
 class EventFormDialog extends StatefulWidget {
@@ -267,6 +269,35 @@ class _EventFormDialogState extends State<EventFormDialog> {
     });
   }
 
+  bool _isUrl(String text) {
+    final t = text.trim().toLowerCase();
+    return t.startsWith('http://') || t.startsWith('https://') || t.startsWith('www.');
+  }
+
+  Future<void> _launchUrl(String urlText) async {
+    var u = urlText.trim();
+    if (u.startsWith('www.')) {
+      u = 'https://$u';
+    }
+    final uri = Uri.tryParse(u);
+    if (uri != null && await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo abrir el enlace')),
+        );
+      }
+    }
+  }
+
+  void _copyToClipboard(String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Copiado al portapapeles')),
+    );
+  }
+
   String _formatDetailedDate(DateTime d) {
     const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
     const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
@@ -332,9 +363,59 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 const Icon(Icons.location_on_outlined, color: Colors.grey, size: 20),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    _locationController.text,
-                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _locationController.text,
+                        style: const TextStyle(fontSize: 16, color: Colors.black87),
+                      ),
+                      if (_isUrl(_locationController.text)) ...[
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 8,
+                          children: [
+                            InkWell(
+                              onTap: () => _launchUrl(_locationController.text),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.open_in_browser, size: 18, color: Colors.blue),
+                                  SizedBox(width: 4),
+                                  Text('Abrir', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () => _copyToClipboard(_locationController.text),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.copy, size: 18, color: Colors.blue),
+                                  SizedBox(width: 4),
+                                  Text('Copiar', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                            InkWell(
+                              onTap: () {
+                                _copyToClipboard(_locationController.text);
+                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compartir copiado al portapapeles')));
+                              },
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.share, size: 18, color: Colors.blue),
+                                  SizedBox(width: 4),
+                                  Text('Compartir', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
