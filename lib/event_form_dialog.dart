@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'location_search_dialog.dart';
+import 'widgets/calendar/location_search_dialog.dart';
 
 class EventFormDialog extends StatefulWidget {
   final String? eventId;
