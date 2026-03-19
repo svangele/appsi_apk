@@ -607,6 +607,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               readOnly: !_canEdit,
               decoration: InputDecoration(
+                icon: const Icon(Icons.title, color: Colors.grey),
                 hintText: 'Título del evento',
                 hintStyle: TextStyle(color: Colors.grey.shade400),
                 border: InputBorder.none,
@@ -656,7 +657,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const SizedBox(width: 24), // Tabbing
+              leading: const Icon(Icons.access_time, color: Colors.grey),
               title: const Text('Termina'),
               trailing: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
