@@ -222,10 +222,52 @@ class _EventFormDialogState extends State<EventFormDialog> {
           SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
-    } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _deleteEvent() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar evento'),
+        content: const Text('¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isLoading = true);
+    
+    try {
+      if (widget.eventId != null) {
+        await _supabase.from('events').delete().eq('id', int.parse(widget.eventId!));
+        
+        if (mounted) {
+          Navigator.pop(context, true);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Evento eliminado exitosamente')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error al eliminar evento: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -662,6 +704,24 @@ class _EventFormDialogState extends State<EventFormDialog> {
                     );
                   },
                 ),
+            ],
+
+            if (_isEditMode && _canEdit) ...[
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : _deleteEvent,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  label: const Text('Eliminar Evento', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    side: const BorderSide(color: Colors.red),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ],
         ),
