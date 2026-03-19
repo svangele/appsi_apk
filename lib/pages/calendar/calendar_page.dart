@@ -153,7 +153,7 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _showMonthsGrid() {
-    final year = _currentDisplayDate.year;
+    int selectedYear = _currentDisplayDate.year;
     final months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
      
     showModalBottomSheet(
@@ -161,51 +161,76 @@ class _CalendarPageState extends State<CalendarPage> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(year.toString(), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 24),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3, 
-                  childAspectRatio: 2,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: 12,
-                itemBuilder: (context, index) {
-                  return Container(
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          _currentView = CalendarView.month;
-                          _calendarController.view = CalendarView.month;
-                          _calendarController.displayDate = DateTime(year, index + 1, 1);
-                        });
-                      },
-                      child: Center(
-                        child: Text(
-                          months[index], 
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)
-                        ),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: () {
+                          setModalState(() {
+                            selectedYear--;
+                          });
+                        },
                       ),
+                      Text(selectedYear.toString(), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: () {
+                          setModalState(() {
+                            selectedYear++;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, 
+                      childAspectRatio: 2,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
                     ),
-                  );
-                },
+                    itemCount: 12,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () {
+                            Navigator.pop(context);
+                            setState(() {
+                              _currentView = CalendarView.month;
+                              _calendarController.view = CalendarView.month;
+                              _calendarController.displayDate = DateTime(selectedYear, index + 1, 1);
+                            });
+                          },
+                          child: Center(
+                            child: Text(
+                              months[index], 
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          }
         );
       }
     );
@@ -260,16 +285,10 @@ class _CalendarPageState extends State<CalendarPage> {
                       GestureDetector(
                         onTap: _showMonthsGrid,
                         child: _buildGlassPill(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
-                              const SizedBox(width: 4),
-                              Text(
-                                '$currentYear',
-                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-                              ),
-                            ],
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          child: Text(
+                            '$currentYear',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
                           ),
                         ),
                       ),
@@ -307,7 +326,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                 ),
 
-                // Calendar Body
+                        // Calendar Body
                 Expanded(
                   child: _isLoading
                       ? const Center(child: CircularProgressIndicator())
@@ -323,22 +342,74 @@ class _CalendarPageState extends State<CalendarPage> {
                           dataSource: EventDataSource(_events),
                           onTap: _onAppointmentTap,
                           headerHeight: 0, 
+                          cellBorderColor: Colors.transparent, // Remove all default borders
                           viewHeaderStyle: const ViewHeaderStyle(
-                            dayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                            dayTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey),
                           ),
                           monthViewSettings: const MonthViewSettings(
-                            showAgenda: true,
+                            dayFormat: 'EEEEE', // Single letter format
+                            showAgenda: false, // Turn off default agenda since we are customizing cells (or keep it if dragging is needed, but iOS clicks to show list below, we'll keep default tap behavior)
                             showTrailingAndLeadingDates: false,
                             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
                           ),
+                          monthCellBuilder: (BuildContext context, MonthCellDetails details) {
+                            final isToday = details.date.year == DateTime.now().year && 
+                                            details.date.month == DateTime.now().month && 
+                                            details.date.day == DateTime.now().day;
+                            
+                            // Only show cells for the current month
+                            if (details.date.month != _currentDisplayDate.month) {
+                              return const SizedBox.shrink();
+                            }
+
+                            return Container(
+                              decoration: BoxDecoration(
+                                border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+                              ),
+                              child: Column(
+                                children: [
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      details.date.day.toString(),
+                                      style: TextStyle(
+                                        color: isToday ? Colors.white : Colors.black87,
+                                        fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  if (details.appointments.isNotEmpty)
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: details.appointments.take(4).map((app) {
+                                        final appointment = app as Appointment;
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                                          width: 6,
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: appointment.color,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                           timeSlotViewSettings: const TimeSlotViewSettings(
                             startHour: 7,
                             endHour: 22,
                           ),
                           selectionDecoration: BoxDecoration(
                             color: Colors.transparent,
-                            border: Border.all(color: Colors.redAccent, width: 2),
-                            borderRadius: BorderRadius.circular(4),
                           ),
                         ),
                 ),
