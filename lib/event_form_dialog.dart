@@ -16,6 +16,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _supabase = Supabase.instance.client;
 
   DateTime _startDate = DateTime.now();
@@ -51,6 +52,14 @@ class _EventFormDialogState extends State<EventFormDialog> {
     });
   }
 
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchEventData() async {
     setState(() => _isFetchingEvent = true);
     try {
@@ -61,6 +70,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
         setState(() {
           _titleController.text = eventResponse['title'] ?? '';
           _locationController.text = eventResponse['location'] ?? '';
+          _descriptionController.text = eventResponse['description'] ?? '';
           _isPublic = eventResponse['is_public'] ?? true;
           _recurrence = eventResponse['recurrence'] ?? 'No repetir';
           _creatorId = eventResponse['creator_id'];
@@ -162,7 +172,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
         // Update event
         await _supabase.from('events').update({
           'title': _titleController.text.trim(),
-          'description': '', 
+          'description': _descriptionController.text.trim(), 
           'location': _locationController.text.trim(),
           'recurrence': _recurrence,
           'start_time': startDateTime.toUtc().toIso8601String(),
@@ -187,7 +197,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
         // Insert event
         final eventResponse = await _supabase.from('events').insert({
           'title': _titleController.text.trim(),
-          'description': '', 
+          'description': _descriptionController.text.trim(), 
           'location': _locationController.text.trim(),
           'recurrence': _recurrence,
           'start_time': startDateTime.toUtc().toIso8601String(),
@@ -462,6 +472,23 @@ class _EventFormDialogState extends State<EventFormDialog> {
               ],
             ),
 
+          if (_descriptionController.text.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.notes, color: Colors.grey, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _descriptionController.text,
+                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           if (_creatorId != null) ...[
             const SizedBox(height: 24),
             Text(_isPublic ? 'Organizador' : 'Invitados', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -587,13 +614,26 @@ class _EventFormDialogState extends State<EventFormDialog> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
             ),
             Divider(color: Colors.grey.shade300),
-                    // 3. Ubicación o URL
                     TextFormField(
                       controller: _locationController,
                       readOnly: !_canEdit,
                       decoration: const InputDecoration(
                         hintText: 'Añadir ubicación o URL',
                         icon: Icon(Icons.location_on_outlined, color: Colors.grey),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                    Divider(color: Colors.grey.shade300),
+
+                    // 3.5 Descripción
+                    TextFormField(
+                      controller: _descriptionController,
+                      readOnly: !_canEdit,
+                      maxLines: 3,
+                      minLines: 1,
+                      decoration: const InputDecoration(
+                        hintText: 'Añadir descripción',
+                        icon: Icon(Icons.notes, color: Colors.grey),
                         border: InputBorder.none,
                       ),
                     ),
