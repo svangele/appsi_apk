@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'widgets/calendar/location_search_dialog.dart';
 
 class EventFormDialog extends StatefulWidget {
   final String? eventId;
@@ -546,32 +545,15 @@ class _EventFormDialogState extends State<EventFormDialog> {
               validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
             ),
             Divider(color: Colors.grey.shade300),
-                        // 3. Ubicación o URL
+                    // 3. Ubicación o URL
                     TextFormField(
                       controller: _locationController,
-                      readOnly: true,
+                      readOnly: !_canEdit,
                       decoration: const InputDecoration(
                         hintText: 'Añadir ubicación o URL',
                         icon: Icon(Icons.location_on_outlined, color: Colors.grey),
                         border: InputBorder.none,
                       ),
-                      onTap: () async {
-                        final result = await showModalBottomSheet<String>(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (context) => LocationSearchDialog(
-                            initialValue: _locationController.text,
-                            isReadOnly: !_canEdit,
-                          ),
-                        );
-                        
-                        if (result != null && _canEdit) {
-                          setState(() {
-                            _locationController.text = result;
-                          });
-                        }
-                      },
                     ),
                     Divider(color: Colors.grey.shade300),
             
