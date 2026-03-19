@@ -3,8 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart' as geocoding;
 
 class LocationSearchDialog extends StatefulWidget {
   final String initialValue;
@@ -25,7 +23,6 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
   String _query = '';
   List<String> _suggestions = [];
   bool _isSearching = false;
-  bool _isLoadingLocation = false;
 
   @override
   void initState() {
@@ -70,41 +67,6 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
       debugPrint('Error searching location: $e');
     } finally {
       if (mounted) setState(() => _isSearching = false);
-    }
-  }
-
-  Future<void> _getCurrentLocation() async {
-    setState(() => _isLoadingLocation = true);
-    try {
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Permisos de ubicación denegados');
-        }
-      }
-      
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('Permisos de ubicación denegados permanentemente');
-      }
-
-      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.medium);
-      
-      final placemarks = await geocoding.placemarkFromCoordinates(position.latitude, position.longitude);
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
-        final address = '${place.street ?? ''} ${place.subThoroughfare ?? ''}, ${place.locality ?? ''}, ${place.country ?? ''}'.trim();
-        // Return cleaned up address, or uncleaned if failed
-        Navigator.pop(context, address.isNotEmpty ? address.replaceAll(RegExp(r'^,\s*'), '') : 'Lat: ${position.latitude}, Lng: ${position.longitude}');
-      } else {
-        Navigator.pop(context, '${position.latitude}, ${position.longitude}');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoadingLocation = false);
     }
   }
 
@@ -220,21 +182,6 @@ class _LocationSearchDialogState extends State<LocationSearchDialog> {
           ]
         ],
         
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text('Opciones', style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.bold)),
-        ),
-        ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.blue.shade100,
-            child: _isLoadingLocation 
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Icon(Icons.my_location, color: Colors.blue, size: 20),
-          ),
-          title: const Text('Ubicación actual'),
-          subtitle: const Text('Usar el GPS de tu dispositivo'),
-          onTap: _isLoadingLocation ? null : _getCurrentLocation,
-        ),
       ],
     );
   }
