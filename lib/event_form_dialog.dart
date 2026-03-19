@@ -698,9 +698,17 @@ class _EventFormDialogState extends State<EventFormDialog> {
               const Text('Invitados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               if (_profiles.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 20),
-                  child: Center(child: CircularProgressIndicator()),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/sisol_loader.gif',
+                      width: 50,
+                      errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+                      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+                          frame == null ? const CircularProgressIndicator() : child,
+                    ),
+                  ),
                 )
               else
                 ListView.builder(
@@ -786,7 +794,15 @@ class _EventFormDialogState extends State<EventFormDialog> {
           Padding(
             padding: const EdgeInsets.only(top: 60.0), // Space for handle and header
             child: _isFetchingEvent 
-               ? const Center(child: CircularProgressIndicator()) 
+               ? Center(
+                   child: Image.asset(
+                     'assets/sisol_loader.gif',
+                     width: 150,
+                     errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+                     frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
+                         frame == null ? const CircularProgressIndicator() : child,
+                   ),
+                 )
                : (_isViewingData ? _buildDetailsView() : _buildFormView(format)),
           ),
           
