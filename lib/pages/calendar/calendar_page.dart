@@ -239,97 +239,110 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     final currentYear = _currentDisplayDate.year;
+    final monthsNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    final currentMonthName = monthsNames[_currentDisplayDate.month - 1];
 
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
-            // Calendar Body
-            Positioned.fill(
-              child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : SfCalendar(
-                      controller: _calendarController,
-                      view: CalendarView.month,
-                      onViewChanged: _onViewChanged,
-                      allowedViews: const [
-                        CalendarView.day,
-                        CalendarView.week,
-                        CalendarView.month,
-                      ],
-                      dataSource: EventDataSource(_events),
-                      onTap: _onAppointmentTap,
-                      headerHeight: 0, // Ocultar el header por defecto para usar nuestro diseño
-                      viewHeaderStyle: const ViewHeaderStyle(
-                        dayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
-                      ),
-                      monthViewSettings: const MonthViewSettings(
-                        showAgenda: true,
-                        appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
-                      ),
-                      timeSlotViewSettings: const TimeSlotViewSettings(
-                        startHour: 7,
-                        endHour: 22,
-                      ),
-                      selectionDecoration: BoxDecoration(
-                        color: Colors.transparent,
-                        border: Border.all(color: Colors.redAccent, width: 2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-            ),
-
-            // Top Left Pill: Year
-            Positioned(
-              top: 16,
-              left: 16,
-              child: GestureDetector(
-                onTap: _showMonthsGrid,
-                child: _buildGlassPill(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Controls (Not overlapping)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
-                      const SizedBox(width: 4),
-                      Text(
-                        '$currentYear',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                      // Top Left Pill: Year
+                      GestureDetector(
+                        onTap: _showMonthsGrid,
+                        child: _buildGlassPill(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.arrow_back_ios, size: 16, color: Colors.black87),
+                              const SizedBox(width: 4),
+                              Text(
+                                '$currentYear',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // Top Right Pill: Search & Plus
+                      _buildGlassPill(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () {
+                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buscador no implementado aún')));
+                              },
+                              child: const Icon(Icons.search, color: Colors.black87),
+                            ),
+                            const SizedBox(width: 16),
+                            GestureDetector(
+                              onTap: _showAddEventDialog,
+                              child: const Icon(Icons.add, color: Colors.black87),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ),
 
-            // Top Right Pill: Controls
-            Positioned(
-              top: 16,
-              right: 16,
-              child: _buildGlassPill(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: _onBottomLeftButtonPressed, // Mismo efecto que cambiar la vista
-                      child: const Icon(Icons.view_agenda_outlined, color: Colors.black87),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Buscador no implementado aún')));
-                      },
-                      child: const Icon(Icons.search, color: Colors.black87),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: _showAddEventDialog,
-                      child: const Icon(Icons.add, color: Colors.black87),
-                    ),
-                  ],
+                // Month Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                  child: Text(
+                    currentMonthName,
+                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
                 ),
-              ),
+
+                // Calendar Body
+                Expanded(
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : SfCalendar(
+                          controller: _calendarController,
+                          view: CalendarView.month,
+                          onViewChanged: _onViewChanged,
+                          allowedViews: const [
+                            CalendarView.day,
+                            CalendarView.week,
+                            CalendarView.month,
+                          ],
+                          dataSource: EventDataSource(_events),
+                          onTap: _onAppointmentTap,
+                          headerHeight: 0, 
+                          viewHeaderStyle: const ViewHeaderStyle(
+                            dayTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+                          ),
+                          monthViewSettings: const MonthViewSettings(
+                            showAgenda: true,
+                            showTrailingAndLeadingDates: false,
+                            appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+                          ),
+                          timeSlotViewSettings: const TimeSlotViewSettings(
+                            startHour: 7,
+                            endHour: 22,
+                          ),
+                          selectionDecoration: BoxDecoration(
+                            color: Colors.transparent,
+                            border: Border.all(color: Colors.redAccent, width: 2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                ),
+              ],
             ),
 
             // Bottom Left Pill: Hoy / Vista
