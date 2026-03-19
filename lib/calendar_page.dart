@@ -411,6 +411,8 @@ class _CalendarPageState extends State<CalendarPage> {
                           ),
                           selectionDecoration: BoxDecoration(
                             color: Colors.transparent,
+                            border: Border.all(color: Colors.green, width: 2),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                       if (_isLoading)
