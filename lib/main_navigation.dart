@@ -9,7 +9,7 @@ import 'incidencias_page.dart';
 import 'social_page.dart';
 import 'external_contacts_page.dart';
 import 'widgets/notification_bell.dart';
-import 'widgets/calendar/calendar_page.dart';
+import 'calendar_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
