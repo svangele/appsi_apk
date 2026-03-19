@@ -18,7 +18,8 @@ dependencies:
   flutter_web_plugins: 
     sdk: flutter
   csv: ^6.0.0
-  syncfusion_flutter_calendar: any
+  syncfusion_flutter_calendar: ^26.2.11
+  syncfusion_localizations: ^26.2.11
   url_launcher: ^6.3.0
   http: ^1.2.0
 
