@@ -41,13 +41,16 @@ class _EventFormDialogState extends State<EventFormDialog> {
       final currentUserId = _supabase.auth.currentUser?.id;
       final response = await _supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, permissions')
           .neq('id', currentUserId ?? '')
           .order('full_name');
       
       if (mounted) {
         setState(() {
-          _profiles = List<Map<String, dynamic>>.from(response);
+          _profiles = List<Map<String, dynamic>>.from(response).where((user) {
+             final perms = user['permissions'] as Map<String, dynamic>?;
+             return perms != null && perms['show_calendar'] == true;
+          }).toList();
         });
       }
     } catch (e) {
