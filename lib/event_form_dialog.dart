@@ -253,7 +253,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
     
     try {
       if (widget.eventId != null) {
-        await _supabase.from('events').delete().eq('id', int.parse(widget.eventId!));
+        await _supabase.from('events').delete().eq('id', widget.eventId!);
         
         if (mounted) {
           Navigator.pop(context, true);
