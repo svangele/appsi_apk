@@ -32,6 +32,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
   bool _isLoading = false;
   bool _isFetchingEvent = false;
   String? _creatorId;
+  late bool _isViewingData;
 
   bool get _isEditMode => widget.eventId != null;
   bool get _canEdit => !_isEditMode || _creatorId == _supabase.auth.currentUser?.id;
@@ -39,6 +40,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
   @override
   void initState() {
     super.initState();
+    _isViewingData = _isEditMode;
     _fetchUsers().then((_) {
       if (_isEditMode) {
         _fetchEventData();
@@ -256,6 +258,282 @@ class _EventFormDialogState extends State<EventFormDialog> {
     });
   }
 
+  String _formatDetailedDate(DateTime d) {
+    const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    final weekdayStr = weekDays[d.weekday - 1];
+    final monthStr = months[d.month - 1];
+    return '$weekdayStr, ${d.day} $monthStr ${d.year}';
+  }
+
+  Widget _buildDetailsView() {
+    final startStr = _startTime.format(context);
+    final endStr = _endTime.format(context);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 20, 
+        right: 20, 
+        bottom: MediaQuery.of(context).viewInsets.bottom + 80
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 16),
+          Text(
+            _titleController.text.isNotEmpty ? _titleController.text : 'Sin título',
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.calendar_today, color: Colors.grey, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _formatDetailedDate(_startDate),
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.access_time, color: Colors.grey, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$startStr - $endStr',
+                  style: const TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          if (_locationController.text.isNotEmpty)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on_outlined, color: Colors.grey, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _locationController.text,
+                    style: const TextStyle(fontSize: 16, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormView(DateFormat format) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 20, 
+        right: 20, 
+        bottom: MediaQuery.of(context).viewInsets.bottom + 80 // Space for keyboard and safe area
+      ),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. Tipo: Publico / Personal
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _canEdit ? () => setState(() => _isPublic = true) : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: _isPublic ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: _isPublic ? [
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+                          ] : null,
+                        ),
+                        child: const Center(
+                          child: Text('Público', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: _canEdit ? () => setState(() => _isPublic = false) : null,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color: !_isPublic ? Colors.white : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                          boxShadow: !_isPublic ? [
+                            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
+                          ] : null,
+                        ),
+                        child: const Center(
+                          child: Text('Personal', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Título
+            TextFormField(
+              controller: _titleController,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              readOnly: !_canEdit,
+              decoration: InputDecoration(
+                hintText: 'Título del evento',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                border: InputBorder.none,
+              ),
+              validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
+            ),
+            Divider(color: Colors.grey.shade300),
+            
+            // 3. Ubicación o URL
+            TextFormField(
+              controller: _locationController,
+              readOnly: !_canEdit,
+              decoration: const InputDecoration(
+                hintText: 'Añadir ubicación o URL',
+                icon: Icon(Icons.location_on_outlined, color: Colors.grey),
+                border: InputBorder.none,
+              ),
+            ),
+            Divider(color: Colors.grey.shade300),
+            
+            // 4 & 5. Fechas (Inicio / Fin)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.access_time, color: Colors.grey),
+              title: const Text('Comienza'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(format.format(DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
+              ),
+              onTap: _canEdit ? () => _pickDateTime(true) : null,
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const SizedBox(width: 24), // Tabbing
+              title: const Text('Termina'),
+              trailing: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(format.format(DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
+              ),
+              onTap: _canEdit ? () => _pickDateTime(false) : null,
+            ),
+            Divider(color: Colors.grey.shade300),
+
+            // 6. Opción de repetir
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.repeat, color: Colors.grey),
+              title: const Text('Repetir'),
+              trailing: DropdownButton<String>(
+                value: _recurrence,
+                underline: const SizedBox(),
+                icon: const Icon(Icons.chevron_right, color: Colors.grey),
+                items: _recurrenceOptions.map((e) {
+                  return DropdownMenuItem(value: e, child: Text(e));
+                }).toList(),
+                onChanged: _canEdit ? (val) {
+                  if (val != null) {
+                    setState(() => _recurrence = val);
+                  }
+                } : null,
+              ),
+            ),
+            Divider(color: Colors.grey.shade300),
+
+            // 7. Invitados (solo si es Personal)
+            if (!_isPublic) ...[
+              const SizedBox(height: 16),
+              const Text('Invitados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 8),
+              if (_profiles.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _profiles.length,
+                  itemBuilder: (context, index) {
+                    final p = _profiles[index];
+                    final id = p['id'] as String;
+                    final name = p['full_name'] ?? p['email'] ?? 'Usuario';
+                    final isSelected = _selectedUserIds.contains(id);
+
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
+                        child: Text(name[0].toUpperCase(), style: TextStyle(color: isSelected ? Colors.white : Colors.black54)),
+                      ),
+                      title: Text(name),
+                      trailing: Switch(
+                        value: isSelected,
+                        activeColor: Colors.blue,
+                        onChanged: _canEdit ? (val) {
+                          setState(() {
+                            if (val == true) {
+                              _selectedUserIds.add(id);
+                            } else {
+                              _selectedUserIds.remove(id);
+                            }
+                          });
+                        } : null,
+                      ),
+                      onTap: _canEdit ? () {
+                        setState(() {
+                          if (isSelected) {
+                            _selectedUserIds.remove(id);
+                          } else {
+                            _selectedUserIds.add(id);
+                          }
+                        });
+                      } : null,
+                    );
+                  },
+                ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final format = DateFormat('dd/MM/yyyy HH:mm');
@@ -271,202 +549,9 @@ class _EventFormDialogState extends State<EventFormDialog> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 60.0), // Space for handle and header
-            child: _isFetchingEvent ? const Center(child: CircularProgressIndicator()) : SingleChildScrollView(
-              padding: EdgeInsets.only(
-                left: 20, 
-                right: 20, 
-                bottom: MediaQuery.of(context).viewInsets.bottom + 80 // Space for keyboard and safe area
-              ),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // 1. Tipo: Publico / Personal
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _canEdit ? () => setState(() => _isPublic = true) : null,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: _isPublic ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: _isPublic ? [
-                                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
-                                  ] : null,
-                                ),
-                                child: const Center(
-                                  child: Text('Público', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _canEdit ? () => setState(() => _isPublic = false) : null,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                decoration: BoxDecoration(
-                                  color: !_isPublic ? Colors.white : Colors.transparent,
-                                  borderRadius: BorderRadius.circular(10),
-                                  boxShadow: !_isPublic ? [
-                                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 2))
-                                  ] : null,
-                                ),
-                                child: const Center(
-                                  child: Text('Personal', style: TextStyle(fontWeight: FontWeight.bold)),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // 2. Título
-                    TextFormField(
-                      controller: _titleController,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      readOnly: !_canEdit,
-                      decoration: InputDecoration(
-                        hintText: 'Título del evento',
-                        hintStyle: TextStyle(color: Colors.grey.shade400),
-                        border: InputBorder.none,
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'Requerido' : null,
-                    ),
-                    Divider(color: Colors.grey.shade300),
-                    
-                    // 3. Ubicación o URL
-                    TextFormField(
-                      controller: _locationController,
-                      readOnly: !_canEdit,
-                      decoration: const InputDecoration(
-                        hintText: 'Añadir ubicación o URL',
-                        icon: Icon(Icons.location_on_outlined, color: Colors.grey),
-                        border: InputBorder.none,
-                      ),
-                    ),
-                    Divider(color: Colors.grey.shade300),
-                    
-                    // 4 & 5. Fechas (Inicio / Fin)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.access_time, color: Colors.grey),
-                      title: const Text('Comienza'),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(format.format(DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
-                      ),
-                      onTap: _canEdit ? () => _pickDateTime(true) : null,
-                    ),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const SizedBox(width: 24), // Tabbing
-                      title: const Text('Termina'),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(format.format(DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
-                      ),
-                      onTap: _canEdit ? () => _pickDateTime(false) : null,
-                    ),
-                    Divider(color: Colors.grey.shade300),
-
-                    // 6. Opción de repetir
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.repeat, color: Colors.grey),
-                      title: const Text('Repetir'),
-                      trailing: DropdownButton<String>(
-                        value: _recurrence,
-                        underline: const SizedBox(),
-                        icon: const Icon(Icons.chevron_right, color: Colors.grey),
-                        items: _recurrenceOptions.map((e) {
-                          return DropdownMenuItem(value: e, child: Text(e));
-                        }).toList(),
-                        onChanged: _canEdit ? (val) {
-                          if (val != null) {
-                            setState(() => _recurrence = val);
-                          }
-                        } : null,
-                      ),
-                    ),
-                    Divider(color: Colors.grey.shade300),
-
-                    // 7. Invitados (solo si es Personal)
-                    if (!_isPublic) ...[
-                      const SizedBox(height: 16),
-                      const Text('Invitados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      const SizedBox(height: 8),
-                      if (_profiles.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 20),
-                          child: Center(child: CircularProgressIndicator()),
-                        )
-                      else
-                        ListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _profiles.length,
-                          itemBuilder: (context, index) {
-                            final p = _profiles[index];
-                            final id = p['id'] as String;
-                            final name = p['full_name'] ?? p['email'] ?? 'Usuario';
-                            final isSelected = _selectedUserIds.contains(id);
-
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: CircleAvatar(
-                                backgroundColor: isSelected ? Colors.blue : Colors.grey.shade200,
-                                child: Text(name[0].toUpperCase(), style: TextStyle(color: isSelected ? Colors.white : Colors.black54)),
-                              ),
-                              title: Text(name),
-                              trailing: Switch(
-                                value: isSelected,
-                                activeColor: Colors.blue,
-                                onChanged: _canEdit ? (val) {
-                                  setState(() {
-                                    if (val == true) {
-                                      _selectedUserIds.add(id);
-                                    } else {
-                                      _selectedUserIds.remove(id);
-                                    }
-                                  });
-                                } : null,
-                              ),
-                              onTap: _canEdit ? () {
-                                setState(() {
-                                  if (isSelected) {
-                                    _selectedUserIds.remove(id);
-                                  } else {
-                                    _selectedUserIds.add(id);
-                                  }
-                                });
-                              } : null,
-                            );
-                          },
-                        ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
+            child: _isFetchingEvent 
+               ? const Center(child: CircularProgressIndicator()) 
+               : (_isViewingData ? _buildDetailsView() : _buildFormView(format)),
           ),
           
           // Header / Drag handle
@@ -487,14 +572,25 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    onPressed: () {
+                      if (!_isViewingData && _isEditMode) {
+                        setState(() => _isViewingData = true);
+                      } else {
+                        Navigator.pop(context);
+                      }
+                    },
+                    child: Text(!_isViewingData && _isEditMode ? 'Atrás' : 'Cancelar', style: const TextStyle(fontSize: 16, color: Colors.grey)),
                   ),
                   Text(
                     _isEditMode ? 'Detalle del Evento' : 'Nuevo Evento', 
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
                   ),
-                  if (_canEdit)
+                  if (_isViewingData && _canEdit)
+                    TextButton(
+                      onPressed: () => setState(() => _isViewingData = false),
+                      child: const Text('Editar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    )
+                  else if (_canEdit)
                     TextButton(
                       onPressed: _isLoading ? null : _saveEvent,
                       child: _isLoading 
