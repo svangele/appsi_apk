@@ -260,10 +260,10 @@ class _EventFormDialogState extends State<EventFormDialog> {
 
   String _formatDetailedDate(DateTime d) {
     const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-    const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     final weekdayStr = weekDays[d.weekday - 1];
     final monthStr = months[d.month - 1];
-    return '$weekdayStr, ${d.day} $monthStr ${d.year}';
+    return '$weekdayStr, ${d.day} de $monthStr de ${d.year}';
   }
 
   Widget _buildDetailsView() {
@@ -330,6 +330,37 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 ),
               ],
             ),
+
+          if (_selectedUserIds.isNotEmpty) ...[
+            const SizedBox(height: 24),
+            const Text('Invitados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 8),
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _selectedUserIds.length,
+              itemBuilder: (context, index) {
+                final id = _selectedUserIds[index];
+                
+                // Buscar perfil por ID
+                final p = _profiles.firstWhere(
+                  (profile) => profile['id'] == id, 
+                  orElse: () => {'full_name': 'Usuario'}
+                );
+                
+                final name = p['full_name'] ?? p['email'] ?? 'Usuario';
+                
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue,
+                    child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+                  ),
+                  title: Text(name),
+                );
+              },
+            ),
+          ],
         ],
       ),
     );
