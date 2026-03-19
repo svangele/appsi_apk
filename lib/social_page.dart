@@ -71,14 +71,28 @@ class _SocialPageState extends State<SocialPage> {
       final monday = DateTime(now.year, now.month, now.day - (now.weekday - 1), 0, 0, 0);
       final sunday = DateTime(now.year, now.month, now.day - (now.weekday - 1) + 6, 23, 59, 59);
 
-      // Personal events (created by user or invited)
+      // Get event IDs where user is an invitee
+      final invitations = await Supabase.instance.client
+          .from('event_invitations')
+          .select('event_id')
+          .eq('user_id', userId);
+      final invitedIds = invitations
+          .map((i) => i['event_id'].toString())
+          .toList();
+
+      // Build OR filter: own events, public events, or invited events
+      String orFilter = 'creator_id.eq.$userId,is_public.eq.true';
+      if (invitedIds.isNotEmpty) {
+        orFilter += ',id.in.(${invitedIds.join(',')})';
+      }
+
       final response = await Supabase.instance.client
           .from('events')
           .select('id, title, start_time, end_time, location, is_public')
           .gte('start_time', monday.toUtc().toIso8601String())
           .lte('start_time', sunday.toUtc().toIso8601String())
-          .or('creator_id.eq.$userId,is_public.eq.true')
-          .order('start_time');
+          .or(orFilter)
+          .order('start_time', ascending: true);
 
       if (mounted) {
         setState(() {
