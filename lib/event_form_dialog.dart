@@ -331,17 +331,40 @@ class _EventFormDialogState extends State<EventFormDialog> {
               ],
             ),
 
-          if (_selectedUserIds.isNotEmpty) ...[
+          if (!_isPublic && (_selectedUserIds.isNotEmpty || _creatorId != null)) ...[
             const SizedBox(height: 24),
             const Text('Invitados', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
+
+            // 1. Mostrar el creador primero
+            if (_creatorId != null)
+              Builder(builder: (context) {
+                final p = _profiles.firstWhere(
+                  (profile) => profile['id'] == _creatorId, 
+                  orElse: () => {'full_name': 'Usuario'}
+                );
+                final name = p['full_name'] ?? p['email'] ?? 'Usuario';
+                
+                return ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blue.shade800,
+                    child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
+                  ),
+                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: const Text('Organizador', style: TextStyle(color: Colors.blue)),
+                );
+              }),
+
+            // 2. Mostrar el resto de los invitados
             ListView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: _selectedUserIds.length,
               itemBuilder: (context, index) {
                 final id = _selectedUserIds[index];
-                
+                if (id == _creatorId) return const SizedBox.shrink(); // evitar duplicado
+
                 // Buscar perfil por ID
                 final p = _profiles.firstWhere(
                   (profile) => profile['id'] == id, 
@@ -353,7 +376,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.blue.shade300,
                     child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
                   ),
                   title: Text(name),
