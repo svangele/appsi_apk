@@ -30,6 +30,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
 
   bool _isPublic = true; 
   String _recurrence = 'No repetir';
+  DateTime? _recurrenceEndDate;
   final List<String> _recurrenceOptions = ['No repetir', 'Diariamente', 'Semanalmente', 'Mensualmente', 'Anualmente'];
 
   List<Map<String, dynamic>> _profiles = [];
@@ -182,7 +183,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
       }
 
       if (_isEditMode) {
-        // Update event
+        // Update single event (no recurrence regeneration on edit)
         await _supabase.from('events').update({
           'title': _titleController.text.trim(),
           'description': _descriptionController.text.trim(), 
@@ -194,8 +195,6 @@ class _EventFormDialogState extends State<EventFormDialog> {
         }).eq('id', widget.eventId!);
 
         final eventId = widget.eventId!;
-
-        // Update invitations if private by clearing and inserting again
         await _supabase.from('event_invitations').delete().eq('event_id', eventId);
         if (!_isPublic && _selectedUserIds.isNotEmpty) {
           final invitations = _selectedUserIds.map((userId) => {
@@ -203,33 +202,40 @@ class _EventFormDialogState extends State<EventFormDialog> {
             'user_id': userId,
             'status': 'pending',
           }).toList();
-
           await _supabase.from('event_invitations').insert(invitations);
         }
       } else {
-        // Insert event
-        final eventResponse = await _supabase.from('events').insert({
-          'title': _titleController.text.trim(),
-          'description': _descriptionController.text.trim(), 
-          'location': _locationController.text.trim(),
-          'recurrence': _recurrence,
-          'start_time': startDateTime.toUtc().toIso8601String(),
-          'end_time': endDateTime.toUtc().toIso8601String(),
-          'creator_id': currentUserId,
-          'is_public': _isPublic,
-        }).select().single();
+        final duration = endDateTime.difference(startDateTime);
+        final List<DateTime> starts;
 
-        final eventId = eventResponse['id'];
+        if (_recurrence != 'No repetir' && _recurrenceEndDate != null) {
+          starts = _generateOccurrences(startDateTime, _recurrence, _recurrenceEndDate!);
+        } else {
+          starts = [startDateTime];
+        }
 
-        // Insert invitations if private
-        if (!_isPublic && _selectedUserIds.isNotEmpty) {
-          final invitations = _selectedUserIds.map((userId) => {
-            'event_id': eventId,
-            'user_id': userId,
-            'status': 'pending',
-          }).toList();
+        for (final occStart in starts) {
+          final occEnd = occStart.add(duration);
+          final eventResponse = await _supabase.from('events').insert({
+            'title': _titleController.text.trim(),
+            'description': _descriptionController.text.trim(),
+            'location': _locationController.text.trim(),
+            'recurrence': _recurrence,
+            'start_time': occStart.toUtc().toIso8601String(),
+            'end_time': occEnd.toUtc().toIso8601String(),
+            'creator_id': currentUserId,
+            'is_public': _isPublic,
+          }).select().single();
 
-          await _supabase.from('event_invitations').insert(invitations);
+          final eventId = eventResponse['id'];
+          if (!_isPublic && _selectedUserIds.isNotEmpty) {
+            final invitations = _selectedUserIds.map((userId) => {
+              'event_id': eventId,
+              'user_id': userId,
+              'status': 'pending',
+            }).toList();
+            await _supabase.from('event_invitations').insert(invitations);
+          }
         }
       }
 
@@ -248,6 +254,44 @@ class _EventFormDialogState extends State<EventFormDialog> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  List<DateTime> _generateOccurrences(DateTime start, String recurrence, DateTime endDate) {
+    final occurrences = <DateTime>[];
+    DateTime current = start;
+    while (!current.isAfter(endDate)) {
+      occurrences.add(current);
+      switch (recurrence) {
+        case 'Diariamente':
+          current = current.add(const Duration(days: 1));
+          break;
+        case 'Semanalmente':
+          current = current.add(const Duration(days: 7));
+          break;
+        case 'Mensualmente':
+          current = DateTime(current.year, current.month + 1, current.day, current.hour, current.minute);
+          break;
+        case 'Anualmente':
+          current = DateTime(current.year + 1, current.month, current.day, current.hour, current.minute);
+          break;
+        default:
+          break;
+      }
+      if (occurrences.length > 500) break; // safety cap
+    }
+    return occurrences;
+  }
+
+  Future<void> _pickRecurrenceEndDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _recurrenceEndDate ?? _startDate.add(const Duration(days: 30)),
+      firstDate: _startDate.add(const Duration(days: 1)),
+      lastDate: DateTime.now().add(const Duration(days: 365 * 5)),
+    );
+    if (picked != null && mounted) {
+      setState(() => _recurrenceEndDate = picked);
     }
   }
 
@@ -704,6 +748,38 @@ class _EventFormDialogState extends State<EventFormDialog> {
               ),
             ),
             Divider(color: Colors.grey.shade300),
+
+            // Repetir end date (shown only when recurrence is active)
+            if (_recurrence != 'No repetir') ...[
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.event_repeat, color: Colors.grey),
+                title: const Text('Repetir hasta'),
+                trailing: GestureDetector(
+                  onTap: _canEdit ? _pickRecurrenceEndDate : null,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: _recurrenceEndDate == null ? Colors.red.shade50 : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: _recurrenceEndDate == null
+                          ? Border.all(color: Colors.red.shade200)
+                          : null,
+                    ),
+                    child: Text(
+                      _recurrenceEndDate == null
+                          ? 'Seleccionar fecha'
+                          : DateFormat('dd/MM/yyyy').format(_recurrenceEndDate!),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: _recurrenceEndDate == null ? Colors.red.shade400 : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Divider(color: Colors.grey.shade300),
+            ],
 
             // 7. Invitados (solo si es Personal)
             if (!_isPublic) ...[
