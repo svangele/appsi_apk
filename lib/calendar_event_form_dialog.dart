@@ -509,6 +509,26 @@ class _EventFormDialogState extends State<EventFormDialog> {
           .eq('event_id', widget.eventId!)
           .eq('user_id', _supabase.auth.currentUser!.id);
 
+      // Enviar notificación al organizador
+      final currentUserId = _supabase.auth.currentUser!.id;
+      final u = _userLookup[currentUserId] ?? {};
+      final userName = u['full_name'] ?? u['email'] ?? 'Un invitado';
+      final reason = _rejectionReasonController.text.trim();
+
+      await _supabase.from('notifications').insert({
+        'user_id': _creatorId,
+        'title': status == 'accepted' ? 'Confirmación de Asistencia' : 'Cancelación de Asistencia',
+        'message': '$userName ha ${status == 'accepted' ? 'confirmado' : 'rechazado'} su asistencia al evento "${_titleController.text}"${status == 'declined' && reason.isNotEmpty ? '.\nMotivo: $reason' : ''}',
+        'type': 'event_invitation', 
+        'metadata': {
+          'event_id': widget.eventId,
+          'event_title': _titleController.text,
+          'event_date': DateTime(_startDate.year, _startDate.month, _startDate.day, _startTime.hour, _startTime.minute).toUtc().toIso8601String(),
+          'priority': _priority,
+          'status': status,
+        }
+      });
+
       if (mounted) {
         setState(() {
           _myAttendanceStatus = status;

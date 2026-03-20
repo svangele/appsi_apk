@@ -104,6 +104,14 @@ class _NotificationListModalState extends State<NotificationListModal> {
               ],
             ),
           ),
+        if (message.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 4, bottom: 2),
+            child: Text(
+              message,
+              style: TextStyle(color: Colors.grey[800], fontSize: 13),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Container(
