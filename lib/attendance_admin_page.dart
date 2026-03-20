@@ -17,18 +17,12 @@ class AttendanceAdminPage extends StatefulWidget {
 class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _allRecords = [];
-  List<Map<String, dynamic>> _filteredRecords = [];
   final _supabase = Supabase.instance.client;
-  String _searchQuery = '';
-  late TextEditingController _searchController;
-  DateTime? _selectedDate;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
 
   @override
   void initState() {
     super.initState();
-    _searchQuery = widget.initialSearchQuery ?? '';
-    _searchController = TextEditingController(text: _searchQuery);
     _fetchData();
   }
 
@@ -44,7 +38,6 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
       if (mounted) {
         setState(() {
           _allRecords = List<Map<String, dynamic>>.from(data);
-          _applyFilters();
           _isLoading = false;
         });
       }
@@ -52,25 +45,6 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
       debugPrint('Error al cargar datos administrativos: $e');
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _applyFilters() {
-    setState(() {
-      _filteredRecords = _allRecords.where((record) {
-        final matchesName = (record['profiles']?['full_name'] ?? '')
-            .toString()
-            .toLowerCase()
-            .contains(_searchQuery.toLowerCase());
-        
-        bool matchesDate = true;
-        if (_selectedDate != null) {
-          final recordDate = record['date'];
-          matchesDate = recordDate == DateFormat('yyyy-MM-dd').format(_selectedDate!);
-        }
-        
-        return matchesName && matchesDate;
-      }).toList();
-    });
   }
 
   Future<void> _openMap(num? lat, num? lng) async {
@@ -90,41 +64,38 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
         backgroundColor: Colors.white,
-        body: Column(
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: Colors.black),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
           children: [
-            _buildHeader(theme),
-            Container(
-              color: theme.colorScheme.primary.withOpacity(0.05),
-              child: TabBar(
-                labelColor: theme.colorScheme.primary,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: theme.colorScheme.primary,
-                tabs: const [
-                  Tab(text: 'REGISTROS DE ASISTENCIA'),
-                  Tab(text: 'CATÁLOGO DE HORARIOS'),
-                ],
-              ),
+            ExpansionTile(
+              initiallyExpanded: true,
+              iconColor: theme.colorScheme.primary,
+              collapsedIconColor: Colors.grey,
+              title: Text('Horarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
+              children: [
+                const SchedulesPage(),
+              ],
             ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  Column(
-                    children: [
-                      _buildFilters(theme),
-                      Expanded(
-                        child: _isLoading
-                            ? const Center(child: CircularProgressIndicator())
-                            : _buildList(theme),
-                      ),
-                    ],
-                  ),
-                  const SchedulesPage(),
-                ],
-              ),
+            const Divider(height: 1),
+            ExpansionTile(
+              initiallyExpanded: false,
+              iconColor: theme.colorScheme.primary,
+              collapsedIconColor: Colors.grey,
+              title: Text('Registros', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
+              children: [
+                _isLoading
+                    ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+                    : _buildList(theme),
+              ],
             ),
           ],
         ),
@@ -132,113 +103,20 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withOpacity(0.05),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: theme.colorScheme.primary,
-            child: const Icon(Icons.admin_panel_settings, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Gestión de Asistencia',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Text(
-                  'Panel de administrador',
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildFilters(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          TextField(
-            controller: _searchController,
-            onChanged: (val) {
-              _searchQuery = val;
-              _applyFilters();
-            },
-            decoration: InputDecoration(
-              hintText: 'Buscar por nombre...',
-              prefixIcon: const Icon(Icons.search),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate ?? DateTime.now(),
-                      firstDate: DateTime(2024),
-                      lastDate: DateTime.now(),
-                    );
-                    if (picked != null) {
-                      setState(() {
-                        _selectedDate = picked;
-                        _applyFilters();
-                      });
-                    }
-                  },
-                  icon: const Icon(Icons.calendar_today, size: 16),
-                  label: Text(_selectedDate == null 
-                      ? 'Filtrar por fecha' 
-                      : DateFormat('dd/MM/yyyy').format(_selectedDate!)),
-                ),
-              ),
-              if (_selectedDate != null)
-                IconButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedDate = null;
-                      _applyFilters();
-                    });
-                  },
-                  icon: const Icon(Icons.clear),
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildList(ThemeData theme) {
-    if (_filteredRecords.isEmpty) {
+    if (_allRecords.isEmpty) {
       return const Center(child: Text('No se encontraron registros.'));
     }
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: _filteredRecords.length,
+      itemCount: _allRecords.length,
       itemBuilder: (context, index) {
-        final rec = _filteredRecords[index];
+        final rec = _allRecords[index];
           final name = rec['profiles']?['full_name'] ?? 'Usuario Desconocido';
         final dateStr = rec['date'];
         final recordDate = DateTime.parse(dateStr);

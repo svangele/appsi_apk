@@ -522,14 +522,12 @@ class _SchedulesPageState extends State<SchedulesPage> {
             ],
           ),
         ),
-        Expanded(
-          child: _isLoading 
-            ? const Center(child: CircularProgressIndicator())
-            : Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: _buildScheduleList(theme, isDesktop),
-              ),
-        ),
+        _isLoading 
+          ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+          : Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: _buildScheduleList(theme, isDesktop),
+            ),
       ],
     );
   }
