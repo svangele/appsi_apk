@@ -210,9 +210,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'show_incidencias': false,
       'show_logs': false,
       'show_external_contacts': false,
-      'show_checador': false,
-      'show_asistencias': false,
-      'show_horarios': false,
+      'show_asistencia': false,
     });
 
     // Credential Controllers
@@ -308,9 +306,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _buildPermissionSwitch('Incidencias', 'show_incidencias', Icons.description, permissions, setDialogState),
                 _buildPermissionSwitch('Logs del Sistema', 'show_logs', Icons.assignment, permissions, setDialogState),
                 _buildPermissionSwitch('Contactos Externos', 'show_external_contacts', Icons.contact_phone, permissions, setDialogState),
-                _buildPermissionSwitch('Asistencia - Checador', 'show_checador', Icons.timer_outlined, permissions, setDialogState),
-                _buildPermissionSwitch('Asistencia - Panel', 'show_asistencias', Icons.fingerprint, permissions, setDialogState),
-                _buildPermissionSwitch('Asistencia - Horarios', 'show_horarios', Icons.schedule_outlined, permissions, setDialogState),
+                _buildPermissionSwitch('Asistencia', 'show_asistencia', Icons.fingerprint, permissions, setDialogState),
               ],
             );
 
@@ -915,7 +911,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
                         _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
                         _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
-                        _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencias'] == true || user['permissions']['show_checador'] == true || user['permissions']['show_horarios'] == true),
+                        _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencia'] == true),
                       ],
                     ],
                   ),
@@ -1127,7 +1123,7 @@ class _UserDataSource extends DataTableSource {
               _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
               _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
               _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
-              _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencias'] == true || user['permissions']['show_checador'] == true || user['permissions']['show_horarios'] == true),
+              _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencia'] == true),
             ],
           ]
         )),

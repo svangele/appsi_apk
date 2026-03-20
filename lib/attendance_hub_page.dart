@@ -19,9 +19,7 @@ class AttendanceHubPage extends StatelessWidget {
     final bool isAdmin = role == 'admin' || role == 'superadmin';
 
     // Nuevos permisos específicos
-    bool canSeeChecador = isAdmin || permissions['show_checador'] == true;
-    bool canSeeAsistencias = isAdmin || permissions['show_asistencias'] == true;
-    bool canSeeHorarios = isAdmin || permissions['show_horarios'] == true;
+    bool canSeeAttendance = isAdmin || permissions['show_asistencia'] == true;
 
     // Construir lista dinámica de pestañas
     final List<Map<String, dynamic>> tabs = [];
@@ -35,21 +33,17 @@ class AttendanceHubPage extends StatelessWidget {
       });
     }
 
-    if (canSeeChecador) {
+    if (canSeeAttendance) {
       tabs.add({
         'title': 'Checador',
         'icon': Icons.timer_outlined,
         'widget': const ChecadorPage(),
       });
-    }
-    if (canSeeAsistencias) {
       tabs.add({
         'title': 'Asistencias',
         'icon': Icons.rule_outlined,
         'widget': AttendanceAdminPage(role: role, permissions: permissions),
       });
-    }
-    if (canSeeHorarios) {
       tabs.add({
         'title': 'Horarios',
         'icon': Icons.schedule_outlined,
