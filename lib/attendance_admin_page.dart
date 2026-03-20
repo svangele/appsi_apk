@@ -67,17 +67,16 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Configuración', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: const SizedBox.shrink(),
         backgroundColor: Colors.white,
         elevation: 0,
-        centerTitle: false,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             ExpansionTile(
-              initiallyExpanded: true,
+              initiallyExpanded: false,
               iconColor: theme.colorScheme.primary,
               collapsedIconColor: Colors.grey,
               title: Text('Horarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
