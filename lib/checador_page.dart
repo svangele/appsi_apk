@@ -1,0 +1,497 @@
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'dart:typed_data';
+import 'package:url_launcher/url_launcher.dart';
+
+class ChecadorPage extends StatefulWidget {
+  const ChecadorPage({super.key});
+
+  @override
+  State<ChecadorPage> createState() => _ChecadorPageState();
+}
+
+class _ChecadorPageState extends State<ChecadorPage> {
+  bool _isLoading = true;
+  bool _isProcessing = false;
+  Map<String, dynamic>? _todayRecord;
+  String? _errorString;
+  List<Map<String, dynamic>> _history = [];
+  bool _autoTriggered = false;
+  final _supabase = Supabase.instance.client;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    setState(() => _isLoading = true);
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return;
+
+      final now = DateTime.now();
+      final todayStr = DateFormat('yyyy-MM-dd').format(now);
+
+      // Obtener registro de hoy
+      final todayData = await _supabase
+          .from('attendance')
+          .select()
+          .eq('colaborador_id', userId)
+          .eq('date', todayStr)
+          .maybeSingle();
+
+      // Obtener historial reciente
+      final historyData = await _supabase
+          .from('attendance')
+          .select()
+          .eq('colaborador_id', userId)
+          .order('date', ascending: false)
+          .limit(10);
+
+      if (mounted) {
+        setState(() {
+          _todayRecord = todayData;
+          _history = List<Map<String, dynamic>>.from(historyData);
+          _isLoading = false;
+        });
+
+        // Autodisparar la cámara al entrar si aún no se ha completado la jornada
+        final isCheckedOut = _todayRecord != null && _todayRecord!['check_out'] != null;
+        if (!_autoTriggered && !isCheckedOut) {
+          _autoTriggered = true;
+          // Esperar un breve momento para que el widget se renderice y se reconozca el gesto
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && !_isProcessing) {
+              _handleCheck(isEntry: _todayRecord == null);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error al cargar datos del checador: $e');
+      if (mounted) {
+        setState(() {
+          _errorString = 'Error: $e';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleCheck({required bool isEntry}) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    
+    // Feedback inmediato
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Iniciando checado: Solicitando GPS y Cámara...'), duration: Duration(seconds: 2)),
+    );
+
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) throw 'Usuario no autenticado';
+
+      // 1. Verificar permisos y obtener ubicación
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Los servicios de ubicación están desactivados.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Los permisos de ubicación fueron denegados.';
+        }
+      }
+
+      // 1. Iniciar captura de ubicación en segundo plano (para ganar tiempo)
+      final locationFuture = Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
+      ).catchError((e) {
+        debugPrint('Error obteniendo ubicación: $e');
+        return Position(
+          latitude: 0.0, longitude: 0.0, 
+          timestamp: DateTime.now(), accuracy: 0.0, altitude: 0.0, 
+          heading: 0.0, speed: 0.0, speedAccuracy: 0.0, altitudeAccuracy: 0.0, headingAccuracy: 0.0
+        );
+      });
+
+      // 2. Capturar foto (usando image_picker)
+      debugPrint('Abriendo Cámara...');
+      final ImagePicker picker = ImagePicker();
+      final XFile? photo = await picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+        imageQuality: 70,
+      ).catchError((e) {
+        throw 'Error al abrir cámara: $e';
+      });
+
+      if (photo == null) {
+        setState(() => _isProcessing = false);
+        return;
+      }
+
+      // 3. Esperar a que la ubicación esté lista (si aún no lo está)
+      final Position position = await locationFuture;
+
+      // 4. Subir foto a Supabase Storage
+      final Uint8List bytes = await photo.readAsBytes();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final type = isEntry ? 'entry' : 'exit';
+      final fileName = 'attendance/$userId/${DateFormat('yyyy-MM-dd').format(DateTime.now())}_$type\_$timestamp.jpg';
+
+      await _supabase.storage.from('employee_photos').uploadBinary(
+        fileName,
+        bytes,
+        fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/jpeg'),
+      );
+
+      final photoUrl = _supabase.storage.from('employee_photos').getPublicUrl(fileName);
+
+      // 4. Guardar en base de datos
+      if (isEntry) {
+        // Registrar Entrada
+        await _supabase.from('attendance').insert({
+          'colaborador_id': userId,
+          'check_in': DateTime.now().toUtc().toIso8601String(),
+          'lat': position.latitude,
+          'lng': position.longitude,
+          'accuracy': position.accuracy,
+          'photo_url': photoUrl,
+          'date': DateFormat('yyyy-MM-dd').format(DateTime.now()),
+        });
+      } else {
+        // Registrar Salida
+        await _supabase.from('attendance').update({
+          'check_out': DateTime.now().toUtc().toIso8601String(),
+          'lat_out': position.latitude,
+          'lng_out': position.longitude,
+          'photo_out_url': photoUrl,
+        }).eq('id', _todayRecord!['id']);
+      }
+
+      // 5. Finalizar
+      await _fetchData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(isEntry ? 'Entrada registrada con éxito' : 'Salida registrada con éxito'),
+            backgroundColor: const Color(0xFFB1CB34),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorString = 'Error en el proceso: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
+    }
+  }
+
+  Future<void> _openMap(num? lat, num? lng) async {
+    if (lat == null || lng == null || (lat == 0 && lng == 0)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ubicación no disponible')),
+      );
+      return;
+    }
+    final Uri url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el mapa')),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCheckedIn = _todayRecord != null;
+    final isCheckedOut = isCheckedIn && _todayRecord!['check_out'] != null;
+
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return Scaffold(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildStatusCard(theme, isCheckedIn, isCheckedOut),
+            if (_errorString != null) ...[
+              const SizedBox(height: 16),
+              Text(
+                '$_errorString',
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ],
+            const SizedBox(height: 32),
+            if (!isCheckedOut)
+              _isProcessing
+                  ? const Center(child: CircularProgressIndicator())
+                  : Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: isCheckedIn ? null : () => _handleCheck(isEntry: true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFB1CB34),
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            icon: const Icon(Icons.login, size: 24),
+                            label: const Text(
+                              'ENTRADA',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: (isCheckedIn && !isCheckedOut) ? () => _handleCheck(isEntry: false) : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              padding: const EdgeInsets.symmetric(vertical: 20),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            ),
+                            icon: const Icon(Icons.logout, size: 24),
+                            label: const Text(
+                              'SALIDA',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+            else
+              const Card(
+                color: Color(0xFFB1CB34),
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(Icons.check_circle, color: Colors.white, size: 32),
+                      SizedBox(width: 16),
+                      Text(
+                        'Jornada completada por hoy',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const SizedBox(height: 48),
+            const Text(
+              'Historial Reciente',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            _buildHistoryList(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard(ThemeData theme, bool isIn, bool isOut) {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: BorderSide(color: Colors.grey[200]!),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: isIn ? (isOut ? Colors.grey[200] : const Color(0xFFB1CB34).withOpacity(0.1)) : theme.colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                isIn ? (isOut ? Icons.event_available : Icons.timer) : Icons.timer_outlined,
+                size: 40,
+                color: isIn ? (isOut ? Colors.grey : const Color(0xFFB1CB34)) : theme.colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isIn ? (isOut ? '¡Hasta mañana!' : 'En el trabajo') : 'Fuera del trabajo',
+              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            ),
+            if (isIn) ...[
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildTimeInfo('Entrada', _todayRecord!['check_in']),
+                  if (isOut) _buildTimeInfo('Salida', _todayRecord!['check_out']),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimeInfo(String label, String? time) {
+    if (time == null) return const SizedBox.shrink();
+    final dateTime = DateTime.parse(time).toLocal();
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 14)),
+        const SizedBox(height: 4),
+        Text(
+          DateFormat('HH:mm').format(dateTime),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHistoryList(ThemeData theme) {
+    if (_history.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('No hay registros previos', style: TextStyle(color: Colors.grey)),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _history.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final item = _history[index];
+        final date = DateTime.parse(item['date']);
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[100]!),
+          ),
+          child: ListTile(
+            leading: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  DateFormat('dd').format(date),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  DateFormat('MMM').format(date).toUpperCase(),
+                  style: TextStyle(fontSize: 10, color: theme.colorScheme.primary),
+                ),
+              ],
+            ),
+            title: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.login, size: 14, color: Color(0xFFB1CB34)),
+                    const SizedBox(width: 4),
+                    Text(
+                      item['check_in'] != null ? DateFormat('HH:mm').format(DateTime.parse(item['check_in']).toLocal()) : '--:--',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                if (item['check_out'] != null)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.logout, size: 14, color: Colors.orange),
+                      const SizedBox(width: 4),
+                      Text(
+                        DateFormat('HH:mm').format(DateTime.parse(item['check_out']).toLocal()),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  item['validated'] == true ? 'Validado ✅' : 'Pendiente (GPS capturado 📍)',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                if (item['lat'] != null && item['lng'] != null) ...[
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () => _openMap(item['lat'], item['lng']),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.location_on, size: 12, color: theme.colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Ver ubicación Entrada',
+                          style: TextStyle(
+                            color: theme.colorScheme.primary,
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                if (item['lat_out'] != null && item['lng_out'] != null) ...[
+                  const SizedBox(height: 4),
+                  InkWell(
+                    onTap: () => _openMap(item['lat_out'], item['lng_out']),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.location_on, size: 12, color: Colors.orange),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Ver ubicación Salida',
+                          style: TextStyle(
+                            color: Colors.orange[700],
+                            fontSize: 12,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

@@ -10,6 +10,7 @@ import 'social_page.dart';
 import 'external_contacts_page.dart';
 import 'widgets/notification_bell.dart';
 import 'calendar_page.dart';
+import 'attendance_hub_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
@@ -105,6 +106,21 @@ class _MainNavigationState extends State<MainNavigation> {
         'icon': Icons.contact_phone_outlined,
         'activeIcon': Icons.contact_phone,
         'widget': const ExternalContactsPage(),
+      });
+    }
+
+    final isAdmin = widget.role == 'admin' || widget.role == 'superadmin';
+    final canSeeAttendance = isAdmin || 
+        widget.permissions['show_checador'] == true || 
+        widget.permissions['show_asistencias'] == true || 
+        widget.permissions['show_horarios'] == true;
+
+    if (canSeeAttendance) {
+      pages.add({
+        'title': 'Asistencia',
+        'icon': Icons.fingerprint,
+        'activeIcon': Icons.fingerprint,
+        'widget': AttendanceHubPage(role: widget.role, permissions: widget.permissions),
       });
     }
 
