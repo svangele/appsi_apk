@@ -67,7 +67,7 @@ class _NotificationListModalState extends State<NotificationListModal> {
       return (icon: Icons.event, color: isHigh ? Colors.red.shade600 : Colors.blue.shade600);
     }
     if (type == 'collaborator_alert' || type == 'status_sys_alert') {
-      return (icon: Icons.person_alert, color: Colors.orange.shade600);
+      return (icon: Icons.person_pin, color: Colors.orange.shade600);
     }
     if (type == 'incidencia_status') {
       return (icon: Icons.description, color: Colors.purple.shade600);
