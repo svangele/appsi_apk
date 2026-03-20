@@ -14,19 +14,24 @@ class AttendanceHubPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isAdmin = role == 'admin' || role == 'superadmin';
+
     // Construir lista dinámica de pestañas
     final List<Map<String, dynamic>> tabs = [
       {
         'title': 'Checador',
         'icon': Icons.timer_outlined,
         'widget': const ChecadorPage(),
-      },
-      {
+      }
+    ];
+
+    if (isAdmin) {
+      tabs.add({
         'title': 'Configuración',
         'icon': Icons.rule_outlined,
         'widget': AttendanceAdminPage(role: role, permissions: permissions),
-      }
-    ];
+      });
+    }
 
     if (tabs.isEmpty) {
       return Scaffold(
