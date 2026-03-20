@@ -7,6 +7,10 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
+// ignore: undefined_prefix_converter
+import 'dart:ui_web' as ui_web;
 
 class ChecadorPage extends StatefulWidget {
   const ChecadorPage({super.key});
@@ -25,6 +29,9 @@ class _ChecadorPageState extends State<ChecadorPage> {
   final _supabase = Supabase.instance.client;
   Timer? _clockTimer;
   DateTime _currentTime = DateTime.now();
+  html.MediaStream? _cameraStream;
+  final String _viewId = 'camera-preview-${DateTime.now().millisecondsSinceEpoch}';
+  bool _cameraReady = false;
 
   @override
   void initState() {
@@ -33,11 +40,34 @@ class _ChecadorPageState extends State<ChecadorPage> {
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _currentTime = DateTime.now());
     });
+    if (kIsWeb) _initCamera();
+  }
+
+  Future<void> _initCamera() async {
+    try {
+      final stream = await html.window.navigator.mediaDevices!.getUserMedia({'video': {'facingMode': 'user'}, 'audio': false});
+      _cameraStream = stream;
+      ui_web.platformViewRegistry.registerViewFactory(_viewId, (int id) {
+        final video = html.VideoElement()
+          ..srcObject = stream
+          ..autoplay = true
+          ..muted = true
+          ..style.width = '100%'
+          ..style.height = '100%'
+          ..style.objectFit = 'cover'
+          ..style.transform = 'scaleX(-1)'; // espejo
+        return video;
+      });
+      if (mounted) setState(() => _cameraReady = true);
+    } catch (e) {
+      debugPrint('Error iniciando cámara: $e');
+    }
   }
 
   @override
   void dispose() {
     _clockTimer?.cancel();
+    _cameraStream?.getTracks().forEach((t) => t.stop());
     super.dispose();
   }
 
@@ -72,18 +102,6 @@ class _ChecadorPageState extends State<ChecadorPage> {
           _history = List<Map<String, dynamic>>.from(historyData);
           _isLoading = false;
         });
-
-        // Autodisparar la cámara al entrar si aún no se ha completado la jornada
-        final isCheckedOut = _todayRecord != null && _todayRecord!['check_out'] != null;
-        if (!_autoTriggered && !isCheckedOut) {
-          _autoTriggered = true;
-          // Esperar un breve momento para que el widget se renderice y se reconozca el gesto
-          Future.delayed(const Duration(milliseconds: 500), () {
-            if (mounted && !_isProcessing) {
-              _handleCheck(isEntry: _todayRecord == null);
-            }
-          });
-        }
       }
     } catch (e) {
       debugPrint('Error al cargar datos del checador: $e');
@@ -136,27 +154,51 @@ class _ChecadorPageState extends State<ChecadorPage> {
         );
       });
 
-      // 2. Capturar foto (usando image_picker)
-      debugPrint('Abriendo Cámara...');
-      final ImagePicker picker = ImagePicker();
-      final XFile? photo = await picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
-        imageQuality: 70,
-      ).catchError((e) {
-        throw 'Error al abrir cámara: $e';
-      });
+      // 2. Capturar foto del stream de cámara activo (web) o image_picker (nativo)
+      debugPrint('Capturando foto...');
+      Uint8List bytes;
 
-      if (photo == null) {
-        setState(() => _isProcessing = false);
-        return;
+      if (kIsWeb && _cameraStream != null) {
+        // Obtener el video element a través del DOM
+        final videos = html.document.querySelectorAll('video');
+        html.VideoElement? videoEl;
+        for (final el in videos) {
+          if (el is html.VideoElement && el.srcObject != null) {
+            videoEl = el;
+            break;
+          }
+        }
+        if (videoEl == null) throw 'No se encontró el video activo';
+
+        final w = videoEl.videoWidth > 0 ? videoEl.videoWidth : 640;
+        final h = videoEl.videoHeight > 0 ? videoEl.videoHeight : 480;
+        final canvas = html.CanvasElement(width: w, height: h);
+        final ctx = canvas.context2D;
+        // Espejo horizontal (ya que la cámara frontal está invertida)
+        ctx.translate(w.toDouble(), 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(videoEl, 0, 0);
+
+        final blob = await canvas.toBlob('image/jpeg', 0.85);
+        final reader = html.FileReader();
+        reader.readAsArrayBuffer(blob);
+        await reader.onLoad.first;
+        bytes = Uint8List.fromList((reader.result as List<int>));
+      } else {
+        // Nativo (Android/iOS)
+        final ImagePicker picker = ImagePicker();
+        final XFile? photo = await picker.pickImage(
+          source: ImageSource.camera,
+          preferredCameraDevice: CameraDevice.front,
+          imageQuality: 70,
+        ).catchError((e) { throw 'Error al abrir cámara: $e'; });
+        if (photo == null) { setState(() => _isProcessing = false); return; }
+        bytes = await photo.readAsBytes();
       }
 
-      // 3. Esperar a que la ubicación esté lista (si aún no lo está)
+      // 3. Esperar a que la ubicación esté lista
       final Position position = await locationFuture;
 
-      // 4. Subir foto a Supabase Storage
-      final Uint8List bytes = await photo.readAsBytes();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final type = isEntry ? 'entry' : 'exit';
       final fileName = 'attendance/$userId/${DateFormat('yyyy-MM-dd').format(DateTime.now())}_$type\_$timestamp.jpg';
@@ -363,7 +405,7 @@ class _ChecadorPageState extends State<ChecadorPage> {
       children: [
         // Camera preview box
         Container(
-          height: 260,
+          height: 300,
           decoration: BoxDecoration(
             color: Colors.black,
             borderRadius: BorderRadius.circular(24),
@@ -373,18 +415,21 @@ class _ChecadorPageState extends State<ChecadorPage> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Camera icon placeholder
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.videocam_rounded, size: 64, color: Colors.white.withOpacity(0.25)),
-                  const SizedBox(height: 12),
-                  Text(
-                    kIsWeb ? 'La c\u00e1mara se activa al checar' : 'Vista previa de c\u00e1mara',
-                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
-                  ),
-                ],
-              ),
+              // Live camera or placeholder
+              if (kIsWeb && _cameraReady)
+                HtmlElementView(viewType: _viewId)
+              else
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.videocam_rounded, size: 64, color: Colors.white.withOpacity(0.25)),
+                    const SizedBox(height: 12),
+                    Text(
+                      kIsWeb ? 'Iniciando cámara...' : 'Vista previa de cámara',
+                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                    ),
+                  ],
+                ),
               // Status overlay badge
               Positioned(
                 top: 12, left: 12,
@@ -413,26 +458,6 @@ class _ChecadorPageState extends State<ChecadorPage> {
             ],
           ),
         ),
-        if (isIn) ...[
-          const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: BorderSide(color: Colors.grey[200]!),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildTimeInfo('Entrada', _todayRecord!['check_in']),
-                  if (isOut) _buildTimeInfo('Salida', _todayRecord!['check_out']),
-                ],
-              ),
-            ),
-          ),
-        ],
       ],
     );
   }
