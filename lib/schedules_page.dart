@@ -54,10 +54,31 @@ class _SchedulesPageState extends State<SchedulesPage> {
   }
 
   Future<void> _saveSchedule() async {
-    if (_nameController.text.isEmpty || _currentRules.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa un nombre y al menos una regla.')),
-      );
+    // Generación Automática: si el usuario ha marcado días, generamos las reglas antes de guardar
+    if (_selectedDays.isNotEmpty) {
+      _currentRules = []; // Limpiamos para evitar duplicidad si reintenta
+      for (int day in _selectedDays) {
+        _currentRules.add({
+          'day': day, 
+          'type': 'ENTRADA',
+          'time': '${_tempIn.hour.toString().padLeft(2, '0')}:${_tempIn.minute.toString().padLeft(2, '0')}:00',
+          'tol': _tempTolerance,
+        });
+        _currentRules.add({
+          'day': day, 
+          'type': 'SALIDA',
+          'time': '${_tempOut.hour.toString().padLeft(2, '0')}:${_tempOut.minute.toString().padLeft(2, '0')}:00',
+          'tol': 0,
+        });
+      }
+    }
+
+    if (_nameController.text.trim().isEmpty || _currentRules.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Por favor ingresa un nombre y selecciona al menos un día.')),
+        );
+      }
       return;
     }
 
@@ -215,37 +236,6 @@ class _SchedulesPageState extends State<SchedulesPage> {
         _buildQuickDefineRow(theme, setModalState),
         
         const SizedBox(height: 24),
-        if (_currentRules.isNotEmpty) ...[
-          const Text('Vincular Jornada a Días Seleccionados:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
-          const SizedBox(height: 12),
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey[200]!),
-            ),
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _currentRules.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final rule = _currentRules[index];
-                final dayName = _daysOfWeek[rule['day']];
-                return ListTile(
-                  dense: true,
-                  leading: const Icon(Icons.check_circle, color: Color(0xFFB1CB34), size: 18),
-                  title: Text('$dayName - ${rule['type']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text('Hora: ${rule['time'].split(':').take(2).join(':')} ${rule['type'] == 'ENTRADA' ? '(Tolerancia: ${rule['tol']}m)' : ''}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                    onPressed: () => setModalState(() => _removeRule(index)),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
       ],
     );
   }
@@ -350,44 +340,6 @@ class _SchedulesPageState extends State<SchedulesPage> {
           );
         }),
         const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton(
-            onPressed: () {
-              if (_selectedDays.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona al menos un día.')));
-                return;
-              }
-              setModalState(() {
-                for (int day in _selectedDays) {
-                  _currentRules.add({
-                    'day': day, 'type': 'ENTRADA',
-                    'time': '${_tempIn.hour.toString().padLeft(2, '0')}:${_tempIn.minute.toString().padLeft(2, '0')}:00',
-                    'tol': _tempTolerance,
-                  });
-                  _currentRules.add({
-                    'day': day, 'type': 'SALIDA',
-                    'time': '${_tempOut.hour.toString().padLeft(2, '0')}:${_tempOut.minute.toString().padLeft(2, '0')}:00',
-                    'tol': 0,
-                  });
-                }
-                _currentRules.sort((a, b) {
-                  int dayCmp = a['day'].compareTo(b['day']);
-                  if (dayCmp != 0) return dayCmp;
-                  return a['time'].compareTo(b['time']);
-                });
-                _selectedDays.clear();
-              });
-            },
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-              foregroundColor: theme.colorScheme.primary,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-            ),
-            child: const Text('VINCULAR A DÍAS SELECCIONADOS', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ),
       ],
     );
   }
