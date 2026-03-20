@@ -258,6 +258,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
   }) {
     return Row(
       children: [
+        const SizedBox(width: 8), // Más espacio a la izquierda antes del icono
         Icon(icon, color: Colors.grey[400], size: 22),
         const SizedBox(width: 16),
         Expanded(
@@ -267,8 +268,15 @@ class _SchedulesPageState extends State<SchedulesPage> {
               labelText: label,
               hintText: hint,
               hintStyle: TextStyle(color: Colors.grey[300]),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[200]!),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey[200]!),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             style: const TextStyle(fontSize: 16),
           ),
@@ -323,18 +331,22 @@ class _SchedulesPageState extends State<SchedulesPage> {
         const SizedBox(height: 8),
         ...List.generate(7, (i) {
           final active = _selectedDays.contains(i);
-          return SwitchListTile(
-            title: Text(_daysOfWeek[i], style: const TextStyle(fontSize: 15)),
-            value: active,
-            activeColor: theme.colorScheme.primary,
-            onChanged: (val) {
-              setModalState(() {
-                if (val) _selectedDays.add(i);
-                else _selectedDays.remove(i);
-              });
-            },
-            contentPadding: EdgeInsets.zero,
-            dense: true,
+          return Transform.scale(
+            scale: 0.85,
+            alignment: Alignment.centerLeft,
+            child: SwitchListTile(
+              title: Text(_daysOfWeek[i], style: const TextStyle(fontSize: 17)), // Un poquito más grande el texto compensando la escala
+              value: active,
+              activeColor: theme.colorScheme.primary,
+              onChanged: (val) {
+                setModalState(() {
+                  if (val) _selectedDays.add(i);
+                  else _selectedDays.remove(i);
+                });
+              },
+              contentPadding: EdgeInsets.zero,
+              dense: true,
+            ),
           );
         }),
         const SizedBox(height: 24),
