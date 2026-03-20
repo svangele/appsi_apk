@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'checador_page.dart';
 import 'attendance_admin_page.dart';
-import 'schedules_page.dart';
 
 class AttendanceHubPage extends StatelessWidget {
   final String role;
@@ -26,11 +25,6 @@ class AttendanceHubPage extends StatelessWidget {
         'title': 'Asistencias',
         'icon': Icons.rule_outlined,
         'widget': AttendanceAdminPage(role: role, permissions: permissions),
-      },
-      {
-        'title': 'Horarios',
-        'icon': Icons.schedule_outlined,
-        'widget': const SchedulesPage(),
       }
     ];
 

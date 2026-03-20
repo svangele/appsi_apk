@@ -11,6 +11,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 // We'll use a dynamic approach to avoid mobile compilation errors
 import 'dart:js' as js;
+import 'schedules_page.dart';
 
 class AttendanceAdminPage extends StatefulWidget {
   final String role;
@@ -195,6 +196,22 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
               ],
             ),
           ),
+          if (_isAdmin)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SchedulesPage()),
+                );
+              },
+              icon: const Icon(Icons.schedule),
+              label: const Text('Horarios'),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.primary,
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
         ],
       ),
     );
