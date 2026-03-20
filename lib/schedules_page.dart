@@ -376,91 +376,87 @@ class SchedulesPageState extends State<SchedulesPage> {
   }
 
 
-  Widget _buildScheduleList(ThemeData theme, bool isDesktop) {
+
+  Widget _buildScheduleList(ThemeData theme) {
     if (_schedules.isEmpty) {
       if (_isLoading) return const Center(child: CircularProgressIndicator());
       return const Center(child: Text('No hay horarios registrados.'));
     }
 
-    return GridView.builder(
+    return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isDesktop ? 2 : 1,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: isDesktop ? 0.75 : 1.2,
-      ),
       itemCount: _schedules.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final sched = _schedules[index];
         final List<dynamic> rules = sched['rules'] ?? [];
         
-        return Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: BorderSide(color: Colors.grey[200]!),
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey[200]!),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        sched['name'], 
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 22),
-                      onPressed: () => _deleteSchedule(sched['id']),
-                    ),
-                  ],
-                ),
-                Text(
-                  'Zona: ${sched['zone'] ?? 'N/A'}',
-                  style: const TextStyle(color: Colors.blueGrey, fontSize: 12),
-                ),
-                const SizedBox(height: 12),
-                const Divider(),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: rules.length,
-                    itemBuilder: (ctx, i) {
-                      final r = rules[i];
-                      final dayLabel = _daysOfWeek[r['day']].substring(0, 3);
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                              width: 35,
-                              child: Text(
-                                dayLabel, 
-                                style: TextStyle(fontWeight: FontWeight.bold, color: theme.colorScheme.primary, fontSize: 12)
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${r['type'] == 'ENTRADA' ? 'Ent' : 'Sal'}: ${r['time'].toString().substring(0, 5)}',
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                            ),
-                            if (r['type'] == 'ENTRADA')
-                              Text(' (+${r['tol']}m)', style: const TextStyle(fontSize: 10, color: Colors.blueGrey)),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+          child: ExpansionTile(
+            shape: const RoundedRectangleBorder(side: BorderSide.none),
+            collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              child: Icon(Icons.calendar_today_rounded, color: theme.colorScheme.primary, size: 20),
             ),
+            title: Text(
+              sched['name'], 
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            subtitle: Text(
+              'Zona: ${sched['zone'] ?? 'N/A'}',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+              onPressed: () => _deleteSchedule(sched['id']),
+            ),
+            children: [
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: rules.map((r) {
+                    final dayLabel = _daysOfWeek[r['day']];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            flex: 2,
+                            child: Text(
+                              dayLabel, 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)
+                            ),
+                          ),
+                          Expanded(
+                            flex: 3,
+                            child: Row(
+                              children: [
+                                Icon(Icons.access_time, size: 14, color: Colors.grey[400]),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${r['type'] == 'ENTRADA' ? 'Entr' : 'Sali'}: ${r['time'].toString().substring(0, 5)}',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                                ),
+                                if (r['type'] == 'ENTRADA')
+                                  Text(' (+${r['tol']}m)', style: const TextStyle(fontSize: 11, color: Colors.blueGrey)),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -519,10 +515,10 @@ class SchedulesPageState extends State<SchedulesPage> {
           ),
         _isLoading 
           ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: _buildScheduleList(theme, isDesktop),
-            ),
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildScheduleList(theme),
+              ),
       ],
     );
   }
