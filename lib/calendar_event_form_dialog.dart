@@ -514,6 +514,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
           _myAttendanceStatus = status;
           _isLoading = false;
         });
+        Navigator.pop(context, true); // Cierra el modal de detalles
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(status == 'accepted' ? 'Asistencia confirmada 👍' : 'Asistencia rechazada 🛑'),
