@@ -3,13 +3,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
 class SchedulesPage extends StatefulWidget {
-  const SchedulesPage({super.key});
+  final bool hideAddButton;
+  const SchedulesPage({super.key, this.hideAddButton = false});
 
   @override
-  State<SchedulesPage> createState() => _SchedulesPageState();
+  State<SchedulesPage> createState() => SchedulesPageState();
 }
 
-class _SchedulesPageState extends State<SchedulesPage> {
+class SchedulesPageState extends State<SchedulesPage> {
   final _supabase = Supabase.instance.client;
   bool _isLoading = true;
   List<Map<String, dynamic>> _schedules = [];
@@ -141,7 +142,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
     }
   }
 
-  void _showScheduleForm() {
+  void showScheduleForm() {
     _nameController.clear();
     _zoneController.clear();
     _currentRules.clear();
@@ -474,47 +475,48 @@ class _SchedulesPageState extends State<SchedulesPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: InkWell(
-            onTap: _showScheduleForm,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+        if (!widget.hideAddButton)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: InkWell(
+              onTap: showScheduleForm,
+              borderRadius: BorderRadius.circular(16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 10),
-                  Text(
-                    'Nuevo Horario',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      letterSpacing: 0.5,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withOpacity(0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 22),
+                    SizedBox(width: 10),
+                    Text(
+                      'Nuevo Horario',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         _isLoading 
           ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
           : Padding(

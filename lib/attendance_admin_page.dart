@@ -19,6 +19,7 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
   List<Map<String, dynamic>> _allRecords = [];
   final _supabase = Supabase.instance.client;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
+  final GlobalKey<SchedulesPageState> _schedulesKey = GlobalKey<SchedulesPageState>();
 
   @override
   void initState() {
@@ -91,17 +92,23 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Text(
-                            'Gestión de Horarios',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              color: theme.colorScheme.primary,
-                            ),
+                          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Gestión de Horarios',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              _buildAddScheduleButtonDesktop(theme),
+                            ],
                           ),
                         ),
-                        const Expanded(child: SchedulesPage()),
+                        Expanded(child: SchedulesPage(key: _schedulesKey, hideAddButton: true)),
                       ],
                     ),
                   ),
@@ -470,5 +477,28 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildAddScheduleButtonDesktop(ThemeData theme) {
+    return InkWell(
+      onTap: () => _schedulesKey.currentState?.showScheduleForm(),
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: Colors.grey[200]!),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.add, size: 20, color: Colors.black87),
+      ),
+    );
   }
 }
