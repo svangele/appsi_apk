@@ -85,7 +85,7 @@ class _CalendarPageState extends State<CalendarPage> {
         if (priority == 'Alta') {
           eventColor = Colors.red.shade700;
         } else {
-          eventColor = _calendarMode == 1 ? Colors.blue.shade500 : Colors.redAccent.shade400;
+          eventColor = _calendarMode == 1 ? Colors.green.shade600 : Colors.blue.shade500;
         }
 
         loadedEvents.add(Appointment(
