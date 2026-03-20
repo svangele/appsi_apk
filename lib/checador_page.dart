@@ -272,6 +272,20 @@ class _ChecadorPageState extends State<ChecadorPage> {
     }
   }
 
+  String _formatDateForUser(DateTime date) {
+    final dayName = DateFormat('EEEE', 'es').format(date);
+    final dayNumber = DateFormat('d', 'es').format(date);
+    final monthName = DateFormat('MMMM', 'es').format(date);
+    final year = DateFormat('yyyy', 'es').format(date);
+    
+    // Capitalizar mes
+    final capitalizedMonth = monthName.isNotEmpty 
+        ? '${monthName[0].toUpperCase()}${monthName.substring(1)}' 
+        : monthName;
+        
+    return "$dayName, $dayNumber $capitalizedMonth $year";
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -283,119 +297,179 @@ class _ChecadorPageState extends State<ChecadorPage> {
     }
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildStatusCard(theme, isCheckedIn, isCheckedOut),
-            if (_errorString != null) ...[
-              const SizedBox(height: 16),
-              Text(
-                '$_errorString',
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.center,
-              ),
-            ],
-            const SizedBox(height: 32),
-            if (!isCheckedOut)
-              _isProcessing
-                  ? const Center(child: CircularProgressIndicator())
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: isCheckedIn ? null : () => _handleCheck(isEntry: true),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFB1CB34),
-                              padding: const EdgeInsets.symmetric(vertical: 20),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            icon: const Icon(Icons.login, size: 24),
-                            label: const Text(
-                              'ENTRADA',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: (isCheckedIn && !isCheckedOut) ? () => _handleCheck(isEntry: false) : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              padding: const EdgeInsets.symmetric(vertical: 20),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            ),
-                            icon: const Icon(Icons.logout, size: 24),
-                            label: const Text(
-                              'SALIDA',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-            else
-              const Card(
-                color: Color(0xFFB1CB34),
-                child: Padding(
-                  padding: EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.white, size: 32),
-                      SizedBox(width: 16),
-                      Text(
-                        'Jornada completada por hoy',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: 32),
-            // Live Clock
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.primary.withOpacity(0.02)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
-              ),
-              child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 950) {
+            // Desktop 3-column layout
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(32),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    DateFormat('HH:mm:ss').format(_currentTime),
-                    style: TextStyle(
-                      fontSize: 48,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 4,
-                      color: theme.colorScheme.primary,
-                      fontFeatures: const [FontFeature.tabularFigures()],
+                  // Col 1: Camera
+                  Expanded(
+                    flex: 4,
+                    child: _buildStatusCard(theme, isCheckedIn, isCheckedOut),
+                  ),
+                  const SizedBox(width: 32),
+                  // Col 2: Clock & Actions
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      children: [
+                        _buildClockSection(theme),
+                        const SizedBox(height: 32),
+                        _buildActionButtons(isCheckedIn, isCheckedOut),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('EEEE, d \"de\" MMMM yyyy', 'es').format(_currentTime),
-                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  const SizedBox(width: 32),
+                  // Col 3: History
+                  Expanded(
+                    flex: 3,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Historial Reciente',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildHistoryList(theme),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 32),
-            const Text(
-              'Historial Reciente',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            _buildHistoryList(theme),
-          ],
-        ),
+            );
+          } else {
+            // Mobile / Tablet single column layout
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildStatusCard(theme, isCheckedIn, isCheckedOut),
+                  if (_errorString != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      '$_errorString',
+                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+                  _buildActionButtons(isCheckedIn, isCheckedOut),
+                  const SizedBox(height: 32),
+                  _buildClockSection(theme),
+                  const SizedBox(height: 32),
+                  const Text(
+                    'Historial Reciente',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildHistoryList(theme),
+                ],
+              ),
+            );
+          }
+        },
       ),
+    );
+  }
+
+  Widget _buildClockSection(ThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.primary.withOpacity(0.02)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            DateFormat('HH:mm:ss').format(_currentTime),
+            style: TextStyle(
+              fontSize: 48,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 4,
+              color: theme.colorScheme.primary,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            _formatDateForUser(_currentTime),
+            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons(bool isCheckedIn, bool isCheckedOut) {
+    if (isCheckedOut) {
+      return const Card(
+        color: Color(0xFFB1CB34),
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 32),
+              SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Jornada completada por hoy',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_isProcessing) return const Center(child: CircularProgressIndicator());
+
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: isCheckedIn ? null : () => _handleCheck(isEntry: true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFB1CB34),
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: const Icon(Icons.login, size: 24),
+            label: const Text(
+              'ENTRADA',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: (isCheckedIn && !isCheckedOut) ? () => _handleCheck(isEntry: false) : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            icon: const Icon(Icons.logout, size: 24),
+            label: const Text(
+              'SALIDA',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
