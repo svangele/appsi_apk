@@ -88,7 +88,7 @@ class _SocialPageState extends State<SocialPage> {
 
       final response = await Supabase.instance.client
           .from('events')
-          .select('id, title, start_time, end_time, location, is_public')
+          .select('id, title, start_time, end_time, location, is_public, priority')
           .gte('start_time', monday.toUtc().toIso8601String())
           .lte('start_time', sunday.toUtc().toIso8601String())
           .or(orFilter)
@@ -265,6 +265,27 @@ class _SocialPageState extends State<SocialPage> {
                         final start = DateTime.parse(ev['start_time']).toLocal();
                         final isToday = start.day == now.day && start.month == now.month && start.year == now.year;
                         final isPublic = ev['is_public'] == true;
+                        final priority = ev['priority'] as String? ?? 'Normal';
+                        final isHigh = priority == 'Alta';
+
+                        Color bgColor;
+                        Color iconColor;
+                        IconData iconData;
+
+                        if (isHigh) {
+                          bgColor = Colors.red.shade50;
+                          iconColor = Colors.red.shade700;
+                          iconData = Icons.priority_high;
+                        } else if (isPublic) {
+                          bgColor = Colors.green.shade50;
+                          iconColor = Colors.green.shade600;
+                          iconData = Icons.groups;
+                        } else {
+                          bgColor = Colors.blue.shade50;
+                          iconColor = Colors.blue.shade500;
+                          iconData = Icons.person;
+                        }
+
                         return Column(
                           children: [
                             ListTile(
@@ -274,15 +295,13 @@ class _SocialPageState extends State<SocialPage> {
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: isPublic
-                                      ? Colors.blue.shade50
-                                      : Colors.redAccent.shade100.withOpacity(0.3),
+                                  color: bgColor,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(
-                                  isPublic ? Icons.groups : Icons.person,
-                                  size: 22,
-                                  color: isPublic ? Colors.blue.shade400 : Colors.redAccent,
+                                  iconData,
+                                  size: 20,
+                                  color: iconColor,
                                 ),
                               ),
                               title: Text(
@@ -293,16 +312,32 @@ class _SocialPageState extends State<SocialPage> {
                                 DateFormat('EEE dd MMM, HH:mm', 'es_MX').format(start),
                                 style: TextStyle(fontSize: 11, color: isToday ? Colors.orange : Colors.grey[600]),
                               ),
-                              trailing: isToday
-                                  ? Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              trailing: Wrap(
+                                spacing: 4,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                children: [
+                                  if (isHigh)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade100,
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.red.shade200),
+                                      ),
+                                      child: const Text('ALTA', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.red)),
+                                    ),
+                                  if (isToday)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
                                         color: Colors.orange.shade100,
                                         borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.orange.shade200),
                                       ),
                                       child: const Text('HOY', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
-                                    )
-                                  : null,
+                                    ),
+                                ],
+                              ),
                               onTap: () {
                                 showModalBottomSheet(
                                   context: context,
