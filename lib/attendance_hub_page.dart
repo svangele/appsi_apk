@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'checador_page.dart';
 import 'attendance_admin_page.dart';
-// import 'schedules_page.dart';
+import 'schedules_page.dart';
 import 'attendance_dashboard.dart';
 
 class AttendanceHubPage extends StatelessWidget {
@@ -49,13 +49,13 @@ class AttendanceHubPage extends StatelessWidget {
         'widget': AttendanceAdminPage(role: role, permissions: permissions),
       });
     }
-    // if (canSeeHorarios) {
-    //   tabs.add({
-    //     'title': 'Horarios',
-    //     'icon': Icons.schedule_outlined,
-    //     'widget': const SchedulesPage(),
-    //   });
-    // }
+    if (canSeeHorarios) {
+      tabs.add({
+        'title': 'Horarios',
+        'icon': Icons.schedule_outlined,
+        'widget': const SchedulesPage(),
+      });
+    }
 
     if (tabs.isEmpty) {
       return Scaffold(
