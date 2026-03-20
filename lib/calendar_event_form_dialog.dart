@@ -28,7 +28,8 @@ class _EventFormDialogState extends State<EventFormDialog> {
     hour: (TimeOfDay.now().hour + 1) % 24,
   );
 
-  bool _isPublic = true; 
+  bool _isPublic = true;
+  String _priority = 'Normal';
   String _recurrence = 'No repetir';
   DateTime? _recurrenceEndDate;
   final List<String> _recurrenceOptions = ['No repetir', 'Diariamente', 'Semanalmente', 'Mensualmente', 'Anualmente'];
@@ -86,6 +87,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
           _locationController.text = eventResponse['location'] ?? '';
           _descriptionController.text = eventResponse['description'] ?? '';
           _isPublic = eventResponse['is_public'] ?? true;
+          _priority = eventResponse['priority'] ?? 'Normal';
           _recurrence = eventResponse['recurrence'] ?? 'No repetir';
           _creatorId = eventResponse['creator_id'];
 
@@ -191,6 +193,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
           'recurrence': _recurrence,
           'start_time': startDateTime.toUtc().toIso8601String(),
           'end_time': endDateTime.toUtc().toIso8601String(),
+          'priority': _priority,
           'is_public': _isPublic,
         }).eq('id', widget.eventId!);
 
@@ -221,6 +224,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
             'description': _descriptionController.text.trim(),
             'location': _locationController.text.trim(),
             'recurrence': _recurrence,
+            'priority': _priority,
             'start_time': occStart.toUtc().toIso8601String(),
             'end_time': occEnd.toUtc().toIso8601String(),
             'creator_id': currentUserId,
@@ -443,6 +447,30 @@ class _EventFormDialogState extends State<EventFormDialog> {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Copiado al portapapeles')),
+    );
+  }
+
+  Widget _buildPriorityChip(String label, Color color) {
+    final isSelected = _priority == label;
+    return GestureDetector(
+      onTap: _canEdit ? () => setState(() => _priority = label) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? color : color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color, width: isSelected ? 2 : 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : color,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
     );
   }
 
@@ -765,6 +793,22 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 child: Text(format.format(DateTime(_endDate.year, _endDate.month, _endDate.day, _endTime.hour, _endTime.minute)), style: const TextStyle(fontWeight: FontWeight.w500)),
               ),
               onTap: _canEdit ? () => _pickDateTime(false) : null,
+            ),
+            Divider(color: Colors.grey.shade300),
+
+            // Priority selector
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(Icons.flag, color: _priority == 'Alta' ? Colors.red : Colors.blue),
+              title: const Text('Prioridad'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildPriorityChip('Normal', Colors.blue),
+                  const SizedBox(width: 8),
+                  _buildPriorityChip('Alta', Colors.red),
+                ],
+              ),
             ),
             Divider(color: Colors.grey.shade300),
 

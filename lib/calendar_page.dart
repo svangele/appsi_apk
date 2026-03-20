@@ -80,13 +80,21 @@ class _CalendarPageState extends State<CalendarPage> {
         final isAllDay = (endTime.difference(startTime).inHours >= 24);
         final creatorName = ev['profiles']?['full_name'] ?? 'Usuario';
 
+        final priority = ev['priority'] ?? 'Normal';
+        Color eventColor;
+        if (priority == 'Alta') {
+          eventColor = Colors.red.shade700;
+        } else {
+          eventColor = _calendarMode == 1 ? Colors.blue.shade500 : Colors.redAccent.shade400;
+        }
+
         loadedEvents.add(Appointment(
           id: ev['id'],
           startTime: startTime,
           endTime: endTime,
           subject: ev['title'],
           notes: '${ev['description'] ?? ''}\nCreado por: $creatorName',
-          color: _calendarMode == 1 ? Colors.blue.shade500 : Colors.redAccent.shade400,
+          color: eventColor,
           isAllDay: isAllDay,
         ));
       }
