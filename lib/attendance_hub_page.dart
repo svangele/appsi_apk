@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'checador_page.dart';
 import 'attendance_admin_page.dart';
 import 'schedules_page.dart';
-import 'attendance_dashboard.dart';
 
 class AttendanceHubPage extends StatelessWidget {
   final String role;
@@ -18,11 +17,6 @@ class AttendanceHubPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Construir lista dinámica de pestañas
     final List<Map<String, dynamic>> tabs = [
-      {
-        'title': 'Resumen',
-        'icon': Icons.insights_rounded,
-        'widget': const AttendanceDashboard(),
-      },
       {
         'title': 'Checador',
         'icon': Icons.timer_outlined,
