@@ -47,44 +47,6 @@ class _SchedulesPageState extends State<SchedulesPage> {
     }
   }
 
-  void _addRuleGroup() {
-    if (_selectedDays.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor selecciona al menos un día.')),
-      );
-      return;
-    }
-
-    setState(() {
-      for (int day in _selectedDays) {
-        // Add Entry
-        _currentRules.add({
-          'day': day,
-          'type': 'ENTRADA',
-          'time': '${_tempIn.hour.toString().padLeft(2, '0')}:${_tempIn.minute.toString().padLeft(2, '0')}:00',
-          'tol': _tempTolerance,
-        });
-        // Add Exit
-        _currentRules.add({
-          'day': day,
-          'type': 'SALIDA',
-          'time': '${_tempOut.hour.toString().padLeft(2, '0')}:${_tempOut.minute.toString().padLeft(2, '0')}:00',
-          'tol': 0,
-        });
-      }
-
-      // De-duplicate if same day/type exists? For now just add.
-      // Sort rules
-      _currentRules.sort((a, b) {
-        int dayCmp = a['day'].compareTo(b['day']);
-        if (dayCmp != 0) return dayCmp;
-        return a['time'].compareTo(b['time']);
-      });
-
-      _selectedDays.clear();
-    });
-  }
-
   void _removeRule(int index) {
     setState(() {
       _currentRules.removeAt(index);
@@ -158,48 +120,58 @@ class _SchedulesPageState extends State<SchedulesPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDesktop = MediaQuery.of(context).size.width > 900;
-
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Configuración Rápida de Horarios', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildForm(theme, isDesktop),
-                const SizedBox(height: 40),
-                const Text(
-                  'Catálogo de Horarios:',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                _buildScheduleList(theme, isDesktop),
-              ],
+  void _showScheduleForm() {
+    _nameController.clear();
+    _zoneController.clear();
+    _currentRules.clear();
+    _selectedDays.clear();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          // Re-bind the global methods to use modal state locally where needed if we want immediate updates in the bottom sheet.
+          // For simplicity, we can let the global setState handle it if we wrap the inputs, but since they are TextEditingControllers it's fine.
+          
+          return Container(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+              top: 20, left: 20, right: 20,
             ),
-          ),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Nuevo Horario Maestro',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF344092)),
+                      ),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFormLogic(Theme.of(context), setModalState),
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          );
+        }
+      ),
     );
   }
 
-  Widget _buildForm(ThemeData theme, bool isDesktop) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FE),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
+  Widget _buildFormLogic(ThemeData theme, StateSetter setModalState) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -236,7 +208,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
           const SizedBox(height: 32),
           const Text('2. Configurar Jornada (Creación Rápida):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 16),
-          _buildQuickDefineRow(theme, isDesktop),
+          _buildQuickDefineRow(theme, setModalState),
           const SizedBox(height: 32),
           if (_currentRules.isNotEmpty) ...[
             const Text('3. Revisar Reglas Generadas:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
@@ -278,7 +250,10 @@ class _SchedulesPageState extends State<SchedulesPage> {
             width: double.infinity,
             height: 54,
             child: ElevatedButton.icon(
-              onPressed: _saveSchedule,
+              onPressed: () {
+                _saveSchedule();
+                Navigator.pop(context);
+              },
               icon: const Icon(Icons.cloud_upload_outlined),
               label: const Text('CONFIRMAR Y GUARDAR TODO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               style: ElevatedButton.styleFrom(
@@ -294,7 +269,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
     );
   }
 
-  Widget _buildQuickDefineRow(ThemeData theme, bool isDesktop) {
+  Widget _buildQuickDefineRow(ThemeData theme, StateSetter setModalState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -308,7 +283,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
               label: Text(_daysOfWeek[i]),
               selected: active,
               onSelected: (selected) {
-                setState(() {
+                setModalState(() {
                   if (selected) _selectedDays.add(i);
                   else _selectedDays.remove(i);
                 });
@@ -326,11 +301,11 @@ class _SchedulesPageState extends State<SchedulesPage> {
           children: [
             SizedBox(
               width: 140,
-              child: _buildTimePickerTile('ENTRADA', _tempIn, (t) => setState(() => _tempIn = t)),
+              child: _buildTimePickerTile('ENTRADA', _tempIn, (t) => setModalState(() => _tempIn = t)),
             ),
             SizedBox(
               width: 140,
-              child: _buildTimePickerTile('SALIDA', _tempOut, (t) => setState(() => _tempOut = t)),
+              child: _buildTimePickerTile('SALIDA', _tempOut, (t) => setModalState(() => _tempOut = t)),
             ),
             SizedBox(
               width: 120,
@@ -338,7 +313,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
                 value: _tempTolerance,
                 decoration: const InputDecoration(labelText: 'Tolerancia', labelStyle: TextStyle(fontSize: 12), border: OutlineInputBorder()),
                 items: [0, 5, 10, 15, 20, 30].map((t) => DropdownMenuItem(value: t, child: Text('$t min'))).toList(),
-                onChanged: (v) => setState(() => _tempTolerance = v!),
+                onChanged: (v) => setModalState(() => _tempTolerance = v!),
               ),
             ),
           ],
@@ -347,7 +322,32 @@ class _SchedulesPageState extends State<SchedulesPage> {
         SizedBox(
           width: double.infinity,
           child: OutlinedButton.icon(
-            onPressed: _addRuleGroup,
+            onPressed: () {
+              if (_selectedDays.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona al menos un día.')));
+                return;
+              }
+              setModalState(() {
+                for (int day in _selectedDays) {
+                  _currentRules.add({
+                    'day': day, 'type': 'ENTRADA',
+                    'time': '${_tempIn.hour.toString().padLeft(2, '0')}:${_tempIn.minute.toString().padLeft(2, '0')}:00',
+                    'tol': _tempTolerance,
+                  });
+                  _currentRules.add({
+                    'day': day, 'type': 'SALIDA',
+                    'time': '${_tempOut.hour.toString().padLeft(2, '0')}:${_tempOut.minute.toString().padLeft(2, '0')}:00',
+                    'tol': 0,
+                  });
+                }
+                _currentRules.sort((a, b) {
+                  int dayCmp = a['day'].compareTo(b['day']);
+                  if (dayCmp != 0) return dayCmp;
+                  return a['time'].compareTo(b['time']);
+                });
+                _selectedDays.clear();
+              });
+            },
             icon: const Icon(Icons.add_task),
             label: const Text('VINCULAR JORNADA A DÍAS SELECCIONADOS', style: TextStyle(fontWeight: FontWeight.bold)),
             style: OutlinedButton.styleFrom(
@@ -404,6 +404,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
 
   Widget _buildScheduleList(ThemeData theme, bool isDesktop) {
     if (_schedules.isEmpty) {
+      if (_isLoading) return const Center(child: CircularProgressIndicator());
       return const Center(child: Text('No hay horarios registrados.'));
     }
 
@@ -489,6 +490,49 @@ class _SchedulesPageState extends State<SchedulesPage> {
           ),
         );
       },
+    );
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDesktop = MediaQuery.of(context).size.width > 900;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Catálogo de Horarios',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              ElevatedButton.icon(
+                onPressed: _showScheduleForm,
+                icon: const Icon(Icons.add),
+                label: const Text('Nuevo Horario'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _isLoading 
+            ? const Center(child: CircularProgressIndicator())
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: _buildScheduleList(theme, isDesktop),
+              ),
+        ),
+      ],
     );
   }
 }

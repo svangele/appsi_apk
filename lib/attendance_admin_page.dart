@@ -142,18 +142,44 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          _buildHeader(theme),
-          _buildFilters(theme),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : _buildList(theme),
-          ),
-        ],
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Column(
+          children: [
+            _buildHeader(theme),
+            Container(
+              color: theme.colorScheme.primary.withOpacity(0.05),
+              child: TabBar(
+                labelColor: theme.colorScheme.primary,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: theme.colorScheme.primary,
+                tabs: const [
+                  Tab(text: 'REGISTROS DE ASISTENCIA'),
+                  Tab(text: 'CATÁLOGO DE HORARIOS'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  Column(
+                    children: [
+                      _buildFilters(theme),
+                      Expanded(
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _buildList(theme),
+                      ),
+                    ],
+                  ),
+                  const SchedulesPage(),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -190,22 +216,6 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
               ],
             ),
           ),
-          if (_isAdmin)
-            TextButton.icon(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SchedulesPage()),
-                );
-              },
-              icon: const Icon(Icons.schedule),
-              label: const Text('Horarios'),
-              style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.primary,
-                backgroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
         ],
       ),
     );
