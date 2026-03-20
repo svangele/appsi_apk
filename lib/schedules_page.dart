@@ -181,9 +181,9 @@ class _SchedulesPageState extends State<SchedulesPage> {
                       ),
                       TextButton(
                         onPressed: () {
-                          if (_nameController.text.isEmpty || _currentRules.isEmpty) {
+                          if (_nameController.text.trim().isEmpty || (_currentRules.isEmpty && _selectedDays.isEmpty)) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Por favor ingresa un nombre y reglas.')),
+                              const SnackBar(content: Text('Por favor ingresa un nombre y selecciona al menos un día.')),
                             );
                             return;
                           }
