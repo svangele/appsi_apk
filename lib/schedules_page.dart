@@ -132,38 +132,56 @@ class _SchedulesPageState extends State<SchedulesPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) {
-          // Re-bind the global methods to use modal state locally where needed if we want immediate updates in the bottom sheet.
-          // For simplicity, we can let the global setState handle it if we wrap the inputs, but since they are TextEditingControllers it's fine.
-          
+          final theme = Theme.of(context);
           return Container(
+            height: MediaQuery.of(context).size.height * 0.9,
             padding: EdgeInsets.only(
               bottom: MediaQuery.of(context).viewInsets.bottom,
-              top: 20, left: 20, right: 20,
             ),
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+            child: Column(
+              children: [
+                // Header (Top Bar)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Nuevo Horario Maestro',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF344092)),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
                       ),
-                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                      const Text(
+                        'Nuevo Horario',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          if (_nameController.text.isEmpty || _currentRules.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Por favor ingresa un nombre y reglas.')),
+                            );
+                            return;
+                          }
+                          _saveSchedule();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Añadir', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  _buildFormLogic(Theme.of(context), setModalState),
-                  const SizedBox(height: 32),
-                ],
-              ),
+                ),
+                const Divider(height: 1),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildFormLogic(theme, setModalState),
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -174,153 +192,154 @@ class _SchedulesPageState extends State<SchedulesPage> {
   Widget _buildFormLogic(ThemeData theme, StateSetter setModalState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('1. Definir Identificación:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                flex: 2,
-                child: TextField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nombre del horario (ej. Corporativo)',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: TextField(
-                  controller: _zoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'Zona / Ubicación',
-                    border: OutlineInputBorder(),
-                    filled: true,
-                    fillColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          const Text('2. Configurar Jornada (Creación Rápida):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          const SizedBox(height: 16),
-          _buildQuickDefineRow(theme, setModalState),
-          const SizedBox(height: 32),
-          if (_currentRules.isNotEmpty) ...[
-            const Text('3. Revisar Reglas Generadas:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blueGrey)),
-            const SizedBox(height: 12),
-            Container(
-              constraints: const BoxConstraints(maxHeight: 400),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey[200]!),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                itemCount: _currentRules.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final rule = _currentRules[index];
-                  final dayName = _daysOfWeek[rule['day']];
-                  return ListTile(
-                    dense: true,
-                    leading: CircleAvatar(
-                      radius: 12,
-                      backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
-                      child: Text(dayName[0], style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-                    ),
-                    title: Text('$dayName - ${rule['type']}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('Hora: ${rule['time'].toString().substring(0, 5)} ${rule['type'] == 'ENTRADA' ? '(Tolerancia: ${rule['tol']}m)' : ''}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-                      onPressed: () => _removeRule(index),
-                    ),
-                  );
-                },
-              ),
+      children: [
+        // Identificación
+        _buildIconInput(
+          controller: _nameController,
+          label: 'Título del horario',
+          hint: 'Ej. Corporativo, Nocturno...',
+          icon: Icons.title,
+        ),
+        const SizedBox(height: 16),
+        _buildIconInput(
+          controller: _zoneController,
+          label: 'Zona / Ubicación',
+          hint: 'Añadir ubicación',
+          icon: Icons.location_on_outlined,
+        ),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 24),
+        
+        // Quick Define
+        _buildQuickDefineRow(theme, setModalState),
+        
+        const SizedBox(height: 24),
+        if (_currentRules.isNotEmpty) ...[
+          const Text('Vincular Jornada a Días Seleccionados:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[50],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey[200]!),
             ),
-          ],
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                _saveSchedule();
-                Navigator.pop(context);
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _currentRules.length,
+              separatorBuilder: (context, index) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final rule = _currentRules[index];
+                final dayName = _daysOfWeek[rule['day']];
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.check_circle, color: Color(0xFFB1CB34), size: 18),
+                  title: Text('$dayName - ${rule['type']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('Hora: ${rule['time'].split(':').take(2).join(':')} ${rule['type'] == 'ENTRADA' ? '(Tolerancia: ${rule['tol']}m)' : ''}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                    onPressed: () => setModalState(() => _removeRule(index)),
+                  ),
+                );
               },
-              icon: const Icon(Icons.cloud_upload_outlined),
-              label: const Text('CONFIRMAR Y GUARDAR TODO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF323B94),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                elevation: 0,
-              ),
             ),
           ),
         ],
-      );
+      ],
+    );
+
+  Widget _buildIconInput({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.grey[400], size: 22),
+        const SizedBox(width: 16),
+        Expanded(
+          child: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: label,
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey[300]),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+            ),
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildQuickDefineRow(ThemeData theme, StateSetter setModalState) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Selecciona uno o varios días:', style: TextStyle(fontSize: 14, color: Colors.grey)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          children: List.generate(7, (i) {
-            final active = _selectedDays.contains(i);
-            return FilterChip(
-              label: Text(_daysOfWeek[i]),
-              selected: active,
-              onSelected: (selected) {
-                setModalState(() {
-                  if (selected) _selectedDays.add(i);
-                  else _selectedDays.remove(i);
-                });
-              },
-              selectedColor: theme.colorScheme.primary.withOpacity(0.2),
-              checkmarkColor: theme.colorScheme.primary,
-            );
-          }),
+        _buildTimeSelectionItem(
+          label: 'Comienza',
+          time: _tempIn,
+          icon: Icons.access_time_outlined,
+          onTap: () async {
+            final t = await showTimePicker(context: context, initialTime: _tempIn);
+            if (t != null) setModalState(() => _tempIn = t);
+          },
         ),
-        const SizedBox(height: 20),
-        Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          crossAxisAlignment: WrapCrossAlignment.end,
+        const SizedBox(height: 16),
+        _buildTimeSelectionItem(
+          label: 'Termina',
+          time: _tempOut,
+          icon: Icons.access_time_outlined,
+          onTap: () async {
+            final t = await showTimePicker(context: context, initialTime: _tempOut);
+            if (t != null) setModalState(() => _tempOut = t);
+          },
+        ),
+        const SizedBox(height: 16),
+        // Tolerancia con mismo estilo
+        Row(
           children: [
-            SizedBox(
-              width: 140,
-              child: _buildTimePickerTile('ENTRADA', _tempIn, (t) => setModalState(() => _tempIn = t)),
-            ),
-            SizedBox(
-              width: 140,
-              child: _buildTimePickerTile('SALIDA', _tempOut, (t) => setModalState(() => _tempOut = t)),
-            ),
-            SizedBox(
-              width: 120,
-              child: DropdownButtonFormField<int>(
-                value: _tempTolerance,
-                decoration: const InputDecoration(labelText: 'Tolerancia', labelStyle: TextStyle(fontSize: 12), border: OutlineInputBorder()),
-                items: [0, 5, 10, 15, 20, 30].map((t) => DropdownMenuItem(value: t, child: Text('$t min'))).toList(),
-                onChanged: (v) => setModalState(() => _tempTolerance = v!),
-              ),
+            Icon(Icons.timer_outlined, color: Colors.grey[400], size: 22),
+            const SizedBox(width: 16),
+            const Text('Tolerancia', style: TextStyle(fontSize: 16)),
+            const Spacer(),
+            DropdownButton<int>(
+              value: _tempTolerance,
+              underline: const SizedBox(),
+              items: [0, 5, 10, 15, 20, 30].map((t) => DropdownMenuItem(value: t, child: Text('$t min'))).toList(),
+              onChanged: (v) => setModalState(() => _tempTolerance = v!),
             ),
           ],
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
+        const Divider(),
+        const SizedBox(height: 24),
+        const Text('Días de la semana', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.blueGrey)),
+        const SizedBox(height: 8),
+        ...List.generate(7, (i) {
+          final active = _selectedDays.contains(i);
+          return SwitchListTile(
+            title: Text(_daysOfWeek[i], style: const TextStyle(fontSize: 15)),
+            value: active,
+            activeColor: theme.colorScheme.primary,
+            onChanged: (val) {
+              setModalState(() {
+                if (val) _selectedDays.add(i);
+                else _selectedDays.remove(i);
+              });
+            },
+            contentPadding: EdgeInsets.zero,
+            dense: true,
+          );
+        }),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          child: OutlinedButton.icon(
+          child: FilledButton(
             onPressed: () {
               if (_selectedDays.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona al menos un día.')));
@@ -347,13 +366,42 @@ class _SchedulesPageState extends State<SchedulesPage> {
                 _selectedDays.clear();
               });
             },
-            icon: const Icon(Icons.add_task),
-            label: const Text('VINCULAR JORNADA A DÍAS SELECCIONADOS', style: TextStyle(fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
               foregroundColor: theme.colorScheme.primary,
-              side: BorderSide(color: theme.colorScheme.primary),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text('VINCULAR A DÍAS SELECCIONADOS', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeSelectionItem({
+    required String label,
+    required TimeOfDay time,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.grey[400], size: 22),
+        const SizedBox(width: 16),
+        Text(label, style: const TextStyle(fontSize: 16)),
+        const Spacer(),
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
             ),
           ),
         ),
@@ -361,45 +409,6 @@ class _SchedulesPageState extends State<SchedulesPage> {
     );
   }
 
-  Widget _buildTimePickerTile(String label, TimeOfDay time, Function(TimeOfDay) OnChanged) {
-    return InkWell(
-      onTap: () async {
-        final t = await showTimePicker(
-          context: context, 
-          initialTime: time,
-          builder: (context, child) {
-            return MediaQuery(
-              data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-              child: child!,
-            );
-          },
-        );
-        if (t != null) OnChanged(t);
-      },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                const Icon(Icons.access_time, size: 16, color: Colors.blueGrey),
-                const SizedBox(width: 8),
-                Text(time.format(context), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildScheduleList(ThemeData theme, bool isDesktop) {
     if (_schedules.isEmpty) {
