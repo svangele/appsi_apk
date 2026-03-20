@@ -15,7 +15,8 @@ import 'dart:js' as js;
 class AttendanceAdminPage extends StatefulWidget {
   final String role;
   final Map<String, dynamic> permissions;
-  const AttendanceAdminPage({super.key, required this.role, required this.permissions});
+  final String? initialSearchQuery;
+  const AttendanceAdminPage({super.key, required this.role, required this.permissions, this.initialSearchQuery});
 
   @override
   State<AttendanceAdminPage> createState() => _AttendanceAdminPageState();
@@ -27,12 +28,15 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
   List<Map<String, dynamic>> _filteredRecords = [];
   final _supabase = Supabase.instance.client;
   String _searchQuery = '';
+  late TextEditingController _searchController;
   DateTime? _selectedDate;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
 
   @override
   void initState() {
     super.initState();
+    _searchQuery = widget.initialSearchQuery ?? '';
+    _searchController = TextEditingController(text: _searchQuery);
     _fetchData();
   }
 
@@ -202,6 +206,7 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
       child: Column(
         children: [
           TextField(
+            controller: _searchController,
             onChanged: (val) {
               _searchQuery = val;
               _applyFilters();

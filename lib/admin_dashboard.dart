@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'widgets/page_header.dart';
 import 'services/notification_service.dart';
+import 'attendance_admin_page.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -921,9 +922,21 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       _showUserForm(user: user);
                     } else if (value == 'delete') {
                       _deleteUser(user['id']);
+                    } else if (value == 'attendance') {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AttendanceAdminPage(
+                            role: _isAdmin ? 'admin' : 'usuario',
+                            permissions: const {},
+                            initialSearchQuery: '${user['nombre']} ${user['paterno']}'.trim(),
+                          ),
+                        ),
+                      );
                     }
                   },
                   itemBuilder: (context) => [
+                    const PopupMenuItem(value: 'attendance', child: ListTile(leading: Icon(Icons.fingerprint, color: Colors.green), title: Text('Ver Asistencia'), dense: true)),
                     const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Editar'), dense: true)),
                     const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                   ],
@@ -946,6 +959,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
       isAdmin: _isAdmin,
       onEdit: (user) => _showUserForm(user: user),
       onDelete: (id) => _deleteUser(id),
+      onViewAttendance: (user) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AttendanceAdminPage(
+              role: _isAdmin ? 'admin' : 'usuario',
+              permissions: const {},
+              initialSearchQuery: '${user['nombre']} ${user['paterno']}'.trim(),
+            ),
+          ),
+        );
+      },
     );
 
     return SingleChildScrollView(
@@ -1049,6 +1074,7 @@ class _UserDataSource extends DataTableSource {
   final bool isAdmin;
   final Function(Map<String, dynamic>) onEdit;
   final Function(String) onDelete;
+  final Function(Map<String, dynamic>) onViewAttendance;
 
   _UserDataSource({
     required this.users,
@@ -1056,6 +1082,7 @@ class _UserDataSource extends DataTableSource {
     required this.isAdmin,
     required this.onEdit,
     required this.onDelete,
+    required this.onViewAttendance,
   });
 
   @override
@@ -1125,10 +1152,12 @@ class _UserDataSource extends DataTableSource {
         DataCell(isAdmin 
             ? PopupMenuButton<String>(
                 onSelected: (value) {
+                  if (value == 'attendance') onViewAttendance(user);
                   if (value == 'edit') onEdit(user);
                   if (value == 'delete') onDelete(user['id']);
                 },
                 itemBuilder: (context) => [
+                  const PopupMenuItem(value: 'attendance', child: ListTile(leading: Icon(Icons.fingerprint, color: Colors.green), title: Text('Ver Asistencia'), dense: true)),
                   const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
                   const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                 ],
