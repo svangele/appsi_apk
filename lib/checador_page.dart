@@ -4,6 +4,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:typed_data';
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 
 class ChecadorPage extends StatefulWidget {
@@ -21,11 +23,22 @@ class _ChecadorPageState extends State<ChecadorPage> {
   List<Map<String, dynamic>> _history = [];
   bool _autoTriggered = false;
   final _supabase = Supabase.instance.client;
+  Timer? _clockTimer;
+  DateTime _currentTime = DateTime.now();
 
   @override
   void initState() {
     super.initState();
     _fetchData();
+    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _currentTime = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchData() async {
@@ -298,7 +311,40 @@ class _ChecadorPageState extends State<ChecadorPage> {
                   ),
                 ),
               ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
+            // Live Clock
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.primary.withOpacity(0.02)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: theme.colorScheme.primary.withOpacity(0.15)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    DateFormat('HH:mm:ss').format(_currentTime),
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                      color: theme.colorScheme.primary,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    DateFormat('EEEE, d \"de\" MMMM yyyy', 'es').format(_currentTime),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
             const Text(
               'Historial Reciente',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
@@ -312,43 +358,82 @@ class _ChecadorPageState extends State<ChecadorPage> {
   }
 
   Widget _buildStatusCard(ThemeData theme, bool isIn, bool isOut) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: Colors.grey[200]!),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: isIn ? (isOut ? Colors.grey[200] : const Color(0xFFB1CB34).withOpacity(0.1)) : theme.colorScheme.primary.withOpacity(0.1),
-              child: Icon(
-                isIn ? (isOut ? Icons.event_available : Icons.timer) : Icons.timer_outlined,
-                size: 40,
-                color: isIn ? (isOut ? Colors.grey : const Color(0xFFB1CB34)) : theme.colorScheme.primary,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Camera preview box
+        Container(
+          height: 260,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 2),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Camera icon placeholder
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.videocam_rounded, size: 64, color: Colors.white.withOpacity(0.25)),
+                  const SizedBox(height: 12),
+                  Text(
+                    kIsWeb ? 'La c\u00e1mara se activa al checar' : 'Vista previa de c\u00e1mara',
+                    style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                  ),
+                ],
               ),
+              // Status overlay badge
+              Positioned(
+                top: 12, left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isIn ? (isOut ? Colors.grey : const Color(0xFFB1CB34)) : theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        isIn ? (isOut ? Icons.event_available : Icons.timer) : Icons.timer_outlined,
+                        size: 14, color: Colors.white,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        isIn ? (isOut ? '\u00a1Hasta ma\u00f1ana!' : 'En el trabajo') : 'Fuera del trabajo',
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (isIn) ...[
+          const SizedBox(height: 16),
+          Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: Colors.grey[200]!),
             ),
-            const SizedBox(height: 16),
-            Text(
-              isIn ? (isOut ? '¡Hasta mañana!' : 'En el trabajo') : 'Fuera del trabajo',
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            if (isIn) ...[
-              const SizedBox(height: 24),
-              Row(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
                   _buildTimeInfo('Entrada', _todayRecord!['check_in']),
                   if (isOut) _buildTimeInfo('Salida', _todayRecord!['check_out']),
                 ],
               ),
-            ],
-          ],
-        ),
-      ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
