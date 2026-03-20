@@ -155,12 +155,6 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _exportToCSV,
-        backgroundColor: const Color(0xFFB1CB34),
-        icon: const Icon(Icons.download_rounded),
-        label: const Text('EXPORTAR CSV', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
     );
   }
 

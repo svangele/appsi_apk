@@ -22,7 +22,7 @@ class AttendanceHubPage extends StatelessWidget {
         'widget': const ChecadorPage(),
       },
       {
-        'title': 'Asistencias',
+        'title': 'Configuración',
         'icon': Icons.rule_outlined,
         'widget': AttendanceAdminPage(role: role, permissions: permissions),
       }
