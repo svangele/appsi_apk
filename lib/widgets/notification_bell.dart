@@ -6,12 +6,14 @@ class NotificationBell extends StatelessWidget {
   final String role;
   final Map<String, dynamic> permissions;
   final String currentUserId;
+  final VoidCallback? onNavigateToCalendar;
 
   const NotificationBell({
     super.key,
     required this.role,
     required this.permissions,
     required this.currentUserId,
+    this.onNavigateToCalendar,
   });
 
   @override
@@ -51,6 +53,7 @@ class NotificationBell extends StatelessWidget {
                     role: role,
                     permissions: permissions,
                     currentUserId: currentUserId,
+                    onNavigateToCalendar: onNavigateToCalendar,
                   ),
                 );
               },

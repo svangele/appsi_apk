@@ -128,6 +128,10 @@ class _MainNavigationState extends State<MainNavigation> {
             role: widget.role,
             permissions: widget.permissions,
             currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
+            onNavigateToCalendar: () {
+              final calendarIndex = pages.indexWhere((p) => p['title'] == 'Calendario');
+              if (calendarIndex != -1) setState(() => _selectedIndex = calendarIndex);
+            },
           ),
         ],
       ),
