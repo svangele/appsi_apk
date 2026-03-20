@@ -203,13 +203,13 @@ class _ChecadorPageState extends State<ChecadorPage> {
       final type = isEntry ? 'entry' : 'exit';
       final fileName = 'attendance/$userId/${DateFormat('yyyy-MM-dd').format(DateTime.now())}_$type\_$timestamp.jpg';
 
-      await _supabase.storage.from('employee_photos').uploadBinary(
+      await _supabase.storage.from('asistencia_registros').uploadBinary(
         fileName,
         bytes,
         fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/jpeg'),
       );
 
-      final photoUrl = _supabase.storage.from('employee_photos').getPublicUrl(fileName);
+      final photoUrl = _supabase.storage.from('asistencia_registros').getPublicUrl(fileName);
 
       // 4. Guardar en base de datos
       if (isEntry) {
