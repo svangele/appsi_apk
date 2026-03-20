@@ -2,15 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:csv/csv.dart';
-import 'dart:typed_data';
-import 'dart:convert';
-import 'package:flutter_web_plugins/url_strategy.dart';
-// Note: In a real project, we might need a web-specific save utility for CSV.
-// For now, we'll implement a simple web download trigger if on web.
-import 'package:flutter/foundation.dart' show kIsWeb;
-// We'll use a dynamic approach to avoid mobile compilation errors
-import 'dart:js' as js;
 import 'schedules_page.dart';
 
 class AttendanceAdminPage extends StatefulWidget {
@@ -92,49 +83,6 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
     final Uri url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  void _exportToCSV() {
-    if (_filteredRecords.isEmpty) return;
-
-    List<List<dynamic>> rows = [];
-    // Cabecera
-    rows.add([
-      'Empleado',
-      'Fecha',
-      'Entrada',
-      'Salida',
-      'Ubicación Entrada (Lat, Lng)',
-      'Ubicación Salida (Lat, Lng)',
-      'Validado'
-    ]);
-
-    for (var rec in _filteredRecords) {
-      rows.add([
-        rec['profiles']?['full_name'] ?? 'N/A',
-        rec['date'],
-        rec['check_in'] != null ? DateFormat('HH:mm').format(DateTime.parse(rec['check_in'])) : '--:--',
-        rec['check_out'] != null ? DateFormat('HH:mm').format(DateTime.parse(rec['check_out'])) : '--:--',
-        '${rec['lat']}, ${rec['lng']}',
-        '${rec['lat_out'] ?? ''}, ${rec['lng_out'] ?? ''}',
-        rec['validated'] == true ? 'SÍ' : 'NO'
-      ]);
-    }
-
-    String csvData = const ListToCsvConverter().convert(rows);
-    final bytes = utf8.encode(csvData);
-    
-    if (kIsWeb) {
-      // Usar JS interop para disparar la descarga en el navegador de forma segura
-      final String fileName = "asistencia_${DateFormat('yyyyMMdd').format(DateTime.now())}.csv";
-      final String blobUrl = js.context.callMethod('URL', ['createObjectURL', js.JsObject(js.context['Blob'], [[csvData], js.JsObject.jsify({'type': 'text/csv'})])]);
-      final anchor = js.context.callMethod('document', ['createElement', 'a']);
-      js.context.callMethod(anchor, ['setAttribute', 'href', blobUrl]);
-      js.context.callMethod(anchor, ['setAttribute', 'download', fileName]);
-      js.context.callMethod(anchor, ['click']);
-    } else {
-      debugPrint('Exportación no implementada para plataformas no-web.');
     }
   }
 

@@ -172,8 +172,8 @@ class _SchedulesPageState extends State<SchedulesPage> {
   }
 
   Widget _buildFormLogic(ThemeData theme, StateSetter setModalState) {
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('1. Definir Identificación:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           const SizedBox(height: 20),
@@ -265,8 +265,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildQuickDefineRow(ThemeData theme, StateSetter setModalState) {
@@ -490,7 +489,6 @@ class _SchedulesPageState extends State<SchedulesPage> {
           ),
         );
       },
-    );
     );
   }
 
