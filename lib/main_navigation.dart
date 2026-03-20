@@ -109,10 +109,8 @@ class _MainNavigationState extends State<MainNavigation> {
       });
     }
 
-    final isAdmin = widget.role == 'admin' || widget.role == 'superadmin';
-    final canSeeAttendance = widget.permissions['show_asistencia'] == true;
-
-    if (canSeeAttendance) {
+ 
+    if (widget.permissions['show_asistencia'] == true) {  
       pages.add({
         'title': 'Asistencia',
         'icon': Icons.fingerprint,
