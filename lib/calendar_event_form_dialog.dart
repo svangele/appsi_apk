@@ -41,6 +41,10 @@ class _EventFormDialogState extends State<EventFormDialog> {
   String? _creatorId;
   late bool _isViewingData;
   final Map<String, dynamic> _userLookup = {};
+  
+  String? _myAttendanceStatus; // 'pending', 'accepted', 'declined'
+  final _rejectionReasonController = TextEditingController();
+  final Map<String, Map<String, dynamic>> _invitationDetails = {}; // userId -> {status, rejection_reason}
 
   bool get _isEditMode => widget.eventId != null;
   bool get _canEdit => !_isEditMode || _creatorId == _supabase.auth.currentUser?.id;
@@ -79,7 +83,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
     setState(() => _isFetchingEvent = true);
     try {
       final eventResponse = await _supabase.from('events').select().eq('id', widget.eventId!).single();
-      final invResponse = await _supabase.from('event_invitations').select('user_id').eq('event_id', widget.eventId!);
+      final invResponse = await _supabase.from('event_invitations').select('user_id, status, rejection_reason').eq('event_id', widget.eventId!);
 
       if (mounted) {
         setState(() {
@@ -98,8 +102,19 @@ class _EventFormDialogState extends State<EventFormDialog> {
           _endDate = DateTime(et.year, et.month, et.day);
           _endTime = TimeOfDay.fromDateTime(et);
 
+          _selectedUserIds.clear();
+          _invitationDetails.clear();
           for (var inv in invResponse) {
-            _selectedUserIds.add(inv['user_id'] as String);
+            final uId = inv['user_id'] as String;
+            _selectedUserIds.add(uId);
+            _invitationDetails[uId] = {
+              'status': inv['status'],
+              'rejection_reason': inv['rejection_reason'],
+            };
+            if (uId == _supabase.auth.currentUser?.id) {
+              _myAttendanceStatus = inv['status'] as String?;
+              _rejectionReasonController.text = inv['rejection_reason'] as String? ?? '';
+            }
           }
         });
       }
@@ -482,6 +497,40 @@ class _EventFormDialogState extends State<EventFormDialog> {
     return '$weekdayStr, ${d.day} de $monthStr de ${d.year}';
   }
 
+  Future<void> _updateAttendance(String status) async {
+    setState(() => _isLoading = true);
+    try {
+      await _supabase
+          .from('event_invitations')
+          .update({
+            'status': status,
+            'rejection_reason': status == 'declined' ? _rejectionReasonController.text.trim() : null,
+          })
+          .eq('event_id', widget.eventId!)
+          .eq('user_id', _supabase.auth.currentUser!.id);
+
+      if (mounted) {
+        setState(() {
+          _myAttendanceStatus = status;
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(status == 'accepted' ? 'Asistencia confirmada 👍' : 'Asistencia rechazada 🛑'),
+            backgroundColor: status == 'accepted' ? Colors.green : Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al actualizar asistencia: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   Widget _buildDetailsView() {
     final startStr = _startTime.format(context);
     final endStr = _endTime.format(context);
@@ -614,6 +663,68 @@ class _EventFormDialogState extends State<EventFormDialog> {
             ),
           ],
 
+          // --- SECCIÓN DE ASISTENCIA PARA INVITADOS ---
+          if (_myAttendanceStatus != null && _creatorId != _supabase.auth.currentUser?.id) ...[
+            const SizedBox(height: 24),
+            const Text('Tu Asistencia', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : () => _updateAttendance('accepted'),
+                    icon: Icon(Icons.check, color: _myAttendanceStatus == 'accepted' ? Colors.white : Colors.grey),
+                    label: const Text('Asistiré'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _myAttendanceStatus == 'accepted' ? Colors.green : Colors.grey.shade100,
+                      foregroundColor: _myAttendanceStatus == 'accepted' ? Colors.white : Colors.black87,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : () => setState(() => _myAttendanceStatus = 'declined'),
+                    icon: Icon(Icons.close, color: _myAttendanceStatus == 'declined' ? Colors.white : Colors.grey),
+                    label: const Text('Rechazar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _myAttendanceStatus == 'declined' ? Colors.red : Colors.grey.shade100,
+                      foregroundColor: _myAttendanceStatus == 'declined' ? Colors.white : Colors.black87,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (_myAttendanceStatus == 'declined') ...[
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _rejectionReasonController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  labelText: 'Motivo de rechazo',
+                  hintText: 'Ej. Cruce de horarios',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : () => _updateAttendance('declined'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Confirmar Rechazo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ],
+
           if (_creatorId != null) ...[
             const SizedBox(height: 24),
             Text(_isPublic ? 'Organizador' : 'Invitados', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
@@ -645,17 +756,34 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 final id = _selectedUserIds[index];
                 if (id == _creatorId) return const SizedBox.shrink(); // evitar duplicado
 
-                // Buscar perfil por ID usando el diccionario global
                 final p = _userLookup[id] ?? {'full_name': 'Usuario'};
                 final name = p['full_name'] ?? p['email'] ?? 'Usuario';
                 
+                final inviteDetail = _invitationDetails[id] ?? {};
+                final status = inviteDetail['status'] ?? 'pending';
+                final reason = inviteDetail['rejection_reason'] ?? '';
+
+                Color avatarBg;
+                if (status == 'accepted') {
+                  avatarBg = Colors.green.shade400;
+                } else if (status == 'declined') {
+                  avatarBg = Colors.red.shade400;
+                } else {
+                  avatarBg = Colors.blue.shade300;
+                }
+
                 return ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: CircleAvatar(
-                    backgroundColor: Colors.blue.shade300,
+                    backgroundColor: avatarBg,
                     child: Text(name[0].toUpperCase(), style: const TextStyle(color: Colors.white)),
                   ),
-                  title: Text(name),
+                  title: Text(name, style: const TextStyle(fontWeight: FontWeight.w500)),
+                  subtitle: status == 'declined'
+                      ? Text('Rechazado: ${reason.isNotEmpty ? reason : 'Sin motivo'}', style: const TextStyle(color: Colors.red, fontSize: 12))
+                      : status == 'accepted'
+                          ? const Text('Asistirá', style: TextStyle(color: Colors.green, fontSize: 12))
+                          : const Text('Pendiente', style: TextStyle(color: Colors.grey, fontSize: 12)),
                 );
               },
             ),
