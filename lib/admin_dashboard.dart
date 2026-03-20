@@ -210,6 +210,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'show_incidencias': false,
       'show_logs': false,
       'show_external_contacts': false,
+      'show_checador': false,
+      'show_asistencias': false,
+      'show_horarios': false,
     });
 
     // Credential Controllers
@@ -305,6 +308,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _buildPermissionSwitch('Incidencias', 'show_incidencias', Icons.description, permissions, setDialogState),
                 _buildPermissionSwitch('Logs del Sistema', 'show_logs', Icons.assignment, permissions, setDialogState),
                 _buildPermissionSwitch('Contactos Externos', 'show_external_contacts', Icons.contact_phone, permissions, setDialogState),
+                _buildPermissionSwitch('Asistencia - Checador', 'show_checador', Icons.timer_outlined, permissions, setDialogState),
+                _buildPermissionSwitch('Asistencia - Panel', 'show_asistencias', Icons.fingerprint, permissions, setDialogState),
+                _buildPermissionSwitch('Asistencia - Horarios', 'show_horarios', Icons.schedule_outlined, permissions, setDialogState),
               ],
             );
 
@@ -909,6 +915,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
                         _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
                         _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
+                        _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencias'] == true || user['permissions']['show_checador'] == true || user['permissions']['show_horarios'] == true),
                       ],
                     ],
                   ),
@@ -922,21 +929,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       _showUserForm(user: user);
                     } else if (value == 'delete') {
                       _deleteUser(user['id']);
-                    } else if (value == 'attendance') {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AttendanceAdminPage(
-                            role: _isAdmin ? 'admin' : 'usuario',
-                            permissions: const {},
-                            initialSearchQuery: '${user['nombre']} ${user['paterno']}'.trim(),
-                          ),
-                        ),
-                      );
                     }
                   },
                   itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'attendance', child: ListTile(leading: Icon(Icons.fingerprint, color: Colors.green), title: Text('Ver Asistencia'), dense: true)),
                     const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit), title: Text('Editar'), dense: true)),
                     const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                   ],
@@ -959,18 +954,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       isAdmin: _isAdmin,
       onEdit: (user) => _showUserForm(user: user),
       onDelete: (id) => _deleteUser(id),
-      onViewAttendance: (user) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AttendanceAdminPage(
-              role: _isAdmin ? 'admin' : 'usuario',
-              permissions: const {},
-              initialSearchQuery: '${user['nombre']} ${user['paterno']}'.trim(),
-            ),
-          ),
-        );
-      },
     );
 
     return SingleChildScrollView(
@@ -1074,7 +1057,6 @@ class _UserDataSource extends DataTableSource {
   final bool isAdmin;
   final Function(Map<String, dynamic>) onEdit;
   final Function(String) onDelete;
-  final Function(Map<String, dynamic>) onViewAttendance;
 
   _UserDataSource({
     required this.users,
@@ -1082,7 +1064,6 @@ class _UserDataSource extends DataTableSource {
     required this.isAdmin,
     required this.onEdit,
     required this.onDelete,
-    required this.onViewAttendance,
   });
 
   @override
@@ -1146,18 +1127,17 @@ class _UserDataSource extends DataTableSource {
               _buildMiniIcon(Icons.badge, user['permissions']['show_cssi'] == true),
               _buildMiniIcon(Icons.description, user['permissions']['show_incidencias'] == true),
               _buildMiniIcon(Icons.assignment, user['permissions']['show_logs'] == true),
+              _buildMiniIcon(Icons.fingerprint, user['permissions']['show_asistencias'] == true || user['permissions']['show_checador'] == true || user['permissions']['show_horarios'] == true),
             ],
           ]
         )),
         DataCell(isAdmin 
             ? PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'attendance') onViewAttendance(user);
                   if (value == 'edit') onEdit(user);
                   if (value == 'delete') onDelete(user['id']);
                 },
                 itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'attendance', child: ListTile(leading: Icon(Icons.fingerprint, color: Colors.green), title: Text('Ver Asistencia'), dense: true)),
                   const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.blue), title: Text('Editar'), dense: true)),
                   const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Eliminar', style: TextStyle(color: Colors.red)), dense: true)),
                 ],
