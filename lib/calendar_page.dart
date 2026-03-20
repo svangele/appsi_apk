@@ -364,6 +364,10 @@ class _CalendarPageState extends State<CalendarPage> {
                             showTrailingAndLeadingDates: false,
                             appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
                           ),
+                          timeSlotViewSettings: const TimeSlotViewSettings(
+                            startHour: 0,
+                            endHour: 24,
+                          ),
                           monthCellBuilder: (BuildContext context, MonthCellDetails details) {
                             final isToday = details.date.year == DateTime.now().year && 
                                             details.date.month == DateTime.now().month && 
