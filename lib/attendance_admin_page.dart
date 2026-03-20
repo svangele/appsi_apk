@@ -71,33 +71,99 @@ class _AttendanceAdminPageState extends State<AttendanceAdminPage> {
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
+        toolbarHeight: 0, // Ocultamos el appbar vacío para ganar espacio
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            ExpansionTile(
-              initiallyExpanded: false,
-              iconColor: theme.colorScheme.primary,
-              collapsedIconColor: Colors.grey,
-              title: Text('Horarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 950) {
+            // Diseño Escritorio: Dos columnas
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SchedulesPage(),
+                // Columna Izquierda: Horarios (Fija o proporcional)
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border(right: BorderSide(color: Colors.grey[200]!)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Text(
+                            'Gestión de Horarios',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                        const Expanded(child: SchedulesPage()),
+                      ],
+                    ),
+                  ),
+                ),
+                // Columna Derecha: Registros (Scroll independiente)
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Registros de Asistencia',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: _isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : SingleChildScrollView(child: _buildList(theme)),
+                      ),
+                    ],
+                  ),
+                ),
               ],
-            ),
-            const Divider(height: 1),
-            ExpansionTile(
-              initiallyExpanded: false,
-              iconColor: theme.colorScheme.primary,
-              collapsedIconColor: Colors.grey,
-              title: Text('Registros', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
-              children: [
-                _isLoading
-                    ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-                    : _buildList(theme),
-              ],
-            ),
-          ],
-        ),
+            );
+          } else {
+            // Diseño Móvil: Secciones retráctiles (Existente)
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  ExpansionTile(
+                    initiallyExpanded: false,
+                    iconColor: theme.colorScheme.primary,
+                    collapsedIconColor: Colors.grey,
+                    title: Text('Horarios', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
+                    children: [
+                      const SchedulesPage(),
+                    ],
+                  ),
+                  const Divider(height: 1),
+                  ExpansionTile(
+                    initiallyExpanded: false,
+                    iconColor: theme.colorScheme.primary,
+                    collapsedIconColor: Colors.grey,
+                    title: Text('Registros', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: theme.colorScheme.primary)),
+                    children: [
+                      _isLoading
+                          ? const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+                          : _buildList(theme),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+        },
       ),
     );
   }
