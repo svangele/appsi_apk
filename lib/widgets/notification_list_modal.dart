@@ -8,7 +8,7 @@ class NotificationListModal extends StatefulWidget {
   final Map<String, dynamic> permissions;
   final String currentUserId;
   /// Called when the user taps an event notification — navigate to Calendar.
-  final VoidCallback? onNavigateToCalendar;
+  final Function(String?)? onNavigateToCalendar;
 
   const NotificationListModal({
     super.key,
@@ -151,25 +151,8 @@ class _NotificationListModalState extends State<NotificationListModal> {
     // Close the modal
     Navigator.pop(context);
 
-    // Navigate to calendar tab
-    widget.onNavigateToCalendar?.call();
-
-    // Open event detail
-    if (eventId != null) {
-      await Future.delayed(const Duration(milliseconds: 300));
-      if (mounted) {
-        showModalBottomSheet(
-          // ignore: use_build_context_synchronously
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.white,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-          ),
-          builder: (_) => EventFormDialog(eventId: eventId),
-        );
-      }
-    }
+    // Navigate to calendar tab with event details
+    widget.onNavigateToCalendar?.call(eventId);
   }
 
   @override

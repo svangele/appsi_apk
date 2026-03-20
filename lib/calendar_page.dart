@@ -7,7 +7,8 @@ import 'calendar_event_form_dialog.dart';
 import 'calendar_event_search_dialog.dart';
 
 class CalendarPage extends StatefulWidget {
-  const CalendarPage({super.key});
+  final String? initialEventId;
+  const CalendarPage({super.key, this.initialEventId});
 
   @override
   State<CalendarPage> createState() => _CalendarPageState();
@@ -28,7 +29,23 @@ class _CalendarPageState extends State<CalendarPage> {
     super.initState();
     _dataSource = EventDataSource([]);
     _fetchEvents();
+
+    if (widget.initialEventId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showEventDetails(widget.initialEventId!);
+      });
+    }
   }
+
+  void _showEventDetails(String eventId) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => EventFormDialog(eventId: eventId),
+    ).then((_) => _fetchEvents());
+  }
+
 
   void _onViewChanged(ViewChangedDetails details) {
     WidgetsBinding.instance.addPostFrameCallback((_) {

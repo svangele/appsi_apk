@@ -22,6 +22,7 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+  String? _selectedEventId;
 
   List<Map<String, dynamic>> get _availablePages {
     final pages = <Map<String, dynamic>>[];
@@ -48,7 +49,7 @@ class _MainNavigationState extends State<MainNavigation> {
         'title': 'Calendario',
         'icon': Icons.calendar_month_outlined,
         'activeIcon': Icons.calendar_month,
-        'widget': const CalendarPage(),
+        'widget': CalendarPage(initialEventId: _selectedEventId),
       });
     }
 
@@ -128,9 +129,14 @@ class _MainNavigationState extends State<MainNavigation> {
             role: widget.role,
             permissions: widget.permissions,
             currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
-            onNavigateToCalendar: () {
+            onNavigateToCalendar: (eventId) {
               final calendarIndex = pages.indexWhere((p) => p['title'] == 'Calendario');
-              if (calendarIndex != -1) setState(() => _selectedIndex = calendarIndex);
+              if (calendarIndex != -1) {
+                setState(() {
+                  _selectedIndex = calendarIndex;
+                  _selectedEventId = eventId;
+                });
+              }
             },
           ),
         ],
@@ -138,7 +144,12 @@ class _MainNavigationState extends State<MainNavigation> {
       body: pages[_selectedIndex]['widget'],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+            _selectedEventId = null; // Clear when tapping directly
+          });
+        },
         selectedItemColor: theme.colorScheme.primary,
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,

@@ -6,7 +6,7 @@ class NotificationBell extends StatelessWidget {
   final String role;
   final Map<String, dynamic> permissions;
   final String currentUserId;
-  final VoidCallback? onNavigateToCalendar;
+  final Function(String?)? onNavigateToCalendar;
 
   const NotificationBell({
     super.key,
