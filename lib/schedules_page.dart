@@ -386,10 +386,10 @@ class SchedulesPageState extends State<SchedulesPage> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isDesktop ? 3 : 1,
+        crossAxisCount: isDesktop ? 2 : 1,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: isDesktop ? 1.3 : 1.2,
+        childAspectRatio: isDesktop ? 0.75 : 1.2,
       ),
       itemCount: _schedules.length,
       itemBuilder: (context, index) {
