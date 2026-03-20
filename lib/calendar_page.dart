@@ -428,10 +428,7 @@ class _CalendarPageState extends State<CalendarPage> {
                               ),
                             );
                           },
-                          timeSlotViewSettings: const TimeSlotViewSettings(
-                            startHour: 7,
-                            endHour: 22,
-                          ),
+
                           selectionDecoration: BoxDecoration(
                             color: Colors.transparent,
                             border: Border.all(color: Colors.green, width: 2),
