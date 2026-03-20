@@ -248,6 +248,7 @@ class _SchedulesPageState extends State<SchedulesPage> {
         ],
       ],
     );
+  }
 
   Widget _buildIconInput({
     required TextEditingController controller,
