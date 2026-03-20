@@ -110,7 +110,7 @@ class _MainNavigationState extends State<MainNavigation> {
     }
 
     final isAdmin = widget.role == 'admin' || widget.role == 'superadmin';
-    final canSeeAttendance = isAdmin || widget.permissions['show_asistencia'] == true;
+    final canSeeAttendance = widget.permissions['show_asistencia'] == true;
 
     if (canSeeAttendance) {
       pages.add({
