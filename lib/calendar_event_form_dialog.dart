@@ -296,36 +296,75 @@ class _EventFormDialogState extends State<EventFormDialog> {
   }
 
   Future<void> _deleteEvent() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar evento'),
-        content: const Text('¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+    final isRecurring = _recurrence != 'No repetir';
 
-    if (confirm != true) return;
+    // For recurring events, ask whether to delete just this one or all in the series
+    String? choice;
+    if (isRecurring) {
+      choice = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Eliminar evento'),
+          content: const Text('Este es un evento con repetición. ¿Qué deseas eliminar?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'single'),
+              child: const Text('Solo este evento', style: TextStyle(color: Colors.orange)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'all'),
+              child: const Text('Todos los eventos', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+      );
+      if (choice == null) return;
+    } else {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Eliminar evento'),
+          content: const Text('¿Estás seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+      choice = 'single';
+    }
 
     setState(() => _isLoading = true);
-    
+
     try {
       if (widget.eventId != null) {
-        await _supabase.from('events').delete().eq('id', widget.eventId!);
-        
+        if (choice == 'all') {
+          // Delete all events in the series (same title + creator + recurrence)
+          await _supabase
+              .from('events')
+              .delete()
+              .eq('title', _titleController.text.trim())
+              .eq('creator_id', _creatorId!)
+              .eq('recurrence', _recurrence);
+        } else {
+          await _supabase.from('events').delete().eq('id', widget.eventId!);
+        }
+
         if (mounted) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Evento eliminado exitosamente')),
+            SnackBar(content: Text(choice == 'all' ? 'Todos los eventos eliminados' : 'Evento eliminado exitosamente')),
           );
         }
       }
@@ -337,6 +376,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   // Helper date/time pickers
   Future<void> _pickDateTime(bool isStart) async {
