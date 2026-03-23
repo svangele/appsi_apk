@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main_navigation.dart';
 import 'login_page.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:syncfusion_localizations/syncfusion_localizations.dart';
@@ -15,11 +14,14 @@ void main() async {
   try {
     await dotenv.load(fileName: ".env");
   } catch (e) {
-    debugPrint("Warning: .env file not found, falling back to environment variables");
+    debugPrint(
+        "Warning: .env file not found, falling back to environment variables");
   }
 
-  final supabaseUrl = dotenv.maybeGet('SB_URL') ?? const String.fromEnvironment('SB_URL');
-  final supabaseAnonKey = dotenv.maybeGet('SB_TOKEN') ?? const String.fromEnvironment('SB_TOKEN');
+  final supabaseUrl =
+      dotenv.maybeGet('SB_URL') ?? const String.fromEnvironment('SB_URL');
+  final supabaseAnonKey =
+      dotenv.maybeGet('SB_TOKEN') ?? const String.fromEnvironment('SB_TOKEN');
 
   if (supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
     await Supabase.initialize(
@@ -52,7 +54,7 @@ class MyApp extends StatelessWidget {
       locale: const Locale('es', 'MX'),
       theme: ThemeData(
         useMaterial3: true,
-        textTheme: GoogleFonts.interTextTheme(ThemeData().textTheme),
+        textTheme: ThemeData().textTheme,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF344092),
           primary: const Color(0xFF344092),
@@ -71,7 +73,8 @@ class MyApp extends StatelessWidget {
             backgroundColor: const Color(0xFF344092),
             foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
