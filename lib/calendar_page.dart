@@ -344,7 +344,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     itemBuilder: (context, index) {
                       final app = selectedEvents[index] as Appointment;
                       return Container(
-                        margin: const EdgeInsets.bottom(12),
+                        margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
