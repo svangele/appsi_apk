@@ -314,12 +314,12 @@ class _CalendarPageState extends State<CalendarPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DateFormat('EEEE').format(_selectedDate).toUpperCase(),
+                  DateFormat('EEEE', 'es').format(_selectedDate).toUpperCase(),
                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 1.5),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  DateFormat('d MMMM, yyyy').format(_selectedDate),
+                  DateFormat('d MMMM, yyyy', 'es').format(_selectedDate),
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
                 ),
               ],
@@ -381,7 +381,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          '${DateFormat('HH:mm').format(app.startTime)} - ${DateFormat('HH:mm').format(app.endTime)}',
+                                          '${DateFormat('HH:mm', 'es').format(app.startTime)} - ${DateFormat('HH:mm', 'es').format(app.endTime)}',
                                           style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
                                         ),
                                       ],
