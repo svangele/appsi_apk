@@ -23,6 +23,7 @@ class _CalendarPageState extends State<CalendarPage> {
   bool _isLoading = true;
   CalendarView _currentView = CalendarView.month;
   DateTime _currentDisplayDate = DateTime.now();
+  DateTime _selectedDate = DateTime.now();
 
   @override
   void initState() {
@@ -45,7 +46,6 @@ class _CalendarPageState extends State<CalendarPage> {
       builder: (context) => EventFormDialog(eventId: eventId),
     ).then((_) => _fetchEvents());
   }
-
 
   void _onViewChanged(ViewChangedDetails details) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -151,12 +151,16 @@ class _CalendarPageState extends State<CalendarPage> {
         backgroundColor: Colors.transparent,
         builder: (context) => EventFormDialog(eventId: appointment.id.toString()),
       ).then((_) => _fetchEvents());
+    } else if (details.targetElement == CalendarElement.calendarCell) {
+      setState(() {
+        _selectedDate = details.date!;
+      });
     }
   }
 
   String get _bottomLeftButtonText {
     if (_currentView == CalendarView.month) return 'Día';
-    if (_currentView == CalendarView.day) return 'Semana';
+    if (_currentView == CalendarView.day) return 'Sem';
     if (_currentView == CalendarView.week) return 'Mes';
     return 'Día';
   }
@@ -283,6 +287,121 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  Widget _buildSideAgenda(double width) {
+    final appointments = _dataSource.appointments ?? [];
+    final selectedEvents = appointments.where((app) {
+      final appointment = app as Appointment;
+      return appointment.startTime.year == _selectedDate.year &&
+             appointment.startTime.month == _selectedDate.month &&
+             appointment.startTime.day == _selectedDate.day;
+    }).toList();
+
+    return Container(
+      width: width,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(left: BorderSide(color: Colors.grey.shade200)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(-5, 0)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat('EEEE').format(_selectedDate).toUpperCase(),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.grey.shade500, letterSpacing: 1.5),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat('d MMMM, yyyy').format(_selectedDate),
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.black),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: selectedEvents.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.event_available, size: 64, color: Colors.grey.shade200),
+                        const SizedBox(height: 16),
+                        Text('Sin eventos planeados', style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500)),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: selectedEvents.length,
+                    itemBuilder: (context, index) {
+                      final app = selectedEvents[index] as Appointment;
+                      return Container(
+                        margin: const EdgeInsets.bottom(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade100),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _showEventDetails(app.id.toString()),
+                            borderRadius: BorderRadius.circular(16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 4,
+                                    height: 32,
+                                    decoration: BoxDecoration(
+                                      color: app.color,
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          app.subject,
+                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black87),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${DateFormat('HH:mm').format(app.startTime)} - ${DateFormat('HH:mm').format(app.endTime)}',
+                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13, fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right, color: Colors.grey.shade300, size: 20),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentYear = _currentDisplayDate.year;
@@ -292,52 +411,85 @@ class _CalendarPageState extends State<CalendarPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 900;
+
+            return Column(
               children: [
-                // Top Controls (Not overlapping)
+                // Top Navigation Bar
                 Padding(
-                  padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 8),
+                  padding: const EdgeInsets.all(16.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Top Left Pill: Year
-                      GestureDetector(
-                        onTap: _showMonthsGrid,
-                        child: _buildGlassPill(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          child: Text(
-                            '$currentYear',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-                          ),
-                        ),
-                      ),
-
-                      // Top Right Pill: Search & Plus
                       _buildGlassPill(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            GestureDetector(
+                              onTap: _showMonthsGrid,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                child: Text(
+                                  '$currentYear',
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                                ),
+                              ),
+                            ),
+                            Container(width: 1, height: 16, color: Colors.grey.withOpacity(0.2)),
+                            GestureDetector(
+                              onTap: _onBottomLeftButtonPressed,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                                child: Text(
+                                  _bottomLeftButtonText,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      _buildGlassPill(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // Vista Toggle Icon
+                            GestureDetector(
+                              onTap: () {
+                                setState(() => _calendarMode = (_calendarMode == 0 ? 1 : 0));
+                                _fetchEvents();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                                child: Icon(_calendarMode == 0 ? Icons.groups : Icons.person, color: Colors.black87, size: 20),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(width: 1, height: 20, color: Colors.grey.withOpacity(0.2)),
+                            const SizedBox(width: 4),
+                            // Search
                             GestureDetector(
                               onTap: () {
                                 showModalBottomSheet(
                                   context: context,
                                   isScrollControlled: true,
                                   backgroundColor: Colors.transparent,
-                                  builder: (context) => EventSearchDialog(
-                                    calendarMode: _calendarMode,
-                                  ),
+                                  builder: (context) => EventSearchDialog(calendarMode: _calendarMode),
                                 ).then((_) => _fetchEvents());
                               },
-                              child: const Icon(Icons.search, color: Colors.black87),
+                              child: const Padding(padding: EdgeInsets.all(8.0), child: Icon(Icons.search, color: Colors.black87, size: 22)),
                             ),
-                            const SizedBox(width: 16),
+                            const SizedBox(width: 4),
+                            // Add
                             GestureDetector(
                               onTap: _showAddEventDialog,
-                              child: const Icon(Icons.add, color: Colors.black87),
+                              child: const Padding(padding: EdgeInsets.all(8.0), child: Icon(Icons.add, color: Colors.black87, size: 22)),
                             ),
                           ],
                         ),
@@ -348,184 +500,139 @@ class _CalendarPageState extends State<CalendarPage> {
 
                 // Month Title
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                  child: Text(
-                    currentMonthName,
-                    style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      currentMonthName,
+                      style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
                   ),
                 ),
 
-                        // Calendar Body
+                // Main Content Area
                 Expanded(
-                  child: Stack(
+                  child: Row(
                     children: [
-                      SfCalendar(
-                          controller: _calendarController,
-                          view: CalendarView.month,
-                          onViewChanged: _onViewChanged,
-                          allowedViews: const [
-                            CalendarView.day,
-                            CalendarView.week,
-                            CalendarView.month,
-                          ],
-                          dataSource: _dataSource,
-                          onTap: _onAppointmentTap,
-                          headerHeight: 0, 
-                          cellBorderColor: Colors.transparent, // Remove all default borders
-                          viewHeaderStyle: const ViewHeaderStyle(
-                            dayTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey),
-                          ),
-                          monthViewSettings: const MonthViewSettings(
-                            dayFormat: 'EEEEE', // Single letter format
-                            showAgenda: true, // Show events list below calendar when a day is tapped
-                            showTrailingAndLeadingDates: false,
-                            appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
-                          ),
-                          timeSlotViewSettings: const TimeSlotViewSettings(
-                            startHour: 0,
-                            endHour: 24,
-                          ),
-                          monthCellBuilder: (BuildContext context, MonthCellDetails details) {
-                            final isToday = details.date.year == DateTime.now().year && 
-                                            details.date.month == DateTime.now().month && 
-                                            details.date.day == DateTime.now().day;
-                            
-                            // Only show cells for the current month
-                            if (details.date.month != _currentDisplayDate.month) {
-                              return const SizedBox.shrink();
-                            }
-
-                            return Container(
-                              decoration: BoxDecoration(
-                                border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+                      // Left Side: Calendar
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            SfCalendar(
+                              key: ValueKey('calendar_$isDesktop'),
+                              controller: _calendarController,
+                              view: CalendarView.month,
+                              onViewChanged: _onViewChanged,
+                              allowedViews: const [CalendarView.day, CalendarView.week, CalendarView.month],
+                              dataSource: _dataSource,
+                              onTap: _onAppointmentTap,
+                              headerHeight: 0,
+                              cellBorderColor: Colors.transparent,
+                              viewHeaderStyle: const ViewHeaderStyle(
+                                dayTextStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey),
                               ),
-                              child: ClipRect(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    const SizedBox(height: 2),
-                                    Center(
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: BoxDecoration(
-                                          color: isToday ? Colors.redAccent.shade400 : Colors.transparent,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Text(
-                                          details.date.day.toString(),
-                                          style: TextStyle(
-                                            color: isToday ? Colors.white : Colors.black87,
-                                            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                                            fontSize: 14,
+                              monthViewSettings: MonthViewSettings(
+                                dayFormat: 'EEEEE',
+                                showAgenda: !isDesktop, // Only mobile agenda
+                                showTrailingAndLeadingDates: false,
+                                appointmentDisplayMode: MonthAppointmentDisplayMode.indicator,
+                              ),
+                              timeSlotViewSettings: const TimeSlotViewSettings(startHour: 0, endHour: 24),
+                              monthCellBuilder: (context, details) {
+                                final isSelected = details.date.year == _selectedDate.year &&
+                                                   details.date.month == _selectedDate.month &&
+                                                   details.date.day == _selectedDate.day;
+                                final isToday = details.date.year == DateTime.now().year && 
+                                                details.date.month == DateTime.now().month && 
+                                                details.date.day == DateTime.now().day;
+                                
+                                if (details.date.month != _currentDisplayDate.month) return const SizedBox.shrink();
+
+                                return Container(
+                                  decoration: BoxDecoration(
+                                    border: Border(top: BorderSide(color: Colors.grey.shade100)),
+                                    color: isSelected && isDesktop ? Colors.blue.shade50.withOpacity(0.5) : null,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(height: 2),
+                                      Center(
+                                        child: Container(
+                                          padding: const EdgeInsets.all(4),
+                                          decoration: BoxDecoration(
+                                            color: isToday ? Colors.redAccent : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Text(
+                                            details.date.day.toString(),
+                                            style: TextStyle(
+                                              color: isToday ? Colors.white : Colors.black87,
+                                              fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                                              fontSize: 12,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    if (details.appointments.isNotEmpty)
-                                      ...details.appointments.take(2).map((app) {
-                                        final appointment = app as Appointment;
-                                        return Container(
-                                          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: appointment.color,
-                                            borderRadius: BorderRadius.circular(4),
+                                      if (isDesktop && details.appointments.isNotEmpty)
+                                        Flexible(
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: details.appointments.take(1).map((app) {
+                                              final ap = app as Appointment;
+                                              return Container(
+                                                width: double.infinity,
+                                                margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+                                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                                decoration: BoxDecoration(color: ap.color, borderRadius: BorderRadius.circular(2)),
+                                                child: Text(
+                                                  ap.subject,
+                                                  style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              );
+                                            }).toList(),
                                           ),
-                                          child: Text(
-                                            appointment.subject,
-                                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-
-                          selectionDecoration: BoxDecoration(
-                            color: Colors.transparent,
-                            border: Border.all(color: Colors.green, width: 2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                      if (_isLoading)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.white.withOpacity(0.6),
-                            child: Center(
-                              child: Image.asset(
-                                'assets/sisol_loader.gif',
-                                width: 150,
-                                errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                                    frame == null ? const CircularProgressIndicator() : child,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              },
+                              selectionDecoration: BoxDecoration(
+                                color: Colors.transparent,
+                                border: Border.all(color: Colors.blue.withOpacity(0.5), width: 2),
+                                borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                          ),
+                            if (_isLoading)
+                              Positioned.fill(
+                                child: Container(
+                                  color: Colors.white.withOpacity(0.5),
+                                  child: Center(
+                                    child: Image.asset('assets/sisol_loader.gif', width: 100, errorBuilder: (_, __, ___) => const CircularProgressIndicator()),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
+                      ),
+                      // Right Side: Desktop Agenda
+                      if (isDesktop) _buildSideAgenda(380),
                     ],
                   ),
                 ),
               ],
-            ),
-
-            // Bottom Left Pill: Hoy / Vista
-            Positioned(
-              bottom: 16,
-              left: 16,
-              child: GestureDetector(
-                onTap: _onBottomLeftButtonPressed,
-                child: _buildGlassPill(
-                  child: Text(
-                    _bottomLeftButtonText,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87),
-                  ),
-                ),
-              ),
-            ),
-
-            // Bottom Right Pill: Tabs (Personal / Grupal)
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: _buildGlassPill(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildTabIcon(Icons.person, 0),
-                    const SizedBox(width: 8),
-                    _buildTabIcon(Icons.groups, 1),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
+
   }
 
   Widget _buildTabIcon(IconData icon, int mode) {
-    final isSelected = _calendarMode == mode;
-    return GestureDetector(
-      onTap: () {
-        setState(() => _calendarMode = mode);
-        _fetchEvents();
-      },
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.grey.shade200 : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Icon(icon, color: isSelected ? Colors.black : Colors.grey.shade600),
-      ),
-    );
+    return const SizedBox.shrink(); // Obsolete
   }
 }
 
