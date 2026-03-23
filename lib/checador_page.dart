@@ -7,10 +7,8 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
-// ignore: undefined_prefix_converter
 import 'dart:ui_web' as ui_web;
+import 'dart:html' as html;
 
 class ChecadorPage extends StatefulWidget {
   const ChecadorPage({super.key});
@@ -30,7 +28,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
   Timer? _clockTimer;
   DateTime _currentTime = DateTime.now();
   html.MediaStream? _cameraStream;
-  final String _viewId = 'camera-preview-${DateTime.now().millisecondsSinceEpoch}';
+  final String _viewId =
+      'camera-preview-${DateTime.now().millisecondsSinceEpoch}';
   bool _cameraReady = false;
 
   @override
@@ -45,7 +44,11 @@ class _ChecadorPageState extends State<ChecadorPage> {
 
   Future<void> _initCamera() async {
     try {
-      final stream = await html.window.navigator.mediaDevices!.getUserMedia({'video': {'facingMode': 'user'}, 'audio': false});
+      final stream = await html.window.navigator.mediaDevices!
+          .getUserMedia(<String, Object>{
+        'video': {'facingMode': 'user'},
+        'audio': false
+      });
       _cameraStream = stream;
       ui_web.platformViewRegistry.registerViewFactory(_viewId, (int id) {
         final video = html.VideoElement()
@@ -55,7 +58,7 @@ class _ChecadorPageState extends State<ChecadorPage> {
           ..style.width = '100%'
           ..style.height = '100%'
           ..style.objectFit = 'cover'
-          ..style.transform = 'scaleX(-1)'; // espejo
+          ..style.transform = 'scaleX(-1)';
         return video;
       });
       if (mounted) setState(() => _cameraReady = true);
@@ -67,7 +70,11 @@ class _ChecadorPageState extends State<ChecadorPage> {
   @override
   void dispose() {
     _clockTimer?.cancel();
-    _cameraStream?.getTracks().forEach((t) => t.stop());
+    if (_cameraStream != null) {
+      for (final track in _cameraStream!.getTracks()) {
+        track.stop();
+      }
+    }
     super.dispose();
   }
 
@@ -117,10 +124,12 @@ class _ChecadorPageState extends State<ChecadorPage> {
   Future<void> _handleCheck({required bool isEntry}) async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
-    
+
     // Feedback inmediato
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Iniciando checado: Solicitando GPS y Cámara...'), duration: Duration(seconds: 2)),
+      const SnackBar(
+          content: Text('Iniciando checado: Solicitando GPS y Cámara...'),
+          duration: Duration(seconds: 2)),
     );
 
     try {
@@ -148,10 +157,16 @@ class _ChecadorPageState extends State<ChecadorPage> {
       ).catchError((e) {
         debugPrint('Error obteniendo ubicación: $e');
         return Position(
-          latitude: 0.0, longitude: 0.0, 
-          timestamp: DateTime.now(), accuracy: 0.0, altitude: 0.0, 
-          heading: 0.0, speed: 0.0, speedAccuracy: 0.0, altitudeAccuracy: 0.0, headingAccuracy: 0.0
-        );
+            latitude: 0.0,
+            longitude: 0.0,
+            timestamp: DateTime.now(),
+            accuracy: 0.0,
+            altitude: 0.0,
+            heading: 0.0,
+            speed: 0.0,
+            speedAccuracy: 0.0,
+            altitudeAccuracy: 0.0,
+            headingAccuracy: 0.0);
       });
 
       // 2. Capturar foto del stream de cámara activo (web) o image_picker (nativo)
@@ -172,27 +187,34 @@ class _ChecadorPageState extends State<ChecadorPage> {
 
         final w = videoEl.videoWidth > 0 ? videoEl.videoWidth : 640;
         final h = videoEl.videoHeight > 0 ? videoEl.videoHeight : 480;
-        final canvas = html.CanvasElement(width: w, height: h);
-        final ctx = canvas.context2D;
-        // Espejo horizontal (ya que la cámara frontal está invertida)
+        final canvas = html.CanvasElement()
+          ..width = w.toInt()
+          ..height = h.toInt();
+        final ctx = canvas.getContext('2d') as html.CanvasRenderingContext2D;
         ctx.translate(w.toDouble(), 0);
         ctx.scale(-1, 1);
         ctx.drawImage(videoEl, 0, 0);
 
         final blob = await canvas.toBlob('image/jpeg', 0.85);
-        final reader = html.FileReader();
-        reader.readAsArrayBuffer(blob);
+        final reader = html.FileReader()..readAsArrayBuffer(blob);
         await reader.onLoad.first;
-        bytes = Uint8List.fromList((reader.result as List<int>));
+        bytes = Uint8List.fromList(reader.result as List<int>);
       } else {
         // Nativo (Android/iOS)
         final ImagePicker picker = ImagePicker();
-        final XFile? photo = await picker.pickImage(
+        final XFile? photo = await picker
+            .pickImage(
           source: ImageSource.camera,
           preferredCameraDevice: CameraDevice.front,
           imageQuality: 70,
-        ).catchError((e) { throw 'Error al abrir cámara: $e'; });
-        if (photo == null) { setState(() => _isProcessing = false); return; }
+        )
+            .catchError((e) {
+          throw 'Error al abrir cámara: $e';
+        });
+        if (photo == null) {
+          setState(() => _isProcessing = false);
+          return;
+        }
         bytes = await photo.readAsBytes();
       }
 
@@ -201,15 +223,18 @@ class _ChecadorPageState extends State<ChecadorPage> {
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final type = isEntry ? 'entry' : 'exit';
-      final fileName = 'attendance/$userId/${DateFormat('yyyy-MM-dd').format(DateTime.now())}_$type\_$timestamp.jpg';
+      final fileName =
+          'attendance/$userId/${DateFormat('yyyy-MM-dd').format(DateTime.now())}_$type\_$timestamp.jpg';
 
       await _supabase.storage.from('asistencia_registros').uploadBinary(
-        fileName,
-        bytes,
-        fileOptions: const FileOptions(cacheControl: '3600', upsert: false, contentType: 'image/jpeg'),
-      );
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(
+                cacheControl: '3600', upsert: false, contentType: 'image/jpeg'),
+          );
 
-      final photoUrl = _supabase.storage.from('asistencia_registros').getPublicUrl(fileName);
+      final photoUrl =
+          _supabase.storage.from('asistencia_registros').getPublicUrl(fileName);
 
       // 4. Guardar en base de datos
       if (isEntry) {
@@ -238,7 +263,9 @@ class _ChecadorPageState extends State<ChecadorPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isEntry ? 'Entrada registrada con éxito' : 'Salida registrada con éxito'),
+            content: Text(isEntry
+                ? 'Entrada registrada con éxito'
+                : 'Salida registrada con éxito'),
             backgroundColor: const Color(0xFFB1CB34),
           ),
         );
@@ -262,7 +289,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
       );
       return;
     }
-    final Uri url = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final Uri url =
+        Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
@@ -277,12 +305,12 @@ class _ChecadorPageState extends State<ChecadorPage> {
     final dayNumber = DateFormat('d', 'es').format(date);
     final monthName = DateFormat('MMMM', 'es').format(date);
     final year = DateFormat('yyyy', 'es').format(date);
-    
+
     // Capitalizar mes
-    final capitalizedMonth = monthName.isNotEmpty 
-        ? '${monthName[0].toUpperCase()}${monthName.substring(1)}' 
+    final capitalizedMonth = monthName.isNotEmpty
+        ? '${monthName[0].toUpperCase()}${monthName.substring(1)}'
         : monthName;
-        
+
     return "$dayName, $dayNumber $capitalizedMonth $year";
   }
 
@@ -332,7 +360,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
                       children: [
                         const Text(
                           'Historial Reciente',
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
                         ),
                         const SizedBox(height: 16),
                         _buildHistoryList(theme),
@@ -354,7 +383,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
                     const SizedBox(height: 16),
                     Text(
                       '$_errorString',
-                      style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                          color: Colors.red, fontWeight: FontWeight.bold),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -383,7 +413,10 @@ class _ChecadorPageState extends State<ChecadorPage> {
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [theme.colorScheme.primary.withOpacity(0.08), theme.colorScheme.primary.withOpacity(0.02)],
+          colors: [
+            theme.colorScheme.primary.withOpacity(0.08),
+            theme.colorScheme.primary.withOpacity(0.02)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -425,7 +458,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
               Expanded(
                 child: Text(
                   'Jornada completada por hoy',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],
@@ -444,7 +478,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFB1CB34),
               padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.login, size: 24),
             label: const Text(
@@ -456,11 +491,14 @@ class _ChecadorPageState extends State<ChecadorPage> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton.icon(
-            onPressed: (isCheckedIn && !isCheckedOut) ? () => _handleCheck(isEntry: false) : null,
+            onPressed: (isCheckedIn && !isCheckedOut)
+                ? () => _handleCheck(isEntry: false)
+                : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.orange,
               padding: const EdgeInsets.symmetric(vertical: 20),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
             ),
             icon: const Icon(Icons.logout, size: 24),
             label: const Text(
@@ -483,7 +521,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
           decoration: BoxDecoration(
             color: Colors.black,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3), width: 2),
+            border: Border.all(
+                color: theme.colorScheme.primary.withOpacity(0.3), width: 2),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -496,34 +535,50 @@ class _ChecadorPageState extends State<ChecadorPage> {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.videocam_rounded, size: 64, color: Colors.white.withOpacity(0.25)),
+                    Icon(Icons.videocam_rounded,
+                        size: 64, color: Colors.white.withOpacity(0.25)),
                     const SizedBox(height: 12),
                     Text(
                       kIsWeb ? 'Iniciando cámara...' : 'Vista previa de cámara',
-                      style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 13),
+                      style: TextStyle(
+                          color: Colors.white.withOpacity(0.4), fontSize: 13),
                     ),
                   ],
                 ),
               // Status overlay badge
               Positioned(
-                top: 12, left: 12,
+                top: 12,
+                left: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isIn ? (isOut ? Colors.grey : const Color(0xFFB1CB34)) : theme.colorScheme.primary,
+                    color: isIn
+                        ? (isOut ? Colors.grey : const Color(0xFFB1CB34))
+                        : theme.colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isIn ? (isOut ? Icons.event_available : Icons.timer) : Icons.timer_outlined,
-                        size: 14, color: Colors.white,
+                        isIn
+                            ? (isOut ? Icons.event_available : Icons.timer)
+                            : Icons.timer_outlined,
+                        size: 14,
+                        color: Colors.white,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isIn ? (isOut ? '\u00a1Hasta ma\u00f1ana!' : 'En el trabajo') : 'Fuera del trabajo',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        isIn
+                            ? (isOut
+                                ? '\u00a1Hasta ma\u00f1ana!'
+                                : 'En el trabajo')
+                            : 'Fuera del trabajo',
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12),
                       ),
                     ],
                   ),
@@ -556,7 +611,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
-          child: Text('No hay registros previos', style: TextStyle(color: Colors.grey)),
+          child: Text('No hay registros previos',
+              style: TextStyle(color: Colors.grey)),
         ),
       );
     }
@@ -581,11 +637,13 @@ class _ChecadorPageState extends State<ChecadorPage> {
               children: [
                 Text(
                   DateFormat('dd').format(date),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Text(
                   DateFormat('MMM').format(date).toUpperCase(),
-                  style: TextStyle(fontSize: 10, color: theme.colorScheme.primary),
+                  style:
+                      TextStyle(fontSize: 10, color: theme.colorScheme.primary),
                 ),
               ],
             ),
@@ -600,7 +658,10 @@ class _ChecadorPageState extends State<ChecadorPage> {
                     const Icon(Icons.login, size: 14, color: Color(0xFFB1CB34)),
                     const SizedBox(width: 4),
                     Text(
-                      item['check_in'] != null ? DateFormat('HH:mm').format(DateTime.parse(item['check_in']).toLocal()) : '--:--',
+                      item['check_in'] != null
+                          ? DateFormat('HH:mm').format(
+                              DateTime.parse(item['check_in']).toLocal())
+                          : '--:--',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -612,7 +673,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
                       const Icon(Icons.logout, size: 14, color: Colors.orange),
                       const SizedBox(width: 4),
                       Text(
-                        DateFormat('HH:mm').format(DateTime.parse(item['check_out']).toLocal()),
+                        DateFormat('HH:mm').format(
+                            DateTime.parse(item['check_out']).toLocal()),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ],
@@ -624,7 +686,9 @@ class _ChecadorPageState extends State<ChecadorPage> {
               children: [
                 const SizedBox(height: 4),
                 Text(
-                  item['validated'] == true ? 'Validado ✅' : 'Pendiente (GPS capturado 📍)',
+                  item['validated'] == true
+                      ? 'Validado ✅'
+                      : 'Pendiente (GPS capturado 📍)',
                   style: const TextStyle(fontSize: 12),
                 ),
                 if (item['lat'] != null && item['lng'] != null) ...[
@@ -634,7 +698,8 @@ class _ChecadorPageState extends State<ChecadorPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.location_on, size: 12, color: theme.colorScheme.primary),
+                        Icon(Icons.location_on,
+                            size: 12, color: theme.colorScheme.primary),
                         const SizedBox(width: 4),
                         Text(
                           'Ver ubicación Entrada',
