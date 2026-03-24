@@ -1,8 +1,7 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'widgets/page_header.dart';
 import 'services/notification_service.dart';
-import 'attendance_admin_page.dart';
 
 Future<T?> showFullWidthModal<T>({
   required BuildContext context,
@@ -62,6 +61,83 @@ class _AdminDashboardState extends State<AdminDashboard> {
     _checkAdminRole();
     _fetchUsers();
     _fetchCollaborators();
+  }
+
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControls(ThemeData theme) {
+    return _buildGlassPill(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar...',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                isDense: true,
+              ),
+              style: const TextStyle(fontSize: 14),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
+          const VerticalDivider(
+              width: 1, thickness: 1, indent: 8, endIndent: 8),
+          GestureDetector(
+            onTap: () => _showUserForm(),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(Icons.add, size: 22, color: Colors.black87),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkAdminRole() async {
@@ -816,62 +892,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final users = _filteredUsers;
-    final isDesktop = MediaQuery.of(context).size.width > 800;
-
-    final searchField = SizedBox(
-      height: 40,
-      child: TextField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: 'Buscar por nombre o rol...',
-          prefixIcon: const Icon(Icons.search, size: 20),
-          suffixIcon: _searchQuery.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear, size: 20),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
-                  },
-                )
-              : null,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-        ),
-        onChanged: (value) => setState(() => _searchQuery = value),
-      ),
-    );
 
     return Scaffold(
-      floatingActionButton: _isAdmin && !isDesktop
-          ? FloatingActionButton.extended(
-              onPressed: () => _showUserForm(),
-              backgroundColor: theme.colorScheme.secondary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('NUEVO'),
-            )
-          : null,
-      body: Column(
-        children: [
-          PageHeader(
-            title: 'Panel de Control',
-            trailing: isDesktop
-                ? ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 300),
-                    child: SizedBox(height: 48, child: searchField),
-                  )
-                : null,
-            bottom: !isDesktop ? [searchField] : null,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _buildControls(theme),
+                ],
+              ),
+            ),
           ),
-          Expanded(
-            child: _isLoading
-                ? Center(
+          _isLoading
+              ? SliverFillRemaining(
+                  child: Center(
                     child: Image.asset(
                       'assets/sisol_loader.gif',
                       width: 150,
@@ -883,41 +921,40 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ? const CircularProgressIndicator()
                                   : child,
                     ),
-                  )
-                : LayoutBuilder(
-                    builder: (context, constraints) {
-                      final isDesktop = constraints.maxWidth > 800;
-                      return RefreshIndicator(
-                        onRefresh: _fetchUsers,
-                        child: users.isEmpty
-                            ? ListView(
-                                children: [
-                                  const SizedBox(height: 80),
-                                  Center(
-                                    child: Column(
-                                      children: [
-                                        Icon(Icons.person_search,
-                                            size: 64, color: Colors.grey[300]),
-                                        const SizedBox(height: 16),
-                                        Text(
-                                          _searchQuery.isNotEmpty
-                                              ? 'Sin resultados para "$_searchQuery"'
-                                              : 'No hay usuarios registrados',
-                                          style: TextStyle(
-                                              color: Colors.grey[500]),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : (isDesktop
-                                ? _buildDesktopLayout(theme, users)
-                                : _buildMobileLayout(theme, users)),
-                      );
-                    },
                   ),
-          ),
+                )
+              : users.isEmpty
+                  ? SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.person_search,
+                                size: 64, color: Colors.grey[300]),
+                            const SizedBox(height: 16),
+                            Text(
+                              _searchQuery.isNotEmpty
+                                  ? 'Sin resultados para "$_searchQuery"'
+                                  : 'No hay usuarios registrados',
+                              style: TextStyle(color: Colors.grey[500]),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : SliverFillRemaining(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isDesktop = constraints.maxWidth > 800;
+                          return RefreshIndicator(
+                            onRefresh: _fetchUsers,
+                            child: isDesktop
+                                ? _buildDesktopLayout(theme, users)
+                                : _buildMobileLayout(theme, users),
+                          );
+                        },
+                      ),
+                    ),
         ],
       ),
     );
