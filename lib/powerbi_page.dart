@@ -64,10 +64,6 @@ class _PowerBiPageState extends State<PowerBiPage> {
             .order('nombre');
 
         _availableUsers = (usersData as List)
-            .where((user) {
-              final perms = user['permissions'];
-              return perms is Map && perms['show_powerbi'] == true;
-            })
             .map((user) => Map<String, dynamic>.from(user))
             .toList();
       }
@@ -354,77 +350,46 @@ class _PowerBiPageState extends State<PowerBiPage> {
   }
 
   Widget _buildUserAccessList(String linkId) {
-    final Set<String> _assignedIds = {};
-    bool _loading = true;
-
-    Future<void> _loadUsers() async {
-      try {
-        final data = await _getLinkUsers(linkId);
-        _assignedIds.clear();
-        _assignedIds.addAll(data.map((u) => u['user_id'].toString()));
-      } finally {
-        if (mounted) {
-          setState(() => _loading = false);
-        }
-      }
-    }
-
-    _loadUsers();
-
-    return StatefulBuilder(
-      builder: (context, setLocalState) {
-        if (_loading) {
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getLinkUsers(linkId),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text('Error: ${snapshot.error}'),
+          );
+        }
+
+        final assignedIds =
+            snapshot.data?.map((u) => u['user_id'].toString()).toSet() ?? {};
 
         if (_availableUsers.isEmpty) {
           return const Padding(
             padding: EdgeInsets.all(16),
-            child: Text('No hay usuarios disponibles con permiso Power BI'),
+            child: Text('No hay usuarios disponibles'),
           );
         }
 
         return Column(
           children: _availableUsers.map((user) {
-            final isAssigned = _assignedIds.contains(user['id'].toString());
+            final userId = user['id'].toString();
+            final isAssigned = assignedIds.contains(userId);
             final fullName =
                 '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
                     .trim();
 
-            return Card(
-              child: SwitchListTile(
-                title: Text(fullName),
-                subtitle: Text(user['id'].toString().substring(0, 8) + '...'),
-                value: isAssigned,
-                onChanged: (value) async {
-                  try {
-                    if (value) {
-                      await _supabase.from('powerbi_link_users').insert({
-                        'link_id': linkId,
-                        'user_id': user['id'],
-                      });
-                      _assignedIds.add(user['id'].toString());
-                    } else {
-                      await _supabase
-                          .from('powerbi_link_users')
-                          .delete()
-                          .eq('link_id', linkId)
-                          .eq('user_id', user['id']);
-                      _assignedIds.remove(user['id'].toString());
-                    }
-                    setLocalState(() {});
-                  } catch (e) {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error: $e'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  }
-                },
-              ),
+            return _UserSwitchCard(
+              user: user,
+              fullName: fullName,
+              linkId: linkId,
+              initialValue: isAssigned,
+              onChanged: () {
+                setState(() {});
+              },
             );
           }).toList(),
         );
@@ -788,6 +753,83 @@ class _PowerBiPageState extends State<PowerBiPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _UserSwitchCard extends StatefulWidget {
+  final Map<String, dynamic> user;
+  final String fullName;
+  final String linkId;
+  final bool initialValue;
+  final VoidCallback onChanged;
+
+  const _UserSwitchCard({
+    required this.user,
+    required this.fullName,
+    required this.linkId,
+    required this.initialValue,
+    required this.onChanged,
+  });
+
+  @override
+  State<_UserSwitchCard> createState() => _UserSwitchCardState();
+}
+
+class _UserSwitchCardState extends State<_UserSwitchCard> {
+  late bool isAssigned;
+
+  @override
+  void initState() {
+    super.initState();
+    isAssigned = widget.initialValue;
+  }
+
+  @override
+  void didUpdateWidget(covariant _UserSwitchCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialValue != widget.initialValue) {
+      isAssigned = widget.initialValue;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = widget.user['id'].toString();
+
+    return Card(
+      child: SwitchListTile(
+        title: Text(widget.fullName),
+        subtitle: Text(userId.substring(0, 8) + '...'),
+        value: isAssigned,
+        onChanged: (value) async {
+          setState(() => isAssigned = value);
+          try {
+            final supabase = Supabase.instance.client;
+            if (value) {
+              await supabase.from('powerbi_link_users').insert({
+                'link_id': widget.linkId,
+                'user_id': widget.user['id'],
+              });
+            } else {
+              await supabase
+                  .from('powerbi_link_users')
+                  .delete()
+                  .eq('link_id', widget.linkId)
+                  .eq('user_id', widget.user['id']);
+            }
+            widget.onChanged();
+          } catch (e) {
+            setState(() => isAssigned = !value);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                    content: Text('Error: $e'), backgroundColor: Colors.red),
+              );
+            }
+          }
+        },
       ),
     );
   }
