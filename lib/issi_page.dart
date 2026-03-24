@@ -311,8 +311,10 @@ class _IssiPageState extends State<IssiPage> {
 
   void _showItemForm({Map<String, dynamic>? item}) {
     final isEditing = item != null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+
     final ubicacionController = TextEditingController(text: item?['ubicacion']);
-    final marcaController = TextEditingController(text: item?['marca']);
     final modeloController = TextEditingController(text: item?['modelo']);
     final nsController = TextEditingController(text: item?['n_s']);
     final imeiController = TextEditingController(text: item?['imei']);
@@ -322,9 +324,8 @@ class _IssiPageState extends State<IssiPage> {
     final gpuController = TextEditingController(text: item?['gpu']);
     final fechaActController =
         TextEditingController(text: item?['fecha_actualizacion']);
-    final valorController = TextEditingController(
-      text: item?['valor']?.toString() ?? '',
-    );
+    final valorController =
+        TextEditingController(text: item?['valor']?.toString() ?? '');
     final observacionesController =
         TextEditingController(text: item?['observaciones']);
 
@@ -332,413 +333,506 @@ class _IssiPageState extends State<IssiPage> {
     String condicion =
         item?['condicion']?.toString().toUpperCase() ?? _condiciones.first;
     String marca = item?['marca']?.toString().toUpperCase() ?? _marcas.first;
-    // If saved marca doesn't match list, fall back to first
     if (!_marcas.contains(marca)) marca = _marcas.first;
 
     String? selectedUsuarioId = item?['usuario_id'];
     String? selectedUsuarioNombre = item?['usuario_nombre'];
 
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-        child: StatefulBuilder(
-          builder: (context, setDialogState) {
-            final screenWidth = MediaQuery.of(context).size.width;
-            final isWide = screenWidth > 700;
-            final maxW = isWide ? 920.0 : 500.0;
+    Widget buildContent(StateSetter setDialogState) {
+      Widget fieldColumn(Widget child) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [child, const SizedBox(height: 12)],
+          );
 
-            // Helper: builds a field wrapped for the grid
-            Widget field(Widget child) => isWide
-                ? SizedBox(
-                    width: (maxW - 48 - 32) / 3,
-                    child: child) // 48 padding + 2×16 gaps
-                : child;
+      final fields = [
+        fieldColumn(
+          DropdownButtonFormField<String>(
+            value: selectedUsuarioId,
+            decoration: const InputDecoration(
+                labelText: 'Usuario *', prefixIcon: Icon(Icons.person_outline)),
+            isExpanded: true,
+            items: _usuarios
+                .map((u) => DropdownMenuItem(
+                    value: u['id'] as String,
+                    child: Text(u['full_name'] ?? 'Usuario')))
+                .toList(),
+            onChanged: (val) {
+              final usuario = _usuarios.firstWhere((u) => u['id'] == val);
+              setDialogState(() {
+                selectedUsuarioId = val;
+                selectedUsuarioNombre = usuario['full_name'];
+              });
+            },
+          ),
+        ),
+        fieldColumn(
+          TextField(
+              controller: ubicacionController,
+              decoration: const InputDecoration(
+                  labelText: 'Ubicación *',
+                  prefixIcon: Icon(Icons.location_on_outlined))),
+        ),
+        fieldColumn(
+          DropdownButtonFormField<String>(
+            value: tipo,
+            decoration: const InputDecoration(
+                labelText: 'Tipo *', prefixIcon: Icon(Icons.devices_outlined)),
+            isExpanded: true,
+            items: _tipos
+                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                .toList(),
+            onChanged: (val) => setDialogState(() => tipo = val!),
+          ),
+        ),
+        fieldColumn(
+          DropdownButtonFormField<String>(
+            value: marca,
+            decoration: const InputDecoration(
+                labelText: 'Marca *',
+                prefixIcon: Icon(Icons.business_outlined)),
+            isExpanded: true,
+            items: _marcas
+                .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                .toList(),
+            onChanged: (val) => setDialogState(() => marca = val!),
+          ),
+        ),
+        fieldColumn(
+          TextField(
+              controller: modeloController,
+              decoration: const InputDecoration(
+                  labelText: 'Modelo *',
+                  prefixIcon: Icon(Icons.label_outlined))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: nsController,
+              decoration: const InputDecoration(
+                  labelText: 'N/S', prefixIcon: Icon(Icons.numbers))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: imeiController,
+              decoration: const InputDecoration(
+                  labelText: 'IMEI',
+                  prefixIcon: Icon(Icons.sim_card_outlined))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: cpuController,
+              decoration: const InputDecoration(
+                  labelText: 'CPU', prefixIcon: Icon(Icons.memory))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: ssdController,
+              decoration: const InputDecoration(
+                  labelText: 'SSD', prefixIcon: Icon(Icons.storage))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: ramController,
+              decoration: const InputDecoration(
+                  labelText: 'RAM', prefixIcon: Icon(Icons.sd_card))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: gpuController,
+              decoration: const InputDecoration(
+                  labelText: 'GPU',
+                  prefixIcon: Icon(Icons.videogame_asset_outlined))),
+        ),
+        fieldColumn(
+          TextField(
+              controller: valorController,
+              decoration: const InputDecoration(
+                  labelText: 'Valor', prefixIcon: Icon(Icons.attach_money)),
+              keyboardType: TextInputType.number),
+        ),
+        fieldColumn(
+          TextField(
+            controller: fechaActController,
+            decoration: const InputDecoration(
+                labelText: 'Fecha Actualización',
+                prefixIcon: Icon(Icons.calendar_today_outlined)),
+            readOnly: true,
+            onTap: () async {
+              final d = await showDatePicker(
+                  context: context,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2020),
+                  lastDate: DateTime(2101));
+              if (d != null)
+                setDialogState(() =>
+                    fechaActController.text = d.toString().split(' ').first);
+            },
+          ),
+        ),
+        fieldColumn(
+          DropdownButtonFormField<String>(
+            value: condicion,
+            decoration: const InputDecoration(
+                labelText: 'Condición *',
+                prefixIcon: Icon(Icons.health_and_safety_outlined)),
+            isExpanded: true,
+            items: _condiciones
+                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .toList(),
+            onChanged: (val) => setDialogState(() => condicion = val!),
+          ),
+        ),
+        fieldColumn(
+          TextField(
+              controller: observacionesController,
+              decoration: const InputDecoration(
+                  labelText: 'Observaciones',
+                  prefixIcon: Icon(Icons.notes_outlined)),
+              maxLines: 2),
+        ),
+      ];
 
-            Widget row3(Widget a, Widget b, Widget c) => isWide
-                ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Expanded(child: a),
-                    const SizedBox(width: 16),
-                    Expanded(child: b),
-                    const SizedBox(width: 16),
-                    Expanded(child: c),
-                  ])
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                        a,
-                        const SizedBox(height: 16),
-                        b,
-                        const SizedBox(height: 16),
-                        c,
-                      ]);
+      if (isDesktop) {
+        final rows = <Widget>[];
+        for (var i = 0; i < fields.length; i += 4) {
+          final rowFields = fields.skip(i).take(4).toList();
+          while (rowFields.length < 4) rowFields.add(const SizedBox());
+          rows.add(Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: rowFields.map((f) => Expanded(child: f)).toList()));
+        }
+        return Column(mainAxisSize: MainAxisSize.min, children: rows);
+      } else {
+        return Column(mainAxisSize: MainAxisSize.min, children: fields);
+      }
+    }
 
-            Widget row2(Widget a, Widget b) => Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: a),
-                    const SizedBox(width: 16),
-                    Expanded(child: b)
-                  ],
-                );
-
-            return Container(
-              width: double.maxFinite,
-              constraints: BoxConstraints(maxWidth: maxW),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            isEditing ? 'Editar Elemento' : 'Nuevo Elemento',
-                            style: Theme.of(context).textTheme.titleLarge,
+    if (isDesktop) {
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: 'Dismiss',
+        barrierColor: Colors.black54,
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: screenWidth,
+                child: StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20))),
+                      constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.9),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 12, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: const BorderRadius.vertical(
+                                top: Radius.circular(20)),
+                            boxShadow: [
+                              BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2))
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      // Row 1: Usuario · Ubicación · Tipo
-                      row3(
-                        DropdownButtonFormField<String>(
-                          value: selectedUsuarioId,
-                          decoration: const InputDecoration(
-                              labelText: 'Usuario *',
-                              prefixIcon: Icon(Icons.person_outline)),
-                          isExpanded: true,
-                          items: _usuarios
-                              .map((u) => DropdownMenuItem(
-                                  value: u['id'] as String,
-                                  child: Text(u['full_name'] ?? 'Usuario')))
-                              .toList(),
-                          onChanged: (val) {
-                            final usuario =
-                                _usuarios.firstWhere((u) => u['id'] == val);
-                            setDialogState(() {
-                              selectedUsuarioId = val;
-                              selectedUsuarioNombre = usuario['full_name'];
-                            });
-                          },
-                        ),
-                        TextField(
-                          controller: ubicacionController,
-                          decoration: const InputDecoration(
-                              labelText: 'Ubicación *',
-                              prefixIcon: Icon(Icons.location_on_outlined)),
-                        ),
-                        DropdownButtonFormField<String>(
-                          value: tipo,
-                          decoration: const InputDecoration(
-                              labelText: 'Tipo *',
-                              prefixIcon: Icon(Icons.devices_outlined)),
-                          isExpanded: true,
-                          items: _tipos
-                              .map((t) =>
-                                  DropdownMenuItem(value: t, child: Text(t)))
-                              .toList(),
-                          onChanged: (val) => setDialogState(() => tipo = val!),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Row 2: Marca · Modelo · N/S
-                      row3(
-                        DropdownButtonFormField<String>(
-                          value: marca,
-                          decoration: const InputDecoration(
-                              labelText: 'Marca *',
-                              prefixIcon: Icon(Icons.business_outlined)),
-                          isExpanded: true,
-                          items: _marcas
-                              .map((m) =>
-                                  DropdownMenuItem(value: m, child: Text(m)))
-                              .toList(),
-                          onChanged: (val) =>
-                              setDialogState(() => marca = val!),
-                        ),
-                        TextField(
-                          controller: modeloController,
-                          decoration: const InputDecoration(
-                              labelText: 'Modelo *',
-                              prefixIcon: Icon(Icons.label_outlined)),
-                        ),
-                        TextField(
-                          controller: nsController,
-                          decoration: const InputDecoration(
-                              labelText: 'N/S',
-                              prefixIcon: Icon(Icons.numbers)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Row 3: IMEI · CPU · SSD
-                      row3(
-                        TextField(
-                          controller: imeiController,
-                          decoration: const InputDecoration(
-                              labelText: 'IMEI',
-                              prefixIcon: Icon(Icons.sim_card_outlined)),
-                        ),
-                        TextField(
-                          controller: cpuController,
-                          decoration: const InputDecoration(
-                              labelText: 'CPU', prefixIcon: Icon(Icons.memory)),
-                        ),
-                        TextField(
-                          controller: ssdController,
-                          decoration: const InputDecoration(
-                              labelText: 'SSD',
-                              prefixIcon: Icon(Icons.storage)),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Row 4: RAM · GPU · Valor
-                      row3(
-                        TextField(
-                          controller: ramController,
-                          decoration: const InputDecoration(
-                              labelText: 'RAM',
-                              prefixIcon: Icon(Icons.sd_card)),
-                        ),
-                        TextField(
-                          controller: gpuController,
-                          decoration: const InputDecoration(
-                              labelText: 'GPU',
-                              prefixIcon: Icon(Icons.videogame_asset_outlined)),
-                        ),
-                        TextField(
-                          controller: valorController,
-                          decoration: const InputDecoration(
-                              labelText: 'Valor',
-                              prefixIcon: Icon(Icons.attach_money)),
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Row 5: Fecha · Condición (2-col or 3-col with spacer)
-                      isWide
-                          ? row3(
-                              TextField(
-                                controller: fechaActController,
-                                decoration: const InputDecoration(
-                                    labelText: 'Fecha Actualización',
-                                    prefixIcon:
-                                        Icon(Icons.calendar_today_outlined)),
-                                readOnly: true,
-                                onTap: () async {
-                                  final d = await showDatePicker(
-                                      context: context,
-                                      initialDate: DateTime.now(),
-                                      firstDate: DateTime(2020),
-                                      lastDate: DateTime(2101));
-                                  if (d != null)
-                                    setDialogState(() => fechaActController
-                                        .text = d.toString().split(' ').first);
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Cancelar',
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.grey)),
+                              ),
+                              Text(
+                                  isEditing
+                                      ? 'Editar Elemento'
+                                      : 'Nuevo Elemento',
+                                  style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold)),
+                              TextButton(
+                                onPressed: () async {
+                                  if (ubicacionController.text.isEmpty ||
+                                      marca.isEmpty ||
+                                      modeloController.text.isEmpty ||
+                                      selectedUsuarioId == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                'Completa los campos obligatorios (*)')));
+                                    return;
+                                  }
+                                  try {
+                                    final data = {
+                                      'ubicacion': ubicacionController.text
+                                          .trim()
+                                          .toUpperCase(),
+                                      'tipo': tipo,
+                                      'marca': marca,
+                                      'modelo': modeloController.text
+                                          .trim()
+                                          .toUpperCase(),
+                                      'n_s': nsController.text.trim().isEmpty
+                                          ? null
+                                          : nsController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'imei': imeiController.text.trim().isEmpty
+                                          ? null
+                                          : imeiController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'cpu': cpuController.text.trim().isEmpty
+                                          ? null
+                                          : cpuController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'ssd': ssdController.text.trim().isEmpty
+                                          ? null
+                                          : ssdController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'ram': ramController.text.trim().isEmpty
+                                          ? null
+                                          : ramController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'gpu': gpuController.text.trim().isEmpty
+                                          ? null
+                                          : gpuController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'fecha_actualizacion':
+                                          fechaActController.text.isEmpty
+                                              ? null
+                                              : fechaActController.text,
+                                      'valor':
+                                          valorController.text.trim().isEmpty
+                                              ? null
+                                              : double.tryParse(
+                                                  valorController.text.trim()),
+                                      'condicion': condicion,
+                                      'observaciones': observacionesController
+                                              .text
+                                              .trim()
+                                              .isEmpty
+                                          ? null
+                                          : observacionesController.text
+                                              .trim()
+                                              .toUpperCase(),
+                                      'usuario_id': selectedUsuarioId,
+                                      'usuario_nombre': selectedUsuarioNombre,
+                                    };
+                                    if (isEditing) {
+                                      await Supabase.instance.client
+                                          .from('issi_inventory')
+                                          .update(data)
+                                          .eq('id', item['id']);
+                                    } else {
+                                      await Supabase.instance.client
+                                          .from('issi_inventory')
+                                          .insert(data);
+                                    }
+                                    if (mounted) {
+                                      Navigator.pop(dialogContext);
+                                      _fetchItems();
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text(isEditing
+                                                  ? 'Elemento actualizado'
+                                                  : 'Elemento creado con éxito'),
+                                              backgroundColor:
+                                                  const Color(0xFFB1CB34)));
+                                    }
+                                  } catch (e) {
+                                    if (mounted)
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(SnackBar(
+                                              content: Text('Error: $e'),
+                                              backgroundColor: Colors.red));
+                                  }
                                 },
+                                child: Text(isEditing ? 'Guardar' : 'Crear',
+                                    style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue)),
                               ),
-                              DropdownButtonFormField<String>(
-                                value: condicion,
-                                decoration: const InputDecoration(
-                                    labelText: 'Condición *',
-                                    prefixIcon:
-                                        Icon(Icons.health_and_safety_outlined)),
-                                isExpanded: true,
-                                items: _condiciones
-                                    .map((c) => DropdownMenuItem(
-                                        value: c, child: Text(c)))
-                                    .toList(),
-                                onChanged: (val) =>
-                                    setDialogState(() => condicion = val!),
-                              ),
-                              const SizedBox.shrink(),
-                            )
-                          : Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                  TextField(
-                                    controller: fechaActController,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Fecha Actualización',
-                                        prefixIcon: Icon(
-                                            Icons.calendar_today_outlined)),
-                                    readOnly: true,
-                                    onTap: () async {
-                                      final d = await showDatePicker(
-                                          context: context,
-                                          initialDate: DateTime.now(),
-                                          firstDate: DateTime(2020),
-                                          lastDate: DateTime(2101));
-                                      if (d != null)
-                                        setDialogState(() =>
-                                            fechaActController.text =
-                                                d.toString().split(' ').first);
-                                    },
-                                  ),
-                                  const SizedBox(height: 16),
-                                  DropdownButtonFormField<String>(
-                                    value: condicion,
-                                    decoration: const InputDecoration(
-                                        labelText: 'Condición *',
-                                        prefixIcon: Icon(
-                                            Icons.health_and_safety_outlined)),
-                                    isExpanded: true,
-                                    items: _condiciones
-                                        .map((c) => DropdownMenuItem(
-                                            value: c, child: Text(c)))
-                                        .toList(),
-                                    onChanged: (val) =>
-                                        setDialogState(() => condicion = val!),
-                                  ),
-                                ]),
-                      const SizedBox(height: 16),
-                      // Observaciones — full width always
-                      TextField(
-                        controller: observacionesController,
-                        decoration: const InputDecoration(
-                            labelText: 'Observaciones',
-                            prefixIcon: Icon(Icons.notes_outlined)),
-                        maxLines: 2,
+                            ],
+                          ),
+                        ),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: buildContent(setDialogState),
+                          ),
+                        ),
+                      ]),
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Container(
+              decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20))),
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.9),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2))
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: const Text('Cancelar',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)),
                       ),
-                      const SizedBox(height: 24),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('CANCELAR'),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                if (ubicacionController.text.isEmpty ||
-                                    marca.isEmpty ||
-                                    modeloController.text.isEmpty ||
-                                    selectedUsuarioId == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Completa los campos obligatorios (*)')),
-                                  );
-                                  return;
-                                }
-
-                                try {
-                                  final data = {
-                                    'ubicacion': ubicacionController.text
-                                        .trim()
-                                        .toUpperCase(),
-                                    'tipo': tipo,
-                                    'marca': marca,
-                                    'modelo': modeloController.text
-                                        .trim()
-                                        .toUpperCase(),
-                                    'n_s': nsController.text.trim().isEmpty
-                                        ? null
-                                        : nsController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'imei': imeiController.text.trim().isEmpty
-                                        ? null
-                                        : imeiController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'cpu': cpuController.text.trim().isEmpty
-                                        ? null
-                                        : cpuController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'ssd': ssdController.text.trim().isEmpty
-                                        ? null
-                                        : ssdController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'ram': ramController.text.trim().isEmpty
-                                        ? null
-                                        : ramController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'gpu': gpuController.text.trim().isEmpty
-                                        ? null
-                                        : gpuController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'fecha_actualizacion':
-                                        fechaActController.text.isEmpty
-                                            ? null
-                                            : fechaActController.text,
-                                    'valor': valorController.text.trim().isEmpty
-                                        ? null
-                                        : double.tryParse(
-                                            valorController.text.trim()),
-                                    'condicion': condicion,
-                                    'observaciones': observacionesController
-                                            .text
-                                            .trim()
-                                            .isEmpty
-                                        ? null
-                                        : observacionesController.text
-                                            .trim()
-                                            .toUpperCase(),
-                                    'usuario_id': selectedUsuarioId,
-                                    'usuario_nombre': selectedUsuarioNombre,
-                                  };
-
-                                  if (isEditing) {
-                                    await Supabase.instance.client
-                                        .from('issi_inventory')
-                                        .update(data)
-                                        .eq('id', item['id']);
-                                  } else {
-                                    await Supabase.instance.client
-                                        .from('issi_inventory')
-                                        .insert(data);
-                                  }
-
-                                  if (mounted) {
-                                    Navigator.pop(context);
-                                    _fetchItems();
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(isEditing
-                                            ? 'Elemento actualizado'
-                                            : 'Elemento creado con éxito'),
-                                        backgroundColor:
-                                            const Color(0xFFB1CB34),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                          content: Text('Error: $e'),
-                                          backgroundColor: Colors.red),
-                                    );
-                                  }
-                                }
-                              },
-                              child: Text(isEditing ? 'GUARDAR' : 'CREAR'),
-                            ),
-                          ),
-                        ],
+                      Text(isEditing ? 'Editar Elemento' : 'Nuevo Elemento',
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      TextButton(
+                        onPressed: () async {
+                          if (ubicacionController.text.isEmpty ||
+                              marca.isEmpty ||
+                              modeloController.text.isEmpty ||
+                              selectedUsuarioId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text(
+                                        'Completa los campos obligatorios (*)')));
+                            return;
+                          }
+                          try {
+                            final data = {
+                              'ubicacion':
+                                  ubicacionController.text.trim().toUpperCase(),
+                              'tipo': tipo,
+                              'marca': marca,
+                              'modelo':
+                                  modeloController.text.trim().toUpperCase(),
+                              'n_s': nsController.text.trim().isEmpty
+                                  ? null
+                                  : nsController.text.trim().toUpperCase(),
+                              'imei': imeiController.text.trim().isEmpty
+                                  ? null
+                                  : imeiController.text.trim().toUpperCase(),
+                              'cpu': cpuController.text.trim().isEmpty
+                                  ? null
+                                  : cpuController.text.trim().toUpperCase(),
+                              'ssd': ssdController.text.trim().isEmpty
+                                  ? null
+                                  : ssdController.text.trim().toUpperCase(),
+                              'ram': ramController.text.trim().isEmpty
+                                  ? null
+                                  : ramController.text.trim().toUpperCase(),
+                              'gpu': gpuController.text.trim().isEmpty
+                                  ? null
+                                  : gpuController.text.trim().toUpperCase(),
+                              'fecha_actualizacion':
+                                  fechaActController.text.isEmpty
+                                      ? null
+                                      : fechaActController.text,
+                              'valor': valorController.text.trim().isEmpty
+                                  ? null
+                                  : double.tryParse(
+                                      valorController.text.trim()),
+                              'condicion': condicion,
+                              'observaciones':
+                                  observacionesController.text.trim().isEmpty
+                                      ? null
+                                      : observacionesController.text
+                                          .trim()
+                                          .toUpperCase(),
+                              'usuario_id': selectedUsuarioId,
+                              'usuario_nombre': selectedUsuarioNombre,
+                            };
+                            if (isEditing) {
+                              await Supabase.instance.client
+                                  .from('issi_inventory')
+                                  .update(data)
+                                  .eq('id', item['id']);
+                            } else {
+                              await Supabase.instance.client
+                                  .from('issi_inventory')
+                                  .insert(data);
+                            }
+                            if (mounted) {
+                              Navigator.pop(sheetContext);
+                              _fetchItems();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(isEditing
+                                          ? 'Elemento actualizado'
+                                          : 'Elemento creado con éxito'),
+                                      backgroundColor:
+                                          const Color(0xFFB1CB34)));
+                            }
+                          } catch (e) {
+                            if (mounted)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red));
+                          }
+                        },
+                        child: Text(isEditing ? 'Guardar' : 'Crear',
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue)),
                       ),
                     ],
                   ),
                 ),
-              ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: buildContent(setDialogState),
+                  ),
+                ),
+              ]),
             );
           },
         ),
-      ),
-    );
+      );
+    }
   }
 
   List<Map<String, dynamic>> get _filteredItems {
