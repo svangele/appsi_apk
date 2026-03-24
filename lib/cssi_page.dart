@@ -295,6 +295,7 @@ class _CssiPageState extends State<CssiPage> {
     String? credito = item?['credito'];
     String? statusSys = item?['status_sys'] ?? 'CAMBIO';
     String? statusRh = item?['status_rh'] ?? 'ACTIVO';
+    String? horario = item?['horario'];
     XFile? pickedFile;
     String? currentFotoUrl = item?['foto_url'];
 
@@ -304,6 +305,49 @@ class _CssiPageState extends State<CssiPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [child, const SizedBox(height: 16)],
           );
+
+      // Use FutureBuilder for schedules
+      Widget scheduleDropdown = FutureBuilder<List<Map<String, dynamic>>>(
+        future: Supabase.instance.client
+            .from('schedules')
+            .select('id, name')
+            .order('name')
+            .then((data) => List<Map<String, dynamic>>.from(data)),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return DropdownButtonFormField<String>(
+              value: horario,
+              decoration: const InputDecoration(
+                labelText: 'Horario',
+                prefixIcon: Icon(Icons.schedule),
+              ),
+              items: const [
+                DropdownMenuItem(value: null, child: Text('Sin horario')),
+              ],
+              onChanged: (v) => setDialogState(() => horario = v),
+            );
+          }
+          final schedules = snapshot.data ?? [];
+          return DropdownButtonFormField<String>(
+            value: horario,
+            decoration: const InputDecoration(
+              labelText: 'Horario',
+              prefixIcon: Icon(Icons.schedule),
+            ),
+            items: [
+              const DropdownMenuItem(value: null, child: Text('Sin horario')),
+              ...schedules.map((s) => DropdownMenuItem(
+                    value: s['id'].toString(),
+                    child: Text(s['name'] ?? 'Sin nombre'),
+                  )),
+            ],
+            onChanged: (v) => setDialogState(() => horario = v),
+          );
+        },
+      );
 
       final col1 = Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -545,6 +589,7 @@ class _CssiPageState extends State<CssiPage> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _sectionTitle('Datos Empresa'),
+          fieldColumn(scheduleDropdown),
           fieldColumn(TextField(
               controller: empresaCtrl,
               decoration: const InputDecoration(labelText: 'Empresa'))),
@@ -757,6 +802,7 @@ class _CssiPageState extends State<CssiPage> {
         'numero_empleado': numeroEmpleadoCtrl.text.trim(),
         'status_sys': statusSys,
         'status_rh': statusRh,
+        'horario': horario,
         'foto_url': currentFotoUrl,
       };
       try {
