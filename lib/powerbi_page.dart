@@ -142,14 +142,29 @@ class _PowerBiPageState extends State<PowerBiPage> {
           await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
         }
       } else {
-        showModalBottomSheet(
+        showGeneralDialog(
           context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => _BiWebView(
-            url: url,
-            title: link['title'] ?? 'Reporte',
-          ),
+          barrierDismissible: true,
+          barrierLabel: 'Dismiss',
+          barrierColor: Colors.black54,
+          transitionDuration: const Duration(milliseconds: 300),
+          pageBuilder: (dialogContext, animation, secondaryAnimation) {
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: Material(
+                color: Colors.transparent,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width,
+                  height: MediaQuery.of(context).size.height,
+                  child: _BiWebView(
+                    url: url,
+                    title: link['title'] ?? 'Reporte',
+                    onClose: () => Navigator.pop(dialogContext),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       }
     } else if (htmlCode != null && htmlCode.isNotEmpty) {
@@ -952,8 +967,9 @@ class _UserSwitchCardState extends State<_UserSwitchCard> {
 class _BiWebView extends StatefulWidget {
   final String url;
   final String title;
+  final VoidCallback? onClose;
 
-  const _BiWebView({required this.url, required this.title});
+  const _BiWebView({required this.url, required this.title, this.onClose});
 
   @override
   State<_BiWebView> createState() => _BiWebViewState();
@@ -964,13 +980,26 @@ class _BiWebViewState extends State<_BiWebView> {
   bool _hasError = false;
   String _errorMessage = '';
 
+  void _handleClose() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isFullScreen = screenHeight > 600;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.9,
-      decoration: const BoxDecoration(
+      height: isFullScreen ? screenHeight : screenHeight * 0.9,
+      decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: isFullScreen
+            ? BorderRadius.zero
+            : const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
         children: [
@@ -978,8 +1007,9 @@ class _BiWebViewState extends State<_BiWebView> {
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: isFullScreen
+                  ? BorderRadius.zero
+                  : const BorderRadius.vertical(top: Radius.circular(20)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -992,7 +1022,7 @@ class _BiWebViewState extends State<_BiWebView> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: _handleClose,
                 ),
                 Expanded(
                   child: Text(
