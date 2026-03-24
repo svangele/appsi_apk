@@ -1115,23 +1115,17 @@ class _EventFormDialogState extends State<EventFormDialog> {
             const SizedBox(height: 16),
 
             // Priority selector
-            TextFormField(
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: 'Prioridad',
-                border: const OutlineInputBorder(),
-                prefixIcon: Icon(Icons.flag,
-                    color: _priority == 'Alta' ? Colors.red : Colors.blue),
-                suffixIcon: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildPriorityChip('Normal', Colors.blue),
-                    const SizedBox(width: 8),
-                    _buildPriorityChip('Alta', Colors.red),
-                    const SizedBox(width: 8),
-                  ],
-                ),
-              ),
+            Row(
+              children: [
+                const Icon(Icons.flag, color: Colors.grey),
+                const SizedBox(width: 12),
+                const Text('Prioridad',
+                    style: TextStyle(fontWeight: FontWeight.w500)),
+                const Spacer(),
+                _buildPriorityChip('Normal', Colors.blue),
+                const SizedBox(width: 8),
+                _buildPriorityChip('Alta', Colors.red),
+              ],
             ),
             const SizedBox(height: 16),
 
