@@ -21,6 +21,7 @@ class _PowerBiPageState extends State<PowerBiPage> {
   bool _isLoading = true;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
   String _searchQuery = '';
+  String _userSearchQuery = '';
 
   @override
   void initState() {
@@ -100,7 +101,8 @@ class _PowerBiPageState extends State<PowerBiPage> {
       if (_isAdmin) {
         final usersData = await _supabase
             .from('profiles')
-            .select('id, nombre, paterno, materno, status_sys, permissions')
+            .select(
+                'id, nombre, paterno, materno, email, status_sys, permissions')
             .eq('status_sys', 'ACTIVO')
             .order('nombre');
 
@@ -395,48 +397,99 @@ class _PowerBiPageState extends State<PowerBiPage> {
   }
 
   Widget _buildUserAccessList(String linkId) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getLinkUsers(linkId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Text('Error: ${snapshot.error}'),
-          );
-        }
-
-        final assignedIds =
-            snapshot.data?.map((u) => u['user_id'].toString()).toSet() ?? {};
-
-        if (_availableUsers.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Text('No hay usuarios disponibles'),
-          );
-        }
-
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
         return Column(
-          children: _availableUsers.map((user) {
-            final userId = user['id'].toString();
-            final isAssigned = assignedIds.contains(userId);
-            final fullName =
-                '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
-                    .trim();
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Buscar usuario...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400),
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  isDense: true,
+                ),
+                style: const TextStyle(fontSize: 13),
+                onChanged: (value) {
+                  setState(() => _userSearchQuery = value);
+                },
+              ),
+            ),
+            Expanded(
+              child: FutureBuilder<List<Map<String, dynamic>>>(
+                future: _getLinkUsers(linkId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-            return _UserSwitchCard(
-              user: user,
-              fullName: fullName,
-              linkId: linkId,
-              initialValue: isAssigned,
-              onChanged: () {
-                setState(() {});
-              },
-            );
-          }).toList(),
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Error: ${snapshot.error}'),
+                    );
+                  }
+
+                  final assignedIds = snapshot.data
+                          ?.map((u) => u['user_id'].toString())
+                          .toSet() ??
+                      {};
+
+                  // Filtrar usuarios por nombre o correo
+                  final filteredUsers = _availableUsers.where((user) {
+                    if (_userSearchQuery.isEmpty) return true;
+                    final fullName =
+                        '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
+                            .trim()
+                            .toLowerCase();
+                    final email =
+                        (user['email'] ?? '').toString().toLowerCase();
+                    final query = _userSearchQuery.toLowerCase();
+                    return fullName.contains(query) || email.contains(query);
+                  }).toList();
+
+                  if (filteredUsers.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Text('No hay usuarios disponibles'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredUsers.length,
+                    itemBuilder: (context, index) {
+                      final user = filteredUsers[index];
+                      final userId = user['id'].toString();
+                      final isAssigned = assignedIds.contains(userId);
+                      final fullName =
+                          '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
+                              .trim();
+
+                      return _UserSwitchCard(
+                        user: user,
+                        fullName: fullName,
+                        linkId: linkId,
+                        initialValue: isAssigned,
+                        onChanged: () {
+                          setState(() {});
+                        },
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         );
       },
     );
