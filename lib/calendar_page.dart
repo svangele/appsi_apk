@@ -76,24 +76,7 @@ class _CalendarPageState extends State<CalendarPage> {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      List<dynamic> response;
-      if (_calendarMode == 1) {
-        // Grupal
-        response = await _supabase
-            .from('events')
-            .select('*, profiles(full_name, id)')
-            .eq('is_public', true)
-            .order('start_time');
-      } else {
-        // Personal e invitados
-        response = await _supabase
-            .from('events')
-            .select('*, profiles(full_name, id)')
-            .eq('is_public', false)
-            .order('start_time');
-      }
-
-      // Get followed users' events (only in Personal mode)
+      // Get followed users first
       Set<String> followedUserIds = {};
       if (_calendarMode == 0) {
         final subscriptions = await _supabase
@@ -105,20 +88,37 @@ class _CalendarPageState extends State<CalendarPage> {
         followedUserIds = {
           for (var s in subscriptions) s['followed_user_id'] as String
         };
+      }
 
-        debugPrint('followedUserIds: $followedUserIds');
+      // Fetch events based on calendar mode
+      List<dynamic> response;
+      if (_calendarMode == 1) {
+        // Grupal - only public events
+        response = await _supabase
+            .from('events')
+            .select('*, profiles(full_name, id)')
+            .eq('is_public', true)
+            .order('start_time');
+      } else {
+        // Personal - user's own events (private)
+        response = await _supabase
+            .from('events')
+            .select('*, profiles(full_name, id)')
+            .eq('creator_id', userId)
+            .eq('is_public', false)
+            .order('start_time');
 
+        // Also get followed users' private events
         if (followedUserIds.isNotEmpty) {
-          debugPrint('Fetching events for IDs: $followedUserIds');
-
-          final followedEvents = await _supabase
-              .from('events')
-              .select('*, profiles(full_name, id)')
-              .filter('creator_id', 'in', '(${followedUserIds.join(",")})')
-              .order('start_time');
-
-          debugPrint('followedEvents count: ${followedEvents.length}');
-          response = [...response, ...followedEvents];
+          for (var followedId in followedUserIds) {
+            final followedPrivateEvents = await _supabase
+                .from('events')
+                .select('*, profiles(full_name, id)')
+                .eq('creator_id', followedId)
+                .eq('is_public', false)
+                .order('start_time');
+            response = [...response, ...followedPrivateEvents];
+          }
         }
       }
 
