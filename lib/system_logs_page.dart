@@ -1,6 +1,6 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'widgets/page_header.dart';
 
 class SystemLogsPage extends StatefulWidget {
   const SystemLogsPage({super.key});
@@ -17,6 +17,32 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
   Map<DateTime, int> _dailyLogins = {};
   Map<String, Map<String, dynamic>> _emailProfiles = {};
 
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -28,7 +54,7 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
     try {
       final now = DateTime.now();
       final oneWeekAgo = DateTime(now.year, now.month, now.day - 6);
-      
+
       final data = await Supabase.instance.client
           .from('system_logs')
           .select('created_at')
@@ -39,7 +65,8 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
       final Map<DateTime, int> counts = {};
       // Initialize days
       for (int i = 0; i < 7; i++) {
-        final date = DateTime(oneWeekAgo.year, oneWeekAgo.month, oneWeekAgo.day + i);
+        final date =
+            DateTime(oneWeekAgo.year, oneWeekAgo.month, oneWeekAgo.day + i);
         counts[date] = 0;
       }
 
@@ -64,22 +91,20 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
   Future<void> _fetchLogs() async {
     setState(() => _isLoading = true);
     try {
-      var query = Supabase.instance.client
-          .from('system_logs')
-          .select();
+      var query = Supabase.instance.client.from('system_logs').select();
 
       if (_startDate != null) {
         query = query.gte('created_at', _startDate!.toIso8601String());
       }
       if (_endDate != null) {
         // Add 23:59:59 to include the whole end day if using only dates
-        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);
+        final end = DateTime(
+            _endDate!.year, _endDate!.month, _endDate!.day, 23, 59, 59);
         query = query.lte('created_at', end.toIso8601String());
       }
 
       final data = await query.order('created_at', ascending: false).limit(100);
 
-      
       setState(() {
         _logs = List<Map<String, dynamic>>.from(data);
         _isLoading = false;
@@ -119,108 +144,120 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     final isDesktop = MediaQuery.of(context).size.width > 800;
 
     return Column(
       children: [
-        PageHeader(
-          title: 'Logs del Sistema',
-          trailing: _isLoading 
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-            : const Icon(Icons.show_chart, color: Colors.white),
-          bottom: !isDesktop ? [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildDateSelector(
-                    label: _startDate == null ? 'Desde' : _formatDateOnly(_startDate!),
-                    icon: Icons.calendar_today,
-                    onTap: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: _startDate ?? DateTime.now(),
-                        firstDate: DateTime(2024),
-                        lastDate: DateTime.now(),
-                      );
-                      if (d != null) {
-                        setState(() => _startDate = d);
-                        _fetchLogs();
-                      }
-                    },
-                  ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Icon(Icons.arrow_forward, size: 16, color: Colors.white70),
-                  ),
-                  _buildDateSelector(
-                    label: _endDate == null ? 'Hasta' : _formatDateOnly(_endDate!),
-                    icon: Icons.event,
-                    onTap: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: _endDate ?? DateTime.now(),
-                        firstDate: _startDate ?? DateTime(2024),
-                        lastDate: DateTime.now(),
-                      );
-                      if (d != null) {
-                        setState(() => _endDate = d);
-                        _fetchLogs();
-                      }
-                    },
-                  ),
-                  if (_startDate != null || _endDate != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8),
-                      child: TextButton.icon(
-                        onPressed: () {
-                          setState(() {
-                            _startDate = null;
-                            _endDate = null;
-                          });
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _buildGlassPill(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildDateSelector(
+                      label: _startDate == null
+                          ? 'Desde'
+                          : _formatDateOnly(_startDate!),
+                      icon: Icons.calendar_today,
+                      onTap: () async {
+                        final d = await showDatePicker(
+                          context: context,
+                          initialDate: _startDate ?? DateTime.now(),
+                          firstDate: DateTime(2024),
+                          lastDate: DateTime.now(),
+                        );
+                        if (d != null) {
+                          setState(() => _startDate = d);
                           _fetchLogs();
-                        },
-                        icon: const Icon(Icons.clear_all, size: 18, color: Colors.white),
-                        label: const Text('Limpiar', style: TextStyle(color: Colors.white)),
-                        style: TextButton.styleFrom(foregroundColor: Colors.white),
-                      ),
+                        }
+                      },
                     ),
-                ],
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Icon(Icons.arrow_forward,
+                          size: 14, color: Colors.grey),
+                    ),
+                    _buildDateSelector(
+                      label: _endDate == null
+                          ? 'Hasta'
+                          : _formatDateOnly(_endDate!),
+                      icon: Icons.event,
+                      onTap: () async {
+                        final d = await showDatePicker(
+                          context: context,
+                          initialDate: _endDate ?? DateTime.now(),
+                          firstDate: _startDate ?? DateTime(2024),
+                          lastDate: DateTime.now(),
+                        );
+                        if (d != null) {
+                          setState(() => _endDate = d);
+                          _fetchLogs();
+                        }
+                      },
+                    ),
+                    if (_startDate != null || _endDate != null)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              _startDate = null;
+                              _endDate = null;
+                            });
+                            _fetchLogs();
+                          },
+                          icon: const Icon(Icons.clear, size: 18),
+                          tooltip: 'Limpiar filtros',
+                        ),
+                      ),
+                  ],
+                ),
               ),
-            ),
-          ] : null,
+            ],
+          ),
         ),
         _buildChartCard(theme),
         Expanded(
-          child: _isLoading 
-            ? Center(
-                child: Image.asset(
-                  'assets/sisol_loader.gif',
-                  width: 150,
-                  errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                  frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                      frame == null ? const CircularProgressIndicator() : child,
-                ),
-              )
-            : _logs.isEmpty 
+          child: _isLoading
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.history_toggle_off, size: 64, color: Colors.grey[300]),
-                      const SizedBox(height: 16),
-                      Text('No hay logs registrados aún', style: TextStyle(color: Colors.grey[500])),
-                    ],
+                  child: Image.asset(
+                    'assets/sisol_loader.gif',
+                    width: 150,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const CircularProgressIndicator(),
+                    frameBuilder: (context, child, frame,
+                            wasSynchronouslyLoaded) =>
+                        frame == null
+                            ? const CircularProgressIndicator()
+                            : child,
                   ),
                 )
-              : isDesktop
-                ? _buildDesktopTable(theme)
-                : _buildMobileList(theme),
+              : _logs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.history_toggle_off,
+                              size: 64, color: Colors.grey[300]),
+                          const SizedBox(height: 16),
+                          Text('No hay logs registrados aún',
+                              style: TextStyle(color: Colors.grey[500])),
+                        ],
+                      ),
+                    )
+                  : isDesktop
+                      ? _buildDesktopTable(theme)
+                      : _buildMobileList(theme),
         ),
       ],
     );
   }
+
   Widget _buildChartCard(ThemeData theme) {
     if (_dailyLogins.isEmpty) return const SizedBox.shrink();
     return Padding(
@@ -236,7 +273,10 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: LinearGradient(
-              colors: [theme.colorScheme.primary, theme.colorScheme.primary.withOpacity(0.85)],
+              colors: [
+                theme.colorScheme.primary,
+                theme.colorScheme.primary.withOpacity(0.85)
+              ],
             ),
           ),
           child: _buildChartSection(theme),
@@ -248,7 +288,9 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
   Widget _buildChartSection(ThemeData theme) {
     if (_dailyLogins.isEmpty) return const SizedBox.shrink();
 
-    final maxLogins = _dailyLogins.values.isEmpty ? 0 : _dailyLogins.values.reduce((a, b) => a > b ? a : b);
+    final maxLogins = _dailyLogins.values.isEmpty
+        ? 0
+        : _dailyLogins.values.reduce((a, b) => a > b ? a : b);
     final totalLogins = _dailyLogins.values.fold(0, (sum, val) => sum + val);
 
     return Column(
@@ -256,7 +298,8 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
       children: [
         Row(
           children: [
-            const Icon(Icons.assessment_outlined, size: 18, color: Colors.white70),
+            const Icon(Icons.assessment_outlined,
+                size: 18, color: Colors.white70),
             const SizedBox(width: 8),
             Text(
               'Inicios de Sesión (Última Semana)',
@@ -293,7 +336,7 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
               final dayName = _getDayName(entry.key);
               final count = entry.value;
               final heightFactor = maxLogins == 0 ? 0.0 : count / maxLogins;
-              
+
               return Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -316,18 +359,22 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: count > 0 
-                            ? [Colors.white, Colors.white.withOpacity(0.7)]
-                            : [Colors.white24, Colors.white12],
+                          colors: count > 0
+                              ? [Colors.white, Colors.white.withOpacity(0.7)]
+                              : [Colors.white24, Colors.white12],
                         ),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
-                        boxShadow: count > 0 ? [
-                          BoxShadow(
-                            color: theme.colorScheme.primary.withOpacity(0.2),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          )
-                        ] : null,
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(6)),
+                        boxShadow: count > 0
+                            ? [
+                                BoxShadow(
+                                  color: theme.colorScheme.primary
+                                      .withOpacity(0.2),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -336,7 +383,9 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                       style: TextStyle(
                         fontSize: 10,
                         color: Colors.white70,
-                        fontWeight: entry.key.day == DateTime.now().day ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: entry.key.day == DateTime.now().day
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -383,7 +432,10 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
-  Widget _buildDateSelector({required String label, required IconData icon, required VoidCallback onTap}) {
+  Widget _buildDateSelector(
+      {required String label,
+      required IconData icon,
+      required VoidCallback onTap}) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -399,7 +451,9 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
           children: [
             Icon(icon, size: 16, color: const Color(0xFF344092)),
             const SizedBox(width: 8),
-            Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            Text(label,
+                style:
+                    const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           ],
         ),
       ),
@@ -419,7 +473,8 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
     if (email.isEmpty) return '---';
     final profile = _emailProfiles[email];
     if (profile == null) return '---';
-    final nombre = '${profile['nombre'] ?? ''} ${profile['paterno'] ?? ''}'.trim();
+    final nombre =
+        '${profile['nombre'] ?? ''} ${profile['paterno'] ?? ''}'.trim();
     return nombre.isEmpty ? '---' : nombre;
   }
 
@@ -440,7 +495,7 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
           final action = log['action_type'] ?? 'ACCIÓN';
           final target = log['target_info'] ?? '---';
           final date = DateTime.parse(log['created_at']).toLocal();
-          
+
           return ListTile(
             leading: _getIconForAction(action, theme),
             title: Text(
@@ -476,13 +531,18 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
                 child: Row(
                   children: [
-                    const Text('Registros de Actividad', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Registros de Actividad',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
                     const Spacer(),
                     _buildDateSelector(
-                      label: _startDate == null ? 'Desde' : _formatDateOnly(_startDate!),
+                      label: _startDate == null
+                          ? 'Desde'
+                          : _formatDateOnly(_startDate!),
                       icon: Icons.calendar_today,
                       onTap: () async {
                         final d = await showDatePicker(
@@ -499,10 +559,13 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                     ),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.arrow_forward, size: 14, color: Colors.grey),
+                      child: Icon(Icons.arrow_forward,
+                          size: 14, color: Colors.grey),
                     ),
                     _buildDateSelector(
-                      label: _endDate == null ? 'Hasta' : _formatDateOnly(_endDate!),
+                      label: _endDate == null
+                          ? 'Hasta'
+                          : _formatDateOnly(_endDate!),
                       icon: Icons.event,
                       onTap: () async {
                         final d = await showDatePicker(
@@ -540,11 +603,21 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                 data: theme.copyWith(cardColor: Colors.transparent),
                 child: PaginatedDataTable(
                   columns: const [
-                    DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Acción', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Detalle', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Nombre',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Email',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Acción',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Detalle',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
+                    DataColumn(
+                        label: Text('Fecha',
+                            style: TextStyle(fontWeight: FontWeight.bold))),
                   ],
                   source: _LogsDataSource(
                     items: _logs,
@@ -555,7 +628,9 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                     getProfileName: _getProfileName,
                     getProfileEmail: _getProfileEmail,
                   ),
-                  rowsPerPage: _logs.isEmpty ? 1 : (_logs.length > 10 ? 10 : _logs.length),
+                  rowsPerPage: _logs.isEmpty
+                      ? 1
+                      : (_logs.length > 10 ? 10 : _logs.length),
                   showCheckboxColumn: false,
                   horizontalMargin: 16,
                   columnSpacing: 16,
@@ -571,9 +646,12 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'APROBADA': return Colors.green;
-      case 'CANCELADA': return Colors.red;
-      default: return Colors.orange;
+      case 'APROBADA':
+        return Colors.green;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.orange;
     }
   }
 }
@@ -609,19 +687,32 @@ class _LogsDataSource extends DataTableSource {
 
     Color actionColor;
     switch (action) {
-      case 'INICIO DE SESIÓN': actionColor = Colors.green; break;
-      case 'CIERRE DE SESIÓN': actionColor = Colors.orange; break;
-      case 'CREACIÓN': actionColor = theme.colorScheme.secondary; break;
-      case 'ELIMINACIÓN': actionColor = Colors.redAccent; break;
-      case 'REGISTRO': actionColor = theme.colorScheme.primary; break;
-      default: actionColor = Colors.blueGrey;
+      case 'INICIO DE SESIÓN':
+        actionColor = Colors.green;
+        break;
+      case 'CIERRE DE SESIÓN':
+        actionColor = Colors.orange;
+        break;
+      case 'CREACIÓN':
+        actionColor = theme.colorScheme.secondary;
+        break;
+      case 'ELIMINACIÓN':
+        actionColor = Colors.redAccent;
+        break;
+      case 'REGISTRO':
+        actionColor = theme.colorScheme.primary;
+        break;
+      default:
+        actionColor = Colors.blueGrey;
     }
 
     return DataRow.byIndex(
       index: index,
       cells: [
-        DataCell(Text(nombre, style: const TextStyle(fontWeight: FontWeight.w500))),
-        DataCell(Text(email, style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
+        DataCell(
+            Text(nombre, style: const TextStyle(fontWeight: FontWeight.w500))),
+        DataCell(Text(email,
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]))),
         DataCell(
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -631,12 +722,16 @@ class _LogsDataSource extends DataTableSource {
             ),
             child: Text(
               action,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: actionColor),
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: actionColor),
             ),
           ),
         ),
         DataCell(Text(target, style: const TextStyle(fontSize: 12))),
-        DataCell(Text(formatTime(date), style: TextStyle(fontSize: 12, color: Colors.grey[500]))),
+        DataCell(Text(formatTime(date),
+            style: TextStyle(fontSize: 12, color: Colors.grey[500]))),
       ],
     );
   }
