@@ -534,18 +534,24 @@ class _PowerBiPageState extends State<PowerBiPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 150),
+                constraints: const BoxConstraints(maxWidth: 200),
                 child: TextField(
                   decoration: InputDecoration(
                     hintText: 'Buscar...',
                     hintStyle: TextStyle(color: Colors.grey.shade400),
                     prefixIcon: const Icon(Icons.search, size: 20),
-                    border: InputBorder.none,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: Colors.grey.shade100,
+                    contentPadding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
                     isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
+                            icon: const Icon(Icons.clear, size: 20),
                             onPressed: () => setState(() => _searchQuery = ''),
                           )
                         : null,
