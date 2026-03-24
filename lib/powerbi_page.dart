@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'dart:ui';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PowerBiPage extends StatefulWidget {
   final String role;
@@ -133,15 +136,22 @@ class _PowerBiPageState extends State<PowerBiPage> {
     final htmlCode = link['html_code'] as String?;
 
     if (url != null && url.isNotEmpty) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => _BiWebView(
-          url: url,
-          title: link['title'] ?? 'Reporte',
-        ),
-      );
+      if (kIsWeb || !Platform.isAndroid && !Platform.isIOS) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
+        }
+      } else {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (context) => _BiWebView(
+            url: url,
+            title: link['title'] ?? 'Reporte',
+          ),
+        );
+      }
     } else if (htmlCode != null && htmlCode.isNotEmpty) {
       if (mounted) {
         _showHtmlViewer(htmlCode, link['title'] ?? 'Reporte');
