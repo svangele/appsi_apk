@@ -67,7 +67,7 @@ class _EventSearchDialogState extends State<EventSearchDialog>
           .from('profiles')
           .select('id, full_name, email, permissions, role')
           .eq('status_sys', 'ACTIVO')
-          .eq('show_calendar', true)
+          .eq('permissions->>show_calendar', 'true')
           .neq('id', currentUserId ?? '')
           .order('full_name');
 
