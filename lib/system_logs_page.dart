@@ -538,63 +538,6 @@ class _SystemLogsPageState extends State<SystemLogsPage> {
                     const Text('Registros de Actividad',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    _buildDateSelector(
-                      label: _startDate == null
-                          ? 'Desde'
-                          : _formatDateOnly(_startDate!),
-                      icon: Icons.calendar_today,
-                      onTap: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _startDate ?? DateTime.now(),
-                          firstDate: DateTime(2024),
-                          lastDate: DateTime.now(),
-                        );
-                        if (d != null) {
-                          setState(() => _startDate = d);
-                          _fetchLogs();
-                        }
-                      },
-                    ),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 6),
-                      child: Icon(Icons.arrow_forward,
-                          size: 14, color: Colors.grey),
-                    ),
-                    _buildDateSelector(
-                      label: _endDate == null
-                          ? 'Hasta'
-                          : _formatDateOnly(_endDate!),
-                      icon: Icons.event,
-                      onTap: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: _endDate ?? DateTime.now(),
-                          firstDate: _startDate ?? DateTime(2024),
-                          lastDate: DateTime.now(),
-                        );
-                        if (d != null) {
-                          setState(() => _endDate = d);
-                          _fetchLogs();
-                        }
-                      },
-                    ),
-                    if (_startDate != null || _endDate != null)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: IconButton(
-                          onPressed: () {
-                            setState(() {
-                              _startDate = null;
-                              _endDate = null;
-                            });
-                            _fetchLogs();
-                          },
-                          icon: const Icon(Icons.clear, size: 18),
-                          tooltip: 'Limpiar filtros',
-                        ),
-                      ),
                   ],
                 ),
               ),
