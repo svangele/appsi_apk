@@ -479,6 +479,22 @@ class _CalendarPageState extends State<CalendarPage> {
                                               fontSize: 13,
                                               fontWeight: FontWeight.w500),
                                         ),
+                                        if (app.notes != null &&
+                                            app.notes!.contains('Creado por:'))
+                                          Padding(
+                                            padding:
+                                                const EdgeInsets.only(top: 2),
+                                            child: Text(
+                                              app.notes!
+                                                  .split('\n')
+                                                  .last
+                                                  .replaceAll(
+                                                      'Creado por: ', ''),
+                                              style: TextStyle(
+                                                  color: Colors.grey.shade500,
+                                                  fontSize: 12),
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ),
