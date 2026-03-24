@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/notification_service.dart';
@@ -22,6 +23,65 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   List<Map<String, dynamic>> _adminUserList = [];
   String? _selectedUserId;
+
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildControls(ThemeData theme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_userRole == 'admin' && _adminUserList.isNotEmpty)
+          _buildGlassPill(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedUserId,
+                isDense: true,
+                icon: Icon(Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.secondary),
+                items: _adminUserList.map((user) {
+                  final name =
+                      '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
+                          .trim();
+                  return DropdownMenuItem(
+                    value: user['id'] as String,
+                    child: Text(name.isEmpty ? 'Usuario' : name,
+                        style: const TextStyle(fontSize: 14)),
+                  );
+                }).toList(),
+                onChanged: _onUserSelected,
+              ),
+            ),
+          ),
+        const SizedBox(width: 8),
+        _buildGlassPill(
+          padding: const EdgeInsets.all(12),
+          child: InkWell(
+            onTap: () => _showIncidenciaForm(),
+            borderRadius: BorderRadius.circular(30),
+            child:
+                Icon(Icons.add, size: 22, color: theme.colorScheme.secondary),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -1290,6 +1350,17 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           : null,
       body: CustomScrollView(
         slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  _buildControls(theme),
+                ],
+              ),
+            ),
+          ),
           // Main content (Responsive layout)
           SliverToBoxAdapter(
             child: Builder(
