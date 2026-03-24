@@ -19,6 +19,7 @@ class _PowerBiPageState extends State<PowerBiPage> {
   List<Map<String, dynamic>> _availableUsers = [];
   bool _isLoading = true;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
+  String _searchQuery = '';
 
   @override
   void initState() {
@@ -527,27 +528,55 @@ class _PowerBiPageState extends State<PowerBiPage> {
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
         _buildGlassPill(
-          child: GestureDetector(
-            onTap: () => _showLinkForm(),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.add, size: 20),
-                SizedBox(width: 8),
-                Text('Nuevo Enlace'),
-              ],
-            ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.search, size: 20, color: Colors.grey),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 150,
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: 'Buscar...',
+                    border: InputBorder.none,
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  style: const TextStyle(fontSize: 14),
+                  onChanged: (value) => setState(() => _searchQuery = value),
+                ),
+              ),
+              if (_searchQuery.isNotEmpty)
+                IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () => setState(() => _searchQuery = ''),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              const SizedBox(width: 8),
+              const VerticalDivider(width: 1, thickness: 1),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.add, size: 22),
+                onPressed: () => _showLinkForm(),
+                tooltip: 'Nuevo Enlace',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildGlassPill({required Widget child}) {
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(30),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(30),
@@ -605,16 +634,29 @@ class _PowerBiPageState extends State<PowerBiPage> {
   }
 
   Widget _buildAdminContent(ThemeData theme) {
-    if (_links.isEmpty) {
+    final filteredLinks = _searchQuery.isEmpty
+        ? _links
+        : _links.where((link) {
+            final title = (link['title'] ?? '').toString().toLowerCase();
+            return title.contains(_searchQuery.toLowerCase());
+          }).toList();
+
+    if (filteredLinks.isEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.link_off, size: 64, color: Colors.grey[300]),
+              Icon(
+                _searchQuery.isEmpty ? Icons.link_off : Icons.search_off,
+                size: 64,
+                color: Colors.grey[300],
+              ),
               const SizedBox(height: 16),
               Text(
-                'No hay enlaces creados',
+                _searchQuery.isEmpty
+                    ? 'No hay enlaces creados'
+                    : 'No se encontraron resultados',
                 style: TextStyle(color: Colors.grey[500]),
               ),
             ],
@@ -634,10 +676,10 @@ class _PowerBiPageState extends State<PowerBiPage> {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final link = _links[index];
+            final link = filteredLinks[index];
             return _buildLinkCard(link, theme, isAdmin: true);
           },
-          childCount: _links.length,
+          childCount: filteredLinks.length,
         ),
       ),
     );
