@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
 
@@ -1024,8 +1025,30 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(user['email'] ?? 'Sin correo',
-                      style: const TextStyle(fontSize: 12)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(user['email'] ?? 'Sin correo',
+                            style: const TextStyle(fontSize: 12)),
+                      ),
+                      if (user['email'] != null &&
+                          user['email'].toString().isNotEmpty)
+                        InkWell(
+                          onTap: () {
+                            Clipboard.setData(
+                                ClipboardData(text: user['email'].toString()));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Correo copiado al portapapeles'),
+                                duration: Duration(seconds: 1),
+                              ),
+                            );
+                          },
+                          child: const Icon(Icons.copy,
+                              size: 14, color: Colors.grey),
+                        ),
+                    ],
+                  ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -1306,7 +1329,34 @@ class _UserDataSource extends DataTableSource {
             ),
           ],
         )),
-        DataCell(Text(user['email']?.toString() ?? 'Sin correo')),
+        DataCell(
+          Builder(
+            builder: (ctx) => Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(user['email']?.toString() ?? 'Sin correo'),
+                if (user['email'] != null &&
+                    user['email'].toString().isNotEmpty)
+                  InkWell(
+                    onTap: () {
+                      Clipboard.setData(
+                          ClipboardData(text: user['email'].toString()));
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        const SnackBar(
+                          content: Text('Correo copiado al portapapeles'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(Icons.copy, size: 14, color: Colors.grey),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
         DataCell(Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
