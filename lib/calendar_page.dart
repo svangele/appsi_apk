@@ -106,13 +106,18 @@ class _CalendarPageState extends State<CalendarPage> {
           for (var s in subscriptions) s['followed_user_id'] as String
         };
 
+        debugPrint('followedUserIds: $followedUserIds');
+
         if (followedUserIds.isNotEmpty) {
+          debugPrint('Fetching events for IDs: $followedUserIds');
+
           final followedEvents = await _supabase
               .from('events')
               .select('*, profiles(full_name, id)')
               .filter('creator_id', 'in', '(${followedUserIds.join(",")})')
               .order('start_time');
 
+          debugPrint('followedEvents count: ${followedEvents.length}');
           response = [...response, ...followedEvents];
         }
       }
