@@ -871,12 +871,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
         final fullName = (user['full_name'] ?? '').toString().toLowerCase();
         final role = (user['role'] ?? '').toString().toLowerCase();
         final numEmp = (user['numero_empleado'] ?? '').toString().toLowerCase();
+        final email = (user['email'] ?? '').toString().toLowerCase();
         return nombre.contains(query) ||
             paterno.contains(query) ||
             materno.contains(query) ||
             fullName.contains(query) ||
             role.contains(query) ||
-            numEmp.contains(query);
+            numEmp.contains(query) ||
+            email.contains(query);
       }).toList();
     }
 
