@@ -342,7 +342,7 @@ class _IssiPageState extends State<IssiPage> {
       Widget fieldColumn(Widget child) => Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [child, const SizedBox(height: 12)],
+            children: [child, const SizedBox(height: 16)],
           );
 
       final fields = [
@@ -557,7 +557,7 @@ class _IssiPageState extends State<IssiPage> {
                               Text(
                                   isEditing
                                       ? 'Editar Elemento'
-                                      : 'Nuevo Elemento',
+                                      : 'Nuevo Inventario',
                                   style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold)),
@@ -663,7 +663,7 @@ class _IssiPageState extends State<IssiPage> {
                                               backgroundColor: Colors.red));
                                   }
                                 },
-                                child: Text(isEditing ? 'Guardar' : 'Crear',
+                                child: Text(isEditing ? 'Guardar' : 'Guardar',
                                     style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -724,7 +724,7 @@ class _IssiPageState extends State<IssiPage> {
                         child: const Text('Cancelar',
                             style: TextStyle(fontSize: 16, color: Colors.grey)),
                       ),
-                      Text(isEditing ? 'Editar Elemento' : 'Nuevo Elemento',
+                      Text(isEditing ? 'Editar Elemento' : 'Nuevo Inventario',
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       TextButton(
@@ -812,7 +812,7 @@ class _IssiPageState extends State<IssiPage> {
                                       backgroundColor: Colors.red));
                           }
                         },
-                        child: Text(isEditing ? 'Guardar' : 'Crear',
+                        child: Text(isEditing ? 'Guardar' : 'Guardar',
                             style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
