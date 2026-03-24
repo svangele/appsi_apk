@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/notification_service.dart';
@@ -12,7 +13,8 @@ class IncidenciasPage extends StatefulWidget {
 
 class _IncidenciasPageState extends State<IncidenciasPage> {
   List<Map<String, dynamic>> _incidencias = [];
-  List<Map<String, dynamic>> _allIncidencias = []; // all PENDIENTE for admin view
+  List<Map<String, dynamic>> _allIncidencias =
+      []; // all PENDIENTE for admin view
   bool _isLoading = true;
   bool _antiguedadExpanded = false; // manual expand state for mobile card
   String? _userRole;
@@ -22,6 +24,79 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   List<Map<String, dynamic>> _adminUserList = [];
   String? _selectedUserId;
+
+  Widget _buildGlassPill({required Widget child, EdgeInsetsGeometry? padding}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(30),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding ??
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.85),
+            borderRadius: BorderRadius.circular(30),
+            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAdminControls(ThemeData theme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _buildGlassPill(
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedUserId,
+              isDense: true,
+              icon: Icon(Icons.keyboard_arrow_down,
+                  color: theme.colorScheme.secondary),
+              items: _adminUserList.map((user) {
+                final name =
+                    '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
+                        .trim();
+                return DropdownMenuItem(
+                  value: user['id'] as String,
+                  child: Text(name.isEmpty ? 'Usuario' : name,
+                      style: const TextStyle(fontSize: 14)),
+                );
+              }).toList(),
+              onChanged: _onUserSelected,
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        _buildGlassPill(
+          padding: EdgeInsets.zero,
+          child: InkWell(
+            onTap: () => _showIncidenciaForm(),
+            borderRadius: BorderRadius.circular(30),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add, size: 20, color: theme.colorScheme.secondary),
+                  const SizedBox(width: 8),
+                  Text(
+                    'NUEVO',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.secondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   void initState() {
@@ -37,15 +112,17 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       // Fetch role and name
       final profile = await Supabase.instance.client
           .from('profiles')
-          .select('role, nombre, paterno, materno, fecha_ingreso, fecha_reingreso')
+          .select(
+              'role, nombre, paterno, materno, fecha_ingreso, fecha_reingreso')
           .eq('id', user.id)
           .maybeSingle();
 
       if (profile != null) {
         final fullName = (profile['nombre'] != null)
-            ? '${profile['nombre']} ${profile['paterno']} ${profile['materno'] ?? ''}'.trim()
+            ? '${profile['nombre']} ${profile['paterno']} ${profile['materno'] ?? ''}'
+                .trim()
             : user.email ?? 'Usuario';
-        
+
         if (mounted) {
           setState(() {
             _userRole = profile['role'];
@@ -58,7 +135,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 : null;
             _selectedUserId = user.id;
           });
-          
+
           if (_userRole == 'admin') {
             await _fetchAdminUserList();
           }
@@ -74,10 +151,11 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     try {
       final response = await Supabase.instance.client
           .from('profiles')
-          .select('id, nombre, paterno, materno, role, fecha_ingreso, fecha_reingreso')
+          .select(
+              'id, nombre, paterno, materno, role, fecha_ingreso, fecha_reingreso')
           .eq('status_sys', 'ACTIVO')
           .order('nombre', ascending: true);
-      
+
       if (mounted) {
         setState(() {
           _adminUserList = List<Map<String, dynamic>>.from(response);
@@ -90,14 +168,16 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   void _onUserSelected(String? newUserId) {
     if (newUserId == null || newUserId == _selectedUserId) return;
-    
-    final selectedProfile = _adminUserList.firstWhere((p) => p['id'] == newUserId, orElse: () => {});
+
+    final selectedProfile = _adminUserList
+        .firstWhere((p) => p['id'] == newUserId, orElse: () => {});
     if (selectedProfile.isEmpty) return;
 
     setState(() {
       _selectedUserId = newUserId;
       _userFullName = (selectedProfile['nombre'] != null)
-          ? '${selectedProfile['nombre']} ${selectedProfile['paterno']} ${selectedProfile['materno'] ?? ''}'.trim()
+          ? '${selectedProfile['nombre']} ${selectedProfile['paterno']} ${selectedProfile['materno'] ?? ''}'
+              .trim()
           : 'Usuario';
       _fechaIngreso = selectedProfile['fecha_ingreso'] != null
           ? DateTime.tryParse(selectedProfile['fecha_ingreso'])
@@ -107,7 +187,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           : null;
       _isLoading = true; // Show loading while fetching their incidencias
     });
-    
+
     _fetchIncidencias();
   }
 
@@ -119,8 +199,13 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     int years = now.year - base.year;
     int months = now.month - base.month;
     int days = now.day - base.day;
-    if (days < 0) { months--; }
-    if (months < 0) { years--; months += 12; }
+    if (days < 0) {
+      months--;
+    }
+    if (months < 0) {
+      years--;
+      months += 12;
+    }
     final parts = <String>[];
     if (years > 0) parts.add('$years año${years > 1 ? 's' : ''}');
     if (months > 0) parts.add('$months mes${months > 1 ? 'es' : ''}');
@@ -134,7 +219,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     if (base == null) return 0;
     final now = DateTime.now();
     int years = now.year - base.year;
-    if (now.month < base.month || (now.month == base.month && now.day < base.day)) years--;
+    if (now.month < base.month ||
+        (now.month == base.month && now.day < base.day)) years--;
     return years < 0 ? 0 : years;
   }
 
@@ -169,7 +255,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       ['26 a 30 años', '30'],
       ['31 a 35 años', '32'],
     ];
-    
+
     final years = _calcYears();
     final highlightIdx = _getRowIndex(years);
 
@@ -191,11 +277,15 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             children: const [
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text('Antigüedad', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                child: Text('Antigüedad',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                child: Text('Días', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                child: Text('Días',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ),
             ],
           ),
@@ -209,24 +299,34 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               ),
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Text(
                     rows[i][0],
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: i == highlightIdx ? FontWeight.bold : FontWeight.normal,
-                      color: i == highlightIdx ? theme.colorScheme.secondary : null,
+                      fontWeight: i == highlightIdx
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: i == highlightIdx
+                          ? theme.colorScheme.secondary
+                          : null,
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Text(
                     rows[i][1],
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: i == highlightIdx ? FontWeight.bold : FontWeight.normal,
-                      color: i == highlightIdx ? theme.colorScheme.secondary : null,
+                      fontWeight: i == highlightIdx
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      color: i == highlightIdx
+                          ? theme.colorScheme.secondary
+                          : null,
                     ),
                   ),
                 ),
@@ -259,16 +359,24 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
         children: [
           Row(
             children: [
-              Icon(Icons.workspace_premium_outlined, color: theme.colorScheme.secondary, size: 28),
+              Icon(Icons.workspace_premium_outlined,
+                  color: theme.colorScheme.secondary, size: 28),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                    Text(label,
+                        style:
+                            const TextStyle(fontSize: 11, color: Colors.grey)),
                     Text(_calcAntiguedad(),
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: theme.colorScheme.secondary)),
-                    Text('Desde: $dateStr', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.secondary)),
+                    Text('Desde: $dateStr',
+                        style:
+                            const TextStyle(fontSize: 11, color: Colors.grey)),
                   ],
                 ),
               ),
@@ -276,7 +384,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 AnimatedRotation(
                   turns: expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 250),
-                  child: Icon(Icons.expand_more, color: theme.colorScheme.secondary.withOpacity(0.6)),
+                  child: Icon(Icons.expand_more,
+                      color: theme.colorScheme.secondary.withOpacity(0.6)),
                 ),
             ],
           ),
@@ -291,7 +400,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   Widget _buildMissingDateFallback({bool isDesktop = false}) {
     return Container(
-      margin: !isDesktop ? const EdgeInsets.fromLTRB(16, 12, 16, 4) : EdgeInsets.zero,
+      margin: !isDesktop
+          ? const EdgeInsets.fromLTRB(16, 12, 16, 4)
+          : EdgeInsets.zero,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: Colors.orange.withOpacity(0.08),
@@ -318,8 +429,10 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     final base = _fechaReingreso ?? _fechaIngreso;
     if (base == null) return _buildMissingDateFallback(isDesktop: false);
     final theme = Theme.of(context);
-    final label = _fechaReingreso != null ? 'Antigüedad (Reingreso)' : 'Antigüedad';
-    final dateStr = '${base.day.toString().padLeft(2, '0')}/${base.month.toString().padLeft(2, '0')}/${base.year}';
+    final label =
+        _fechaReingreso != null ? 'Antigüedad (Reingreso)' : 'Antigüedad';
+    final dateStr =
+        '${base.day.toString().padLeft(2, '0')}/${base.month.toString().padLeft(2, '0')}/${base.year}';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -349,13 +462,16 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     final base = _fechaReingreso ?? _fechaIngreso;
     if (base == null) return _buildMissingDateFallback(isDesktop: true);
     final theme = Theme.of(context);
-    final label = _fechaReingreso != null ? 'Antigüedad (Reingreso)' : 'Antigüedad';
-    final dateStr = '${base.day.toString().padLeft(2, '0')}/${base.month.toString().padLeft(2, '0')}/${base.year}';
-    
+    final label =
+        _fechaReingreso != null ? 'Antigüedad (Reingreso)' : 'Antigüedad';
+    final dateStr =
+        '${base.day.toString().padLeft(2, '0')}/${base.month.toString().padLeft(2, '0')}/${base.year}';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildAntiguedadCardContent(theme: theme, label: label, dateStr: dateStr, isDesktop: true),
+        _buildAntiguedadCardContent(
+            theme: theme, label: label, dateStr: dateStr, isDesktop: true),
         const SizedBox(height: 12),
         _buildLeyesVacacionesTable(),
       ],
@@ -387,7 +503,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     final completedYears = _calcYears();
 
     final String targetUserId = _selectedUserId ?? '';
-    String normalizePeriod(String? p) => (p ?? '').replaceAll(RegExp(r'\D'), '');
+    String normalizePeriod(String? p) =>
+        (p ?? '').replaceAll(RegExp(r'\D'), '');
 
     final usedDaysMap = <String, int>{};
     for (final inc in _incidencias) {
@@ -403,7 +520,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     // Fórmula: (días_ley / 365) × (fecha_actual − inicio_periodo + 1)
     // periodEnd = anniversary date (when year y completes)
     // periodStart = one year before = DateTime(base.year + y - 1, ...)
-    double _calcProporcionalDouble(int days, DateTime periodStart, DateTime periodEnd) {
+    double _calcProporcionalDouble(
+        int days, DateTime periodStart, DateTime periodEnd) {
       if (periodStart.isAfter(now)) {
         // Future period: show full entitlement
         return days.toDouble();
@@ -419,8 +537,10 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
     final tableRows = <Map<String, dynamic>>[];
     for (int y = 1; y <= completedYears + 1; y++) {
-      final periodEnd   = DateTime(base.year + y,     base.month, base.day); // anniversary end
-      final periodStart = DateTime(base.year + y - 1, base.month, base.day); // anniversary start
+      final periodEnd =
+          DateTime(base.year + y, base.month, base.day); // anniversary end
+      final periodStart = DateTime(
+          base.year + y - 1, base.month, base.day); // anniversary start
       final periodLabel = '${periodStart.year} - ${periodEnd.year}';
       final normLabel = normalizePeriod(periodLabel);
 
@@ -442,7 +562,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final isCurrent = y == completedYears;
       final isUpcoming = periodEnd.isAfter(now) && periodStart.isAfter(now);
       final daysRequested = usedDaysMap[normLabel] ?? 0;
-      final proporcional = _calcProporcionalDouble(days, periodStart, periodEnd);
+      final proporcional =
+          _calcProporcionalDouble(days, periodStart, periodEnd);
       final saldo = proporcional - daysRequested;
 
       tableRows.add({
@@ -459,9 +580,12 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     if (tableRows.isEmpty) return const SizedBox.shrink();
 
     // Grand totals
-    final totalProp  = tableRows.fold<double>(0, (s, r) => s + (r['proporcional'] as double));
-    final totalReq   = tableRows.fold<int>(0, (s, r) => s + (r['requested'] as int));
-    final totalSaldo = tableRows.fold<double>(0, (s, r) => s + (r['saldo'] as double));
+    final totalProp =
+        tableRows.fold<double>(0, (s, r) => s + (r['proporcional'] as double));
+    final totalReq =
+        tableRows.fold<int>(0, (s, r) => s + (r['requested'] as int));
+    final totalSaldo =
+        tableRows.fold<double>(0, (s, r) => s + (r['saldo'] as double));
 
     // Column widths
     const double wProp = 72;
@@ -469,11 +593,26 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     const double wSaldo = 72;
     const double wLey = 52;
 
-    Widget _cell(String text, {Color? color, FontWeight? weight, TextAlign align = TextAlign.center, double? width}) {
-      final w = Text(text, textAlign: align, style: TextStyle(fontSize: 12, fontWeight: weight, color: color));
+    Widget _cell(String text,
+        {Color? color,
+        FontWeight? weight,
+        TextAlign align = TextAlign.center,
+        double? width}) {
+      final w = Text(text,
+          textAlign: align,
+          style: TextStyle(fontSize: 12, fontWeight: weight, color: color));
       return width != null
-        ? SizedBox(width: width, child: Padding(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8), child: w))
-        : Expanded(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: w));
+          ? SizedBox(
+              width: width,
+              child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+                  child: w))
+          : Expanded(
+              child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: w));
     }
 
     return Container(
@@ -491,10 +630,14 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                Icon(Icons.calendar_month_outlined, size: 18, color: theme.colorScheme.secondary),
+                Icon(Icons.calendar_month_outlined,
+                    size: 18, color: theme.colorScheme.secondary),
                 const SizedBox(width: 8),
                 Text('Historial de Vacaciones',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: theme.colorScheme.secondary)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: theme.colorScheme.secondary)),
               ],
             ),
           ),
@@ -516,26 +659,42 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             final isCurrent = row['isCurrent'] as bool;
             final isUpcoming = row['isUpcoming'] as bool;
 
-            final Color? textColor = isCurrent ? theme.colorScheme.secondary : (isUpcoming ? Colors.orange[700] : null);
+            final Color? textColor = isCurrent
+                ? theme.colorScheme.secondary
+                : (isUpcoming ? Colors.orange[700] : null);
             final double saldo = row['saldo'] as double;
             final double proporcional = row['proporcional'] as double;
             final FontWeight? weight = isCurrent ? FontWeight.bold : null;
-            final Color saldoColor = saldo < 0 ? Colors.red : (saldo == 0 ? Colors.grey : Colors.green[700]!);
+            final Color saldoColor = saldo < 0
+                ? Colors.red
+                : (saldo == 0 ? Colors.grey : Colors.green[700]!);
 
             Color bgColor;
-            if (isCurrent) bgColor = theme.colorScheme.secondary.withOpacity(0.15);
-            else if (isUpcoming) bgColor = Colors.orange.withOpacity(0.07);
-            else bgColor = i.isEven ? Colors.white : Colors.grey[50]!;
+            if (isCurrent)
+              bgColor = theme.colorScheme.secondary.withOpacity(0.15);
+            else if (isUpcoming)
+              bgColor = Colors.orange.withOpacity(0.07);
+            else
+              bgColor = i.isEven ? Colors.white : Colors.grey[50]!;
 
             return Container(
               color: bgColor,
               child: Row(children: [
-                _cell(row['periodo'] as String, color: textColor, weight: weight, align: TextAlign.left),
-                _cell('${row['days']}', color: textColor, weight: weight, width: wLey),
-                _cell('${proporcional.toInt()}', color: textColor, weight: weight, width: wProp),
-                _cell(row['requested'] > 0 ? '${row['requested']}' : '', color: textColor, weight: weight, width: wPedidos),
-                _cell(proporcional == 0 && row['requested'] == 0 ? '' : '${saldo.toInt()}',
-                    color: saldoColor, weight: FontWeight.bold, width: wSaldo),
+                _cell(row['periodo'] as String,
+                    color: textColor, weight: weight, align: TextAlign.left),
+                _cell('${row['days']}',
+                    color: textColor, weight: weight, width: wLey),
+                _cell('${proporcional.toInt()}',
+                    color: textColor, weight: weight, width: wProp),
+                _cell(row['requested'] > 0 ? '${row['requested']}' : '',
+                    color: textColor, weight: weight, width: wPedidos),
+                _cell(
+                    proporcional == 0 && row['requested'] == 0
+                        ? ''
+                        : '${saldo.toInt()}',
+                    color: saldoColor,
+                    weight: FontWeight.bold,
+                    width: wSaldo),
               ]),
             );
           }),
@@ -543,12 +702,15 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           Container(
             color: Colors.grey[200],
             child: Row(children: [
-              _cell('Saldo Actual Total', weight: FontWeight.bold, align: TextAlign.left),
+              _cell('Saldo Actual Total',
+                  weight: FontWeight.bold, align: TextAlign.left),
               _cell('', width: wLey),
               _cell('', width: wProp),
               _cell('', width: wPedidos),
-              _cell('${totalSaldo.toInt()} días.', weight: FontWeight.bold,
-                  color: totalSaldo < 0 ? Colors.red : Colors.green[700], width: wSaldo),
+              _cell('${totalSaldo.toInt()} días.',
+                  weight: FontWeight.bold,
+                  color: totalSaldo < 0 ? Colors.red : Colors.green[700],
+                  width: wSaldo),
             ]),
           ),
         ],
@@ -563,7 +725,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final response = await Supabase.instance.client
           .from('incidencias')
           .select()
-          .eq('usuario_id', _selectedUserId ?? Supabase.instance.client.auth.currentUser!.id)
+          .eq('usuario_id',
+              _selectedUserId ?? Supabase.instance.client.auth.currentUser!.id)
           .order('created_at', ascending: false);
 
       if (mounted) {
@@ -574,7 +737,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               final aOrder = order[a['status']] ?? 99;
               final bOrder = order[b['status']] ?? 99;
               if (aOrder != bOrder) return aOrder.compareTo(bOrder);
-              return (b['created_at'] as String).compareTo(a['created_at'] as String);
+              return (b['created_at'] as String)
+                  .compareTo(a['created_at'] as String);
             });
           _isLoading = false;
         });
@@ -612,15 +776,16 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     }
   }
 
-
   void _showIncidenciaForm({Map<String, dynamic>? incidencia}) {
     final isEditing = incidencia != null;
     final status = incidencia?['status'] ?? 'PENDIENTE';
-    
+
     // Si no es admin y el estatus no es PENDIENTE, no se puede editar
     if (isEditing && _userRole != 'admin' && status != 'PENDIENTE') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Solo se pueden editar incidencias en estado PENDIENTE')),
+        const SnackBar(
+            content:
+                Text('Solo se pueden editar incidencias en estado PENDIENTE')),
       );
       return;
     }
@@ -630,13 +795,20 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final base = _fechaReingreso ?? _fechaIngreso;
       if (base != null) {
         final now = DateTime.now();
-        final years = now.year - base.year - ((now.month < base.month || (now.month == base.month && now.day < base.day)) ? 1 : 0);
+        final years = now.year -
+            base.year -
+            ((now.month < base.month ||
+                    (now.month == base.month && now.day < base.day))
+                ? 1
+                : 0);
         if (years < 1) {
           showDialog(
             context: context,
             builder: (ctx) => AlertDialog(
-              icon: const Icon(Icons.info_outline, color: Colors.orange, size: 36),
-              title: const Text('Antigüedad insuficiente', textAlign: TextAlign.center),
+              icon: const Icon(Icons.info_outline,
+                  color: Colors.orange, size: 36),
+              title: const Text('Antigüedad insuficiente',
+                  textAlign: TextAlign.center),
               content: const Text(
                 'Recuerda que partiendo de tu fecha de ingreso o reingreso, debes de cumplir el año de servicios para poder ser válidas tus vacaciones.',
                 textAlign: TextAlign.center,
@@ -654,11 +826,19 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       }
     }
 
-    final periodController = TextEditingController(text: incidencia?['periodo'] ?? '2025 – 2026');
-    final diasController = TextEditingController(text: incidencia?['dias']?.toString() ?? '');
-    DateTime fechaInicio = incidencia != null ? DateTime.parse(incidencia['fecha_inicio']) : DateTime.now();
-    DateTime fechaFin = incidencia != null ? DateTime.parse(incidencia['fecha_fin']) : DateTime.now().add(const Duration(days: 1));
-    DateTime fechaRegreso = incidencia != null ? DateTime.parse(incidencia['fecha_regreso']) : DateTime.now().add(const Duration(days: 2));
+    final periodController =
+        TextEditingController(text: incidencia?['periodo'] ?? '2025 – 2026');
+    final diasController =
+        TextEditingController(text: incidencia?['dias']?.toString() ?? '');
+    DateTime fechaInicio = incidencia != null
+        ? DateTime.parse(incidencia['fecha_inicio'])
+        : DateTime.now();
+    DateTime fechaFin = incidencia != null
+        ? DateTime.parse(incidencia['fecha_fin'])
+        : DateTime.now().add(const Duration(days: 1));
+    DateTime fechaRegreso = incidencia != null
+        ? DateTime.parse(incidencia['fecha_regreso'])
+        : DateTime.now().add(const Duration(days: 2));
 
     showModalBottomSheet(
       context: context,
@@ -668,7 +848,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
         builder: (context, setModalState) => Container(
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 20, left: 20, right: 20,
+            top: 20,
+            left: 20,
+            right: 20,
           ),
           decoration: const BoxDecoration(
             color: Colors.white,
@@ -684,23 +866,39 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   children: [
                     Text(
                       isEditing ? 'Editar Incidencia' : 'Nueva Incidencia',
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF344092)),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF344092)),
                     ),
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close)),
                   ],
                 ),
                 const SizedBox(height: 16),
                 _buildFieldLabel('Nombre (Automático)'),
-                Text(isEditing ? (incidencia['nombre_usuario'] ?? '...') : (_userFullName ?? '...'), style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(
+                    isEditing
+                        ? (incidencia['nombre_usuario'] ?? '...')
+                        : (_userFullName ?? '...'),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
                 _buildFieldLabel('Periodo'),
                 DropdownButtonFormField<String>(
                   value: periodController.text,
-                  items: ['2020 – 2021', '2021 – 2022', '2022 – 2023', '2024 – 2025', '2025 – 2026']
+                  items: [
+                    '2020 – 2021',
+                    '2021 – 2022',
+                    '2022 – 2023',
+                    '2024 – 2025',
+                    '2025 – 2026'
+                  ]
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                       .toList(),
                   onChanged: (val) => periodController.text = val!,
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                  decoration:
+                      const InputDecoration(border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 16),
                 _buildFieldLabel('Días'),
@@ -708,29 +906,33 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   controller: diasController,
                   keyboardType: TextInputType.number,
                   maxLength: 2,
-                  decoration: const InputDecoration(border: OutlineInputBorder(), counterText: ""),
+                  decoration: const InputDecoration(
+                      border: OutlineInputBorder(), counterText: ""),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
                     Expanded(
-                      child: _buildDatePicker('Fecha Inicio', fechaInicio, (d) => setModalState(() => fechaInicio = d)),
+                      child: _buildDatePicker('Fecha Inicio', fechaInicio,
+                          (d) => setModalState(() => fechaInicio = d)),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: _buildDatePicker('Fecha Final', fechaFin, (d) => setModalState(() => fechaFin = d)),
+                      child: _buildDatePicker('Fecha Final', fechaFin,
+                          (d) => setModalState(() => fechaFin = d)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                _buildDatePicker('Fecha Regreso', fechaRegreso, (d) => setModalState(() => fechaRegreso = d)),
+                _buildDatePicker('Fecha Regreso', fechaRegreso,
+                    (d) => setModalState(() => fechaRegreso = d)),
                 const SizedBox(height: 32),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
                       if (diasController.text.isEmpty) return;
-                      
+
                       final data = {
                         if (!isEditing) 'nombre_usuario': _userFullName,
                         'periodo': periodController.text,
@@ -738,18 +940,26 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                         'fecha_inicio': fechaInicio.toIso8601String(),
                         'fecha_fin': fechaFin.toIso8601String(),
                         'fecha_regreso': fechaRegreso.toIso8601String(),
-                        if (!isEditing) 'usuario_id': _selectedUserId ?? Supabase.instance.client.auth.currentUser!.id,
+                        if (!isEditing)
+                          'usuario_id': _selectedUserId ??
+                              Supabase.instance.client.auth.currentUser!.id,
                       };
 
                       try {
                         if (isEditing) {
-                          await Supabase.instance.client.from('incidencias').update(data).eq('id', incidencia['id']);
+                          await Supabase.instance.client
+                              .from('incidencias')
+                              .update(data)
+                              .eq('id', incidencia['id']);
                         } else {
-                          await Supabase.instance.client.from('incidencias').insert(data);
+                          await Supabase.instance.client
+                              .from('incidencias')
+                              .insert(data);
                           // Notificar a administradores (global)
                           await NotificationService.send(
                             title: 'Nueva Incidencia',
-                            message: '$_userFullName ha creado una nueva petición.',
+                            message:
+                                '$_userFullName ha creado una nueva petición.',
                             type: 'new_incidencia',
                           );
                         }
@@ -761,7 +971,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                         debugPrint('Error saving incidencia: $e');
                       }
                     },
-                    child: Text(isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PETICIÓN'),
+                    child:
+                        Text(isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PETICIÓN'),
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -774,11 +985,14 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   }
 
   Widget _buildFieldLabel(String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
-  );
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(label,
+            style: const TextStyle(
+                fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+      );
 
-  Widget _buildDatePicker(String label, DateTime current, Function(DateTime) onPick) {
+  Widget _buildDatePicker(
+      String label, DateTime current, Function(DateTime) onPick) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -795,7 +1009,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           },
           child: Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(border: Border.all(color: Colors.grey), borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4)),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -825,17 +1041,20 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             side: BorderSide(color: Colors.grey[200]!),
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             title: Text(
               inc['periodo'] ?? '---',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text('Días: ${inc['dias']} | Creado: ${_formatDate(inc['created_at'])}'),
+            subtitle: Text(
+                'Días: ${inc['dias']} | Creado: ${_formatDate(inc['created_at'])}'),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: _getStatusColor(inc['status']).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -855,10 +1074,13 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                       if (val == 'EDIT') {
                         _showIncidenciaForm(incidencia: inc);
                       } else {
-                        await Supabase.instance.client.from('incidencias').update({'status': val}).eq('id', inc['id']);
+                        await Supabase.instance.client
+                            .from('incidencias')
+                            .update({'status': val}).eq('id', inc['id']);
                         await NotificationService.send(
                           title: 'Tu incidencia fue $val',
-                          message: 'El estado de tu petición ha cambiado a $val.',
+                          message:
+                              'El estado de tu petición ha cambiado a $val.',
                           userId: inc['usuario_id'],
                           type: 'incidencia_status',
                         );
@@ -866,15 +1088,25 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                       }
                     },
                     itemBuilder: (ctx) => [
-                      const PopupMenuItem(value: 'EDIT', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Editar'), dense: true)),
+                      const PopupMenuItem(
+                          value: 'EDIT',
+                          child: ListTile(
+                              leading: Icon(Icons.edit_outlined),
+                              title: Text('Editar'),
+                              dense: true)),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(value: 'APROBADA', child: Text('Aprobar')),
-                      const PopupMenuItem(value: 'CANCELADA', child: Text('Cancelar')),
-                      const PopupMenuItem(value: 'PENDIENTE', child: Text('Pendiente')),
+                      const PopupMenuItem(
+                          value: 'APROBADA', child: Text('Aprobar')),
+                      const PopupMenuItem(
+                          value: 'CANCELADA', child: Text('Cancelar')),
+                      const PopupMenuItem(
+                          value: 'PENDIENTE', child: Text('Pendiente')),
                     ],
                   )
                 else if (inc['status'] == 'PENDIENTE')
-                  IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: () => _showIncidenciaForm(incidencia: inc)),
+                  IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 20),
+                      onPressed: () => _showIncidenciaForm(incidencia: inc)),
               ],
             ),
           ),
@@ -882,7 +1114,6 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       },
     );
   }
-
 
   /// Admin-only: shows all PENDIENTE records from all users.
   Widget _buildPendingTable(ThemeData theme) {
@@ -899,11 +1130,13 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             child: Row(
               children: [
-                Icon(Icons.pending_actions, color: Colors.orange[700], size: 20),
+                Icon(Icons.pending_actions,
+                    color: Colors.orange[700], size: 20),
                 const SizedBox(width: 8),
                 Text(
                   'Solicitudes Pendientes (${_allIncidencias.length})',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -913,7 +1146,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             const Padding(
               padding: EdgeInsets.all(32),
               child: Center(
-                child: Text('Sin solicitudes pendientes', style: TextStyle(color: Colors.grey)),
+                child: Text('Sin solicitudes pendientes',
+                    style: TextStyle(color: Colors.grey)),
               ),
             )
           else
@@ -924,71 +1158,109 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                     child: DataTable(
-                headingRowColor: WidgetStateProperty.all(Colors.orange.withOpacity(0.07)),
-                columnSpacing: 20,
-                horizontalMargin: 16,
-                dataRowMinHeight: 40,
-                dataRowMaxHeight: 48,
-                columns: const [
-                  DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Periodo', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Días', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha Inicio', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha Final', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha Regreso', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
-                ],
-                rows: _allIncidencias.map((inc) {
-                  final profile = inc['profiles'] as Map<String, dynamic>? ?? {};
-                  final nombre = '${profile['nombre'] ?? ''} ${profile['paterno'] ?? ''}'.trim();
-                  return DataRow(cells: [
-                    DataCell(Text(nombre.isEmpty ? inc['usuario_id']?.toString().substring(0, 8) ?? '---' : nombre)),
-                    DataCell(Text(inc['periodo']?.toString() ?? '---')),
-                    DataCell(Text(inc['dias']?.toString() ?? '---')),
-                    DataCell(Text(inc['fecha_inicio'] != null ? _formatDate(inc['fecha_inicio']) : '---')),
-                    DataCell(Text(inc['fecha_fin'] != null ? _formatDate(inc['fecha_fin']) : '---')),
-                    DataCell(Text(inc['fecha_regreso'] != null ? _formatDate(inc['fecha_regreso']) : '---')),
-                    DataCell(
-                      PopupMenuButton<String>(
-                        tooltip: 'Cambiar estatus',
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.orange.withOpacity(0.4), width: 0.8),
+                      headingRowColor: WidgetStateProperty.all(
+                          Colors.orange.withOpacity(0.07)),
+                      columnSpacing: 20,
+                      horizontalMargin: 16,
+                      dataRowMinHeight: 40,
+                      dataRowMaxHeight: 48,
+                      columns: const [
+                        DataColumn(
+                            label: Text('Nombre',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Periodo',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Días',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Fecha Inicio',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Fecha Final',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Fecha Regreso',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                        DataColumn(
+                            label: Text('Estatus',
+                                style: TextStyle(fontWeight: FontWeight.bold))),
+                      ],
+                      rows: _allIncidencias.map((inc) {
+                        final profile =
+                            inc['profiles'] as Map<String, dynamic>? ?? {};
+                        final nombre =
+                            '${profile['nombre'] ?? ''} ${profile['paterno'] ?? ''}'
+                                .trim();
+                        return DataRow(cells: [
+                          DataCell(Text(nombre.isEmpty
+                              ? inc['usuario_id']?.toString().substring(0, 8) ??
+                                  '---'
+                              : nombre)),
+                          DataCell(Text(inc['periodo']?.toString() ?? '---')),
+                          DataCell(Text(inc['dias']?.toString() ?? '---')),
+                          DataCell(Text(inc['fecha_inicio'] != null
+                              ? _formatDate(inc['fecha_inicio'])
+                              : '---')),
+                          DataCell(Text(inc['fecha_fin'] != null
+                              ? _formatDate(inc['fecha_fin'])
+                              : '---')),
+                          DataCell(Text(inc['fecha_regreso'] != null
+                              ? _formatDate(inc['fecha_regreso'])
+                              : '---')),
+                          DataCell(
+                            PopupMenuButton<String>(
+                              tooltip: 'Cambiar estatus',
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                      color: Colors.orange.withOpacity(0.4),
+                                      width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text('PENDIENTE',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orange[800])),
+                                    const SizedBox(width: 4),
+                                    Icon(Icons.arrow_drop_down,
+                                        size: 14, color: Colors.orange[800]),
+                                  ],
+                                ),
+                              ),
+                              onSelected: (val) async {
+                                await Supabase.instance.client
+                                    .from('incidencias')
+                                    .update({'status': val}).eq(
+                                        'id', inc['id']);
+                                await NotificationService.send(
+                                  title: 'Tu incidencia fue $val',
+                                  message:
+                                      'El estado de tu petición ha cambiado a $val.',
+                                  userId: inc['usuario_id'],
+                                  type: 'incidencia_status',
+                                );
+                                _fetchIncidencias();
+                              },
+                              itemBuilder: (_) => const [
+                                PopupMenuItem(
+                                    value: 'APROBADA', child: Text('APROBADA')),
+                                PopupMenuItem(
+                                    value: 'RECHAZADA',
+                                    child: Text('RECHAZADA')),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('PENDIENTE',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.orange[800])),
-                              const SizedBox(width: 4),
-                              Icon(Icons.arrow_drop_down, size: 14, color: Colors.orange[800]),
-                            ],
-                          ),
-                        ),
-                        onSelected: (val) async {
-                          await Supabase.instance.client
-                              .from('incidencias')
-                              .update({'status': val})
-                              .eq('id', inc['id']);
-                          await NotificationService.send(
-                            title: 'Tu incidencia fue $val',
-                            message: 'El estado de tu petición ha cambiado a $val.',
-                            userId: inc['usuario_id'],
-                            type: 'incidencia_status',
-                          );
-                          _fetchIncidencias();
-                        },
-                        itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'APROBADA', child: Text('APROBADA')),
-                          PopupMenuItem(value: 'RECHAZADA', child: Text('RECHAZADA')),
-                        ],
-                      ),
-                    ),
-                  ]);
-                }).toList(),
+                        ]);
+                      }).toList(),
                     ),
                   ),
                 );
@@ -1000,8 +1272,6 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   }
 
   Widget _buildDesktopTable(ThemeData theme) {
-
-
     return SizedBox(
       width: double.infinity,
       child: Card(
@@ -1015,34 +1285,33 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Historial de ${_userFullName ?? "Solicitudes"}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ElevatedButton.icon(
-                    onPressed: () => _showIncidenciaForm(),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: theme.colorScheme.secondary,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(120, 48),
-                    ),
-                    icon: const Icon(Icons.add),
-                    label: const Text('NUEVO'),
-                  ),
-                ],
-              ),
+              child: Text('Historial de ${_userFullName ?? "Solicitudes"}',
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             const Divider(height: 1),
             Theme(
               data: theme.copyWith(cardColor: Colors.transparent),
               child: PaginatedDataTable(
                 columns: const [
-                  DataColumn(label: Text('Periodo', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Días', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Creado', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha Inicio', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Fecha Fin', style: TextStyle(fontWeight: FontWeight.bold))),
-                  DataColumn(label: Text('Estatus', style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Periodo',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Días',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Creado',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Fecha Inicio',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Fecha Fin',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Estatus',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 source: _IncidenciasDataSource(
                   items: _incidencias,
@@ -1052,7 +1321,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   getStatusColor: _getStatusColor,
                   onEdit: (item) => _showIncidenciaForm(incidencia: item),
                   onStatusChange: (item, val) async {
-                    await Supabase.instance.client.from('incidencias').update({'status': val}).eq('id', item['id']);
+                    await Supabase.instance.client
+                        .from('incidencias')
+                        .update({'status': val}).eq('id', item['id']);
                     await NotificationService.send(
                       title: 'Tu incidencia fue $val',
                       message: 'El estado de tu petición ha cambiado a $val.',
@@ -1062,7 +1333,9 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                     _fetchIncidencias();
                   },
                 ),
-                rowsPerPage: _incidencias.isEmpty ? 1 : (_incidencias.length > 10 ? 10 : _incidencias.length),
+                rowsPerPage: _incidencias.isEmpty
+                    ? 1
+                    : (_incidencias.length > 10 ? 10 : _incidencias.length),
                 showCheckboxColumn: false,
                 horizontalMargin: 16,
                 columnSpacing: 16,
@@ -1096,42 +1369,44 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final isMobile = constraints.maxWidth <= 800;
-                final hasSelector = _userRole == 'admin' && _adminUserList.isNotEmpty;
+                final hasSelector =
+                    _userRole == 'admin' && _adminUserList.isNotEmpty;
 
                 Widget? selectorWidget = hasSelector
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[300]!),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedUserId,
-                          isDense: true,
-                          icon: Icon(Icons.keyboard_arrow_down, color: theme.colorScheme.secondary),
-                          items: _adminUserList.map((user) {
-                            final name = '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'.trim();
-                            return DropdownMenuItem(
-                              value: user['id'] as String,
-                              child: Text(name.isEmpty ? 'Usuario' : name, style: const TextStyle(fontSize: 14)),
-                            );
-                          }).toList(),
-                          onChanged: _onUserSelected,
+                    ? _buildGlassPill(
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedUserId,
+                            isDense: true,
+                            icon: Icon(Icons.keyboard_arrow_down,
+                                color: theme.colorScheme.secondary),
+                            items: _adminUserList.map((user) {
+                              final name =
+                                  '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
+                                      .trim();
+                              return DropdownMenuItem(
+                                value: user['id'] as String,
+                                child: Text(name.isEmpty ? 'Usuario' : name,
+                                    style: const TextStyle(fontSize: 14)),
+                              );
+                            }).toList(),
+                            onChanged: _onUserSelected,
+                          ),
                         ),
-                      ),
-                    )
-                  : null;
+                      )
+                    : null;
 
                 return PageHeader(
                   title: 'Incidencias y Peticiones',
-                  // On desktop: selector is inline (trailing)
-                  // On mobile: selector goes below the title (bottom) to avoid compressing it
-                  trailing: (!isMobile && selectorWidget != null) ? selectorWidget : null,
+                  trailing: (!isMobile && hasSelector)
+                      ? _buildAdminControls(theme)
+                      : null,
                   bottom: (isMobile && selectorWidget != null)
-                    ? [SizedBox(width: double.infinity, child: selectorWidget)]
-                    : null,
+                      ? [
+                          SizedBox(
+                              width: double.infinity, child: selectorWidget)
+                        ]
+                      : null,
                 );
               },
             ),
@@ -1144,7 +1419,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
                 if (isDesktop) {
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -1168,14 +1444,19 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                             const SizedBox(width: 16),
                             Expanded(
                               flex: 6,
-                               child: _isLoading
+                              child: _isLoading
                                   ? Center(
                                       child: Image.asset(
                                         'assets/sisol_loader.gif',
                                         width: 150,
-                                        errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                                        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                                            frame == null ? const CircularProgressIndicator() : child,
+                                        errorBuilder: (context, error,
+                                                stackTrace) =>
+                                            const CircularProgressIndicator(),
+                                        frameBuilder: (context, child, frame,
+                                                wasSynchronouslyLoaded) =>
+                                            frame == null
+                                                ? const CircularProgressIndicator()
+                                                : child,
                                       ),
                                     )
                                   : _buildDesktopTable(theme),
@@ -1210,14 +1491,20 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                               child: Image.asset(
                                 'assets/sisol_loader.gif',
                                 width: 150,
-                                errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
-                                frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
-                                    frame == null ? const CircularProgressIndicator() : child,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const CircularProgressIndicator(),
+                                frameBuilder: (context, child, frame,
+                                        wasSynchronouslyLoaded) =>
+                                    frame == null
+                                        ? const CircularProgressIndicator()
+                                        : child,
                               ),
                             ),
                           )
                         else if (_incidencias.isEmpty)
-                          const Padding(padding: EdgeInsets.all(40), child: Text('Sin incidencias registradas'))
+                          const Padding(
+                              padding: EdgeInsets.all(40),
+                              child: Text('Sin incidencias registradas'))
                         else
                           _buildMobileList(theme),
                       ],
@@ -1227,7 +1514,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               },
             ),
           ),
-          const SliverToBoxAdapter(child: SizedBox(height: 80)), // FAB clearance
+          const SliverToBoxAdapter(
+              child: SizedBox(height: 80)), // FAB clearance
         ],
       ),
     );
@@ -1235,17 +1523,23 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   IconData _getStatusIconData(String status) {
     switch (status) {
-      case 'APROBADA': return Icons.check_circle_outline;
-      case 'CANCELADA': return Icons.cancel_outlined;
-      default: return Icons.pending_outlined;
+      case 'APROBADA':
+        return Icons.check_circle_outline;
+      case 'CANCELADA':
+        return Icons.cancel_outlined;
+      default:
+        return Icons.pending_outlined;
     }
   }
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'APROBADA': return Colors.green;
-      case 'CANCELADA': return Colors.red;
-      default: return Colors.orange;
+      case 'APROBADA':
+        return Colors.green;
+      case 'CANCELADA':
+        return Colors.red;
+      default:
+        return Colors.orange;
     }
   }
 
@@ -1287,12 +1581,16 @@ class _IncidenciasDataSource extends DataTableSource {
       index: index,
       cells: [
         DataCell(
-          Text(inc['periodo'] ?? '---', style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(inc['periodo'] ?? '---',
+              style: const TextStyle(fontWeight: FontWeight.w500)),
         ),
         DataCell(Text('${inc['dias'] ?? '-'}')),
         DataCell(Text(formatDate(inc['created_at']))),
-        DataCell(Text(inc['fecha_inicio'] != null ? formatDate(inc['fecha_inicio']) : '-')),
-        DataCell(Text(inc['fecha_fin'] != null ? formatDate(inc['fecha_fin']) : '-')),
+        DataCell(Text(inc['fecha_inicio'] != null
+            ? formatDate(inc['fecha_inicio'])
+            : '-')),
+        DataCell(Text(
+            inc['fecha_fin'] != null ? formatDate(inc['fecha_fin']) : '-')),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,
@@ -1323,15 +1621,25 @@ class _IncidenciasDataSource extends DataTableSource {
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(value: 'EDIT', child: ListTile(leading: Icon(Icons.edit_outlined), title: Text('Editar'), dense: true)),
+                    const PopupMenuItem(
+                        value: 'EDIT',
+                        child: ListTile(
+                            leading: Icon(Icons.edit_outlined),
+                            title: Text('Editar'),
+                            dense: true)),
                     const PopupMenuDivider(),
-                    const PopupMenuItem(value: 'APROBADA', child: Text('Aprobar')),
-                    const PopupMenuItem(value: 'CANCELADA', child: Text('Cancelar')),
-                    const PopupMenuItem(value: 'PENDIENTE', child: Text('Pendiente')),
+                    const PopupMenuItem(
+                        value: 'APROBADA', child: Text('Aprobar')),
+                    const PopupMenuItem(
+                        value: 'CANCELADA', child: Text('Cancelar')),
+                    const PopupMenuItem(
+                        value: 'PENDIENTE', child: Text('Pendiente')),
                   ],
                 )
               else if (inc['status'] == 'PENDIENTE')
-                IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: () => onEdit(inc)),
+                IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    onPressed: () => onEdit(inc)),
             ],
           ),
         ),
