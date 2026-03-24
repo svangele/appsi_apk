@@ -132,7 +132,7 @@ class _CalendarPageState extends State<CalendarPage> {
             final allEvents = await _supabase
                 .from('events')
                 .select('id, creator_id, title')
-                .limit(5);
+                .limit(50);
             debugPrint('TEST - All events (no filter): ${allEvents.length}');
             for (var ev in allEvents) {
               debugPrint(
