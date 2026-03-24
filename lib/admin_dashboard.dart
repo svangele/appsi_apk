@@ -1170,19 +1170,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 header: const Text('Directorio de Usuarios',
                     style:
                         TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                actions: [
-                  if (_isAdmin)
-                    ElevatedButton.icon(
-                      onPressed: () => _showUserForm(),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.secondary,
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(120, 48),
-                      ),
-                      icon: const Icon(Icons.add),
-                      label: const Text('NUEVO'),
-                    ),
-                ],
                 columns: const [
                   DataColumn(
                       label: Text('N Empleado',
