@@ -181,6 +181,9 @@ class _ExternalContactsPageState extends State<ExternalContactsPage> {
 
   void _showContactForm({Map<String, dynamic>? contact}) {
     final isEditing = contact != null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
+
     final nombreController = TextEditingController(text: contact?['nombre']);
     final empresaController = TextEditingController(text: contact?['empresa']);
     final correoController = TextEditingController(text: contact?['correo']);
@@ -188,173 +191,226 @@ class _ExternalContactsPageState extends State<ExternalContactsPage> {
         TextEditingController(text: contact?['telefono']);
     final otroController = TextEditingController(text: contact?['otro']);
 
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        insetPadding: const EdgeInsets.all(16),
-        child: StatefulBuilder(
-          builder: (context, setDialogState) {
-            final isDesktop = MediaQuery.of(context).size.width > 800;
+    Widget buildFields() {
+      final fields = [
+        TextField(
+            controller: nombreController,
+            decoration: const InputDecoration(
+                labelText: 'Nombre *', prefixIcon: Icon(Icons.person))),
+        TextField(
+            controller: empresaController,
+            decoration: const InputDecoration(
+                labelText: 'Empresa', prefixIcon: Icon(Icons.business))),
+        TextField(
+            controller: correoController,
+            decoration: const InputDecoration(
+                labelText: 'Correo', prefixIcon: Icon(Icons.email))),
+        TextField(
+            controller: telefonoController,
+            decoration: const InputDecoration(
+                labelText: 'Teléfono', prefixIcon: Icon(Icons.phone))),
+        TextField(
+            controller: otroController,
+            decoration: const InputDecoration(
+                labelText: 'Otro', prefixIcon: Icon(Icons.more_horiz))),
+      ];
 
-            Widget buildFields() {
-              final fields = [
-                TextField(
-                    controller: nombreController,
-                    decoration: const InputDecoration(
-                        labelText: 'Nombre *', prefixIcon: Icon(Icons.person))),
-                TextField(
-                    controller: empresaController,
-                    decoration: const InputDecoration(
-                        labelText: 'Empresa',
-                        prefixIcon: Icon(Icons.business))),
-                TextField(
-                    controller: correoController,
-                    decoration: const InputDecoration(
-                        labelText: 'Correo', prefixIcon: Icon(Icons.email))),
-                TextField(
-                    controller: telefonoController,
-                    decoration: const InputDecoration(
-                        labelText: 'Teléfono', prefixIcon: Icon(Icons.phone))),
-                TextField(
-                    controller: otroController,
-                    decoration: const InputDecoration(
-                        labelText: 'Otro', prefixIcon: Icon(Icons.more_horiz))),
-              ];
+      if (isDesktop) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(child: fields[0]),
+                const SizedBox(width: 16),
+                Expanded(child: fields[1]),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: fields[2]),
+                const SizedBox(width: 16),
+                Expanded(child: fields[3]),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(child: fields[4]),
+                const SizedBox(width: 16),
+                const Spacer(),
+              ],
+            ),
+          ],
+        );
+      }
+      return Column(
+        children: fields
+            .map((f) =>
+                Padding(padding: const EdgeInsets.only(bottom: 16), child: f))
+            .toList(),
+      );
+    }
 
-              if (isDesktop) {
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: fields[0]),
-                        const SizedBox(width: 16),
-                        Expanded(child: fields[1]),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: fields[2]),
-                        const SizedBox(width: 16),
-                        Expanded(child: fields[3]),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: fields[4]),
-                        const SizedBox(width: 16),
-                        const Spacer(),
-                      ],
-                    ),
-                  ],
-                );
-              }
-              return Column(
-                children: fields
-                    .map((f) => Padding(
-                        padding: const EdgeInsets.only(bottom: 16), child: f))
-                    .toList(),
-              );
-            }
+    Widget buildHeader(
+        StateSetter setDialogState, bool saving, VoidCallback onCancel) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2))
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            TextButton(
+              onPressed: onCancel,
+              child: const Text('Cancelar',
+                  style: TextStyle(fontSize: 16, color: Colors.grey)),
+            ),
+            Text(
+              isEditing ? 'Editar Contacto' : 'Nuevo Contacto',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            TextButton(
+              onPressed: () async {
+                if (nombreController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('El nombre es obligatorio')));
+                  return;
+                }
+                setDialogState(() => saving = true);
+                try {
+                  final data = {
+                    'nombre': nombreController.text.trim().toUpperCase(),
+                    'empresa': empresaController.text.trim().toUpperCase(),
+                    'correo': correoController.text.trim(),
+                    'telefono': telefonoController.text.trim(),
+                    'otro': otroController.text.trim(),
+                    'created_by': Supabase.instance.client.auth.currentUser?.id,
+                  };
+                  if (isEditing) {
+                    await Supabase.instance.client
+                        .from('external_contacts')
+                        .update(data)
+                        .eq('id', contact['id']);
+                  } else {
+                    await Supabase.instance.client
+                        .from('external_contacts')
+                        .insert(data);
+                  }
+                  if (mounted) {
+                    Navigator.pop(context);
+                    _fetchContacts();
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text(isEditing
+                            ? 'Contacto actualizado'
+                            : 'Contacto creado')));
+                  }
+                } catch (e) {
+                  setDialogState(() => saving = false);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red));
+                  }
+                }
+              },
+              child: saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Text('Guardar',
+                      style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue)),
+            ),
+          ],
+        ),
+      );
+    }
 
-            return Container(
-              width: double.maxFinite,
-              constraints: BoxConstraints(maxWidth: isDesktop ? 800 : 500),
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(isEditing ? 'Editar Contacto' : 'Nuevo Contacto',
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Flexible(child: SingleChildScrollView(child: buildFields())),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('CANCELAR'),
+    if (isDesktop) {
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: 'Dismiss',
+        barrierColor: Colors.black54,
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: screenWidth,
+                child: StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    bool saving = false;
+                    return Container(
+                      decoration: const BoxDecoration(
+                          color: Colors.white,
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20))),
+                      constraints: BoxConstraints(
+                          maxHeight: MediaQuery.of(context).size.height * 0.9),
+                      child: Column(mainAxisSize: MainAxisSize.min, children: [
+                        buildHeader(setDialogState, saving,
+                            () => Navigator.pop(dialogContext)),
+                        Flexible(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.all(24),
+                            child: buildFields(),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            if (nombreController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('El nombre es obligatorio')));
-                              return;
-                            }
-                            try {
-                              final data = {
-                                'nombre':
-                                    nombreController.text.trim().toUpperCase(),
-                                'empresa':
-                                    empresaController.text.trim().toUpperCase(),
-                                'correo': correoController.text.trim(),
-                                'telefono': telefonoController.text.trim(),
-                                'otro': otroController.text.trim(),
-                                'created_by': Supabase
-                                    .instance.client.auth.currentUser?.id,
-                              };
-
-                              if (isEditing) {
-                                await Supabase.instance.client
-                                    .from('external_contacts')
-                                    .update(data)
-                                    .eq('id', contact['id']);
-                              } else {
-                                await Supabase.instance.client
-                                    .from('external_contacts')
-                                    .insert(data);
-                              }
-
-                              if (mounted) {
-                                Navigator.pop(context);
-                                _fetchContacts();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text(isEditing
-                                            ? 'Contacto actualizado'
-                                            : 'Contacto creado')));
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                        content: Text('Error: $e'),
-                                        backgroundColor: Colors.red));
-                              }
-                            }
-                          },
-                          child: Text(isEditing ? 'GUARDAR' : 'CREAR'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ]),
+                    );
+                  },
+                ),
               ),
+            ),
+          );
+        },
+      );
+    } else {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (sheetContext) => StatefulBuilder(
+          builder: (context, setDialogState) {
+            bool saving = false;
+            return Container(
+              decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius:
+                      BorderRadius.vertical(top: Radius.circular(20))),
+              constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.9),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                buildHeader(
+                    setDialogState, saving, () => Navigator.pop(sheetContext)),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24),
+                    child: buildFields(),
+                  ),
+                ),
+              ]),
             );
           },
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
