@@ -17,7 +17,12 @@ class _UserDashboardState extends State<UserDashboard> {
   bool _isLoading = true;
   bool _isPhotoLoading = false;
   final Map<String, bool> _obscureCredentials = {
-    'drp': true, 'gp': true, 'bitrix': true, 'ek': true, 'otro': true,
+    'mail': true,
+    'drp': true,
+    'gp': true,
+    'bitrix': true,
+    'ek': true,
+    'otro': true,
   };
 
   @override
@@ -44,7 +49,8 @@ class _UserDashboardState extends State<UserDashboard> {
 
       final bytes = await image.readAsBytes();
       final fileExt = image.path.split('.').last;
-      final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileName =
+          '${user.id}_${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final path = 'avatars/$fileName';
 
       // Subir imagen al bucket 'employee_photos'
@@ -63,8 +69,7 @@ class _UserDashboardState extends State<UserDashboard> {
       // Actualizar la tabla 'profiles'
       await Supabase.instance.client
           .from('profiles')
-          .update({'foto_url': photoUrl})
-          .eq('id', user.id);
+          .update({'foto_url': photoUrl}).eq('id', user.id);
 
       // Refrescar perfil
       await _fetchProfile();
@@ -103,7 +108,7 @@ class _UserDashboardState extends State<UserDashboard> {
             .select('*')
             .eq('id', user.id)
             .maybeSingle();
-        
+
         if (mounted) {
           setState(() {
             _profile = data;
@@ -115,7 +120,7 @@ class _UserDashboardState extends State<UserDashboard> {
             .from('issi_inventory')
             .select()
             .eq('usuario_id', user.id);
-        
+
         if (mounted) {
           setState(() {
             _assignedEquipment = List<Map<String, dynamic>>.from(equipmentData);
@@ -158,36 +163,48 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
             const SizedBox(height: 24),
             if (_profile?['nombre'] != null) ...[
-              _buildInfoRow(Icons.numbers, 'Número de empleado', _profile?['numero_empleado'] ?? '---'),
+              _buildInfoRow(Icons.numbers, 'Número de empleado',
+                  _profile?['numero_empleado'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.fingerprint, 'CURP', _profile?['curp'] ?? '---'),
+              _buildInfoRow(
+                  Icons.fingerprint, 'CURP', _profile?['curp'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.business, 'Empresa', _profile?['empresa'] ?? '---'),
+              _buildInfoRow(
+                  Icons.business, 'Empresa', _profile?['empresa'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.account_tree_outlined, 'Área', _profile?['area'] ?? '---'),
+              _buildInfoRow(Icons.account_tree_outlined, 'Área',
+                  _profile?['area'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.location_on_outlined, 'Ubicación', _profile?['ubicacion'] ?? '---'),
+              _buildInfoRow(Icons.location_on_outlined, 'Ubicación',
+                  _profile?['ubicacion'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.person, 'Director', _profile?['director'] ?? '---'),
+              _buildInfoRow(
+                  Icons.person, 'Director', _profile?['director'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.manage_accounts, 'Gerente regional', _profile?['gerente_regional'] ?? '---'),
+              _buildInfoRow(Icons.manage_accounts, 'Gerente regional',
+                  _profile?['gerente_regional'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.person_pin, 'Jefe inmediato', _profile?['jefe_inmediato'] ?? '---'),
+              _buildInfoRow(Icons.person_pin, 'Jefe inmediato',
+                  _profile?['jefe_inmediato'] ?? '---'),
               const SizedBox(height: 12),
               _buildInfoRow(Icons.groups, 'Líder', _profile?['lider'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.phone_outlined, 'Teléfono', _profile?['telefono'] ?? '---'),
+              _buildInfoRow(Icons.phone_outlined, 'Teléfono',
+                  _profile?['telefono'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.phone_android, 'Teléfono celular', _profile?['celular'] ?? '---'),
+              _buildInfoRow(Icons.phone_android, 'Teléfono celular',
+                  _profile?['celular'] ?? '---'),
               const SizedBox(height: 12),
-              _buildInfoRow(Icons.email, 'Correo', Supabase.instance.client.auth.currentUser?.email ?? '---'),
+              _buildInfoRow(Icons.email, 'Correo',
+                  Supabase.instance.client.auth.currentUser?.email ?? '---'),
             ] else ...[
               const Center(
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Text(
                     'Sin datos de colaborador vinculados',
-                    style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                        color: Colors.blueGrey, fontStyle: FontStyle.italic),
                   ),
                 ),
               ),
@@ -210,7 +227,8 @@ class _UserDashboardState extends State<UserDashboard> {
           children: [
             const Row(
               children: [
-                Icon(Icons.inventory_2_outlined, color: Colors.blueGrey, size: 28),
+                Icon(Icons.inventory_2_outlined,
+                    color: Colors.blueGrey, size: 28),
                 SizedBox(width: 12),
                 Text(
                   'Equipo Asignado',
@@ -225,12 +243,14 @@ class _UserDashboardState extends State<UserDashboard> {
                   padding: EdgeInsets.symmetric(vertical: 20),
                   child: Text(
                     'Sin equipo asignado registrado',
-                    style: TextStyle(color: Colors.blueGrey, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                        color: Colors.blueGrey, fontStyle: FontStyle.italic),
                   ),
                 ),
               )
             else
-              ..._assignedEquipment!.map((item) => _buildEquipmentItem(item, theme)),
+              ..._assignedEquipment!
+                  .map((item) => _buildEquipmentItem(item, theme)),
           ],
         ),
       ),
@@ -258,11 +278,18 @@ class _UserDashboardState extends State<UserDashboard> {
               ],
             ),
             const SizedBox(height: 24),
-            _buildSystemAccessRow('DRP', _profile?['drp_user'], _profile?['drp_pass'], 'drp'),
-            _buildSystemAccessRow('GP', _profile?['gp_user'], _profile?['gp_pass'], 'gp'),
-            _buildSystemAccessRow('BITRIX', _profile?['bitrix_user'], _profile?['bitrix_pass'], 'bitrix'),
-            _buildSystemAccessRow('ENKONTROL', _profile?['ek_user'], _profile?['ek_pass'], 'ek'),
-            _buildSystemAccessRow('OTRO', _profile?['otro_user'], _profile?['otro_pass'], 'otro'),
+            _buildSystemAccessRow(
+                'MAIL', _profile?['mail_user'], _profile?['mail_pass'], 'mail'),
+            _buildSystemAccessRow(
+                'DRP', _profile?['drp_user'], _profile?['drp_pass'], 'drp'),
+            _buildSystemAccessRow(
+                'GP', _profile?['gp_user'], _profile?['gp_pass'], 'gp'),
+            _buildSystemAccessRow('BITRIX', _profile?['bitrix_user'],
+                _profile?['bitrix_pass'], 'bitrix'),
+            _buildSystemAccessRow(
+                'ENKONTROL', _profile?['ek_user'], _profile?['ek_pass'], 'ek'),
+            _buildSystemAccessRow(
+                'OTRO', _profile?['otro_user'], _profile?['otro_pass'], 'otro'),
           ],
         ),
       ),
@@ -276,7 +303,8 @@ class _UserDashboardState extends State<UserDashboard> {
           label: const Text('CAMBIAR CONTRASEÑA'),
           style: OutlinedButton.styleFrom(
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
         const SizedBox(height: 16),
@@ -299,7 +327,8 @@ class _UserDashboardState extends State<UserDashboard> {
             foregroundColor: Colors.redAccent,
             side: const BorderSide(color: Colors.redAccent),
             minimumSize: const Size(double.infinity, 50),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         ),
       ],
@@ -310,7 +339,8 @@ class _UserDashboardState extends State<UserDashboard> {
             child: Image.asset(
               'assets/sisol_loader.gif',
               width: 150,
-              errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(),
+              errorBuilder: (context, error, stackTrace) =>
+                  const CircularProgressIndicator(),
               frameBuilder: (context, child, frame, wasSynchronouslyLoaded) =>
                   frame == null ? const CircularProgressIndicator() : child,
             ),
@@ -319,7 +349,8 @@ class _UserDashboardState extends State<UserDashboard> {
             child: Align(
               alignment: Alignment.topCenter,
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isDesktop ? double.infinity : 1200),
+                constraints: BoxConstraints(
+                    maxWidth: isDesktop ? double.infinity : 1200),
                 child: Column(
                   children: [
                     Stack(
@@ -350,12 +381,24 @@ class _UserDashboardState extends State<UserDashboard> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 60,
-                                  backgroundColor: theme.colorScheme.secondary.withOpacity(0.2),
-                                  backgroundImage: (_profile?['foto_url'] != null && _profile?['foto_url'].toString().isNotEmpty == true)
-                                      ? NetworkImage(_profile!['foto_url'])
-                                      : null,
-                                  child: (_profile?['foto_url'] == null || _profile?['foto_url'].toString().isEmpty == true)
-                                      ? Icon(Icons.person, size: 60, color: theme.colorScheme.secondary)
+                                  backgroundColor: theme.colorScheme.secondary
+                                      .withOpacity(0.2),
+                                  backgroundImage:
+                                      (_profile?['foto_url'] != null &&
+                                              _profile?['foto_url']
+                                                      .toString()
+                                                      .isNotEmpty ==
+                                                  true)
+                                          ? NetworkImage(_profile!['foto_url'])
+                                          : null,
+                                  child: (_profile?['foto_url'] == null ||
+                                          _profile?['foto_url']
+                                                  .toString()
+                                                  .isEmpty ==
+                                              true)
+                                      ? Icon(Icons.person,
+                                          size: 60,
+                                          color: theme.colorScheme.secondary)
                                       : null,
                                 ),
                               ),
@@ -374,7 +417,9 @@ class _UserDashboardState extends State<UserDashboard> {
                                   shape: const CircleBorder(),
                                   elevation: 4,
                                   child: InkWell(
-                                    onTap: _isPhotoLoading ? null : () => _updateProfilePhoto(),
+                                    onTap: _isPhotoLoading
+                                        ? null
+                                        : () => _updateProfilePhoto(),
                                     customBorder: const CircleBorder(),
                                     child: const Padding(
                                       padding: EdgeInsets.all(8),
@@ -395,11 +440,13 @@ class _UserDashboardState extends State<UserDashboard> {
                     const SizedBox(height: 70),
                     Text(
                       _profile?['full_name'] ?? 'Usuario',
-                      style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -501,8 +548,8 @@ class _UserDashboardState extends State<UserDashboard> {
                     ),
                     const Text(
                       'Cambiar Contraseña',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton(
                       onPressed: isLoading
@@ -532,8 +579,8 @@ class _UserDashboardState extends State<UserDashboard> {
                                   confirmPasswordController.text) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                      content: Text(
-                                          'Las contraseñas no coinciden')),
+                                      content:
+                                          Text('Las contraseñas no coinciden')),
                                 );
                                 return;
                               }
@@ -554,8 +601,7 @@ class _UserDashboardState extends State<UserDashboard> {
                                   password: currentPasswordController.text,
                                 );
 
-                                await Supabase.instance.client.auth
-                                    .updateUser(
+                                await Supabase.instance.client.auth.updateUser(
                                   UserAttributes(
                                       password: newPasswordController.text),
                                 );
@@ -579,12 +625,11 @@ class _UserDashboardState extends State<UserDashboard> {
                                           actions: [
                                             TextButton(
                                               onPressed: () async {
-                                                await Supabase.instance.client
-                                                    .auth
+                                                await Supabase
+                                                    .instance.client.auth
                                                     .signOut();
                                                 if (successContext.mounted)
-                                                  Navigator.pop(
-                                                      successContext);
+                                                  Navigator.pop(successContext);
                                               },
                                               child: const Text('ACEPTAR'),
                                             ),
@@ -611,8 +656,7 @@ class _UserDashboardState extends State<UserDashboard> {
                           ? const SizedBox(
                               height: 20,
                               width: 20,
-                              child:
-                                  CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Text('Guardar',
                               style: TextStyle(
@@ -638,8 +682,11 @@ class _UserDashboardState extends State<UserDashboard> {
                     labelText: 'Nueva Contraseña',
                     prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
-                      icon: Icon(obscureNewPassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setDialogState(() => obscureNewPassword = !obscureNewPassword),
+                      icon: Icon(obscureNewPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () => setDialogState(
+                          () => obscureNewPassword = !obscureNewPassword),
                     ),
                   ),
                   obscureText: obscureNewPassword,
@@ -651,8 +698,11 @@ class _UserDashboardState extends State<UserDashboard> {
                     labelText: 'Confirmar Nueva Contraseña',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
-                      icon: Icon(obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setDialogState(() => obscureConfirmPassword = !obscureConfirmPassword),
+                      icon: Icon(obscureConfirmPassword
+                          ? Icons.visibility_off
+                          : Icons.visibility),
+                      onPressed: () => setDialogState(() =>
+                          obscureConfirmPassword = !obscureConfirmPassword),
                     ),
                   ),
                   obscureText: obscureConfirmPassword,
@@ -683,8 +733,10 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  Widget _buildSystemAccessRow(String label, String? user, String? pass, String key) {
-    final hasData = (user != null && user.isNotEmpty) || (pass != null && pass.isNotEmpty);
+  Widget _buildSystemAccessRow(
+      String label, String? user, String? pass, String key) {
+    final hasData =
+        (user != null && user.isNotEmpty) || (pass != null && pass.isNotEmpty);
     if (!hasData) return const SizedBox.shrink();
 
     return Padding(
@@ -692,7 +744,11 @@ class _UserDashboardState extends State<UserDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          Text(label,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey)),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(12),
@@ -705,32 +761,44 @@ class _UserDashboardState extends State<UserDashboard> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.person_outline, size: 16, color: Colors.grey),
+                    const Icon(Icons.person_outline,
+                        size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
-                    const Text('Usuario:', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    const Text('Usuario:',
+                        style: TextStyle(fontSize: 13, color: Colors.grey)),
                     const SizedBox(width: 8),
-                    Text(user ?? '---', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                    Text(user ?? '---',
+                        style: const TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w500)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    const Icon(Icons.lock_outline, size: 16, color: Colors.grey),
+                    const Icon(Icons.lock_outline,
+                        size: 16, color: Colors.grey),
                     const SizedBox(width: 8),
-                    const Text('Contraseña:', style: TextStyle(fontSize: 13, color: Colors.grey)),
+                    const Text('Contraseña:',
+                        style: TextStyle(fontSize: 13, color: Colors.grey)),
                     const SizedBox(width: 8),
                     Text(
-                      (_obscureCredentials[key] ?? true) ? '••••••••' : (pass ?? '---'),
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      (_obscureCredentials[key] ?? true)
+                          ? '••••••••'
+                          : (pass ?? '---'),
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                     const Spacer(),
                     IconButton(
                       icon: Icon(
-                        (_obscureCredentials[key] ?? true) ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        (_obscureCredentials[key] ?? true)
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         size: 18,
                         color: Colors.blueGrey,
                       ),
-                      onPressed: () => setState(() => _obscureCredentials[key] = !(_obscureCredentials[key] ?? true)),
+                      onPressed: () => setState(() => _obscureCredentials[key] =
+                          !(_obscureCredentials[key] ?? true)),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -776,7 +844,8 @@ class _UserDashboardState extends State<UserDashboard> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getColorForCondition(item['condicion']).withOpacity(0.1),
+                  color:
+                      _getColorForCondition(item['condicion']).withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
@@ -802,11 +871,13 @@ class _UserDashboardState extends State<UserDashboard> {
               style: TextStyle(fontSize: 13, color: Colors.grey[600]),
             ),
           ],
-          if (item['ubicacion'] != null && item['ubicacion'].toString().isNotEmpty) ...[
+          if (item['ubicacion'] != null &&
+              item['ubicacion'].toString().isNotEmpty) ...[
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                const Icon(Icons.location_on_outlined,
+                    size: 14, color: Colors.grey),
                 const SizedBox(width: 4),
                 Text(
                   item['ubicacion'],
@@ -822,23 +893,35 @@ class _UserDashboardState extends State<UserDashboard> {
 
   IconData _getIconForType(String? tipo) {
     switch (tipo?.toLowerCase()) {
-      case 'laptop': return Icons.laptop;
-      case 'pc': return Icons.computer;
-      case 'impresora': return Icons.print;
-      case 'celular': return Icons.smartphone;
-      case 'telefono': return Icons.phone;
-      case 'monitor': return Icons.monitor;
-      default: return Icons.devices;
+      case 'laptop':
+        return Icons.laptop;
+      case 'pc':
+        return Icons.computer;
+      case 'impresora':
+        return Icons.print;
+      case 'celular':
+        return Icons.smartphone;
+      case 'telefono':
+        return Icons.phone;
+      case 'monitor':
+        return Icons.monitor;
+      default:
+        return Icons.devices;
     }
   }
 
   Color _getColorForCondition(String? condicion) {
     switch (condicion?.toLowerCase()) {
-      case 'nuevo': return Colors.green;
-      case 'usado': return Colors.orange;
-      case 'dañado': return Colors.red;
-      case 'sin reparacion': return Colors.black;
-      default: return Colors.blueGrey;
+      case 'nuevo':
+        return Colors.green;
+      case 'usado':
+        return Colors.orange;
+      case 'dañado':
+        return Colors.red;
+      case 'sin reparacion':
+        return Colors.black;
+      default:
+        return Colors.blueGrey;
     }
   }
 }
