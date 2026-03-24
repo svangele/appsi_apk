@@ -1342,18 +1342,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDesktopWidth = MediaQuery.of(context).size.width > 800;
 
     return Scaffold(
-      floatingActionButton: !isDesktopWidth
-          ? FloatingActionButton.extended(
-              onPressed: () => _showIncidenciaForm(),
-              backgroundColor: theme.colorScheme.secondary,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('NUEVO'),
-            )
-          : null,
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
