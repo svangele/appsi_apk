@@ -648,12 +648,6 @@ class _EventFormDialogState extends State<EventFormDialog> {
     final startStr = _startTime.format(context);
     final endStr = _endTime.format(context);
 
-    final creatorName = _creatorId != null
-        ? (_userLookup[_creatorId]?['full_name'] ??
-            _userLookup[_creatorId]?['email'] ??
-            'Usuario')
-        : 'Usuario';
-
     return SingleChildScrollView(
       padding: EdgeInsets.only(
           left: 20,
@@ -668,17 +662,6 @@ class _EventFormDialogState extends State<EventFormDialog> {
                 ? _titleController.text
                 : 'Sin título',
             style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              const Icon(Icons.person_outline, color: Colors.grey, size: 18),
-              const SizedBox(width: 6),
-              Text(
-                'Creado por: $creatorName',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
-              ),
-            ],
           ),
           const SizedBox(height: 24),
 
