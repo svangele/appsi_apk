@@ -63,17 +63,24 @@ class _EventSearchDialogState extends State<EventSearchDialog>
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
 
+      debugPrint('Loading users...');
+
       final users = await _supabase
           .from('profiles')
-          .select('id, full_name, email, permissions')
+          .select('id, full_name, email, permissions, role')
           .neq('id', currentUserId ?? '')
           .order('full_name');
+
+      debugPrint('Total users fetched: ${users.length}');
 
       final usersWithCalendarPerms =
           await Future.wait((users as List).map((user) async {
         final perms = user['permissions'] as Map<String, dynamic>?;
         final hasPerm = perms?['show_calendar'] == true ||
             perms?['show_calendar'] == 'true';
+
+        debugPrint(
+            'User ${user['full_name']}: role=${user['role']}, show_calendar=$hasPerm');
 
         if (hasPerm) {
           final eventCount = await _supabase
@@ -91,6 +98,7 @@ class _EventSearchDialogState extends State<EventSearchDialog>
       if (mounted) {
         setState(() {
           _users = usersWithCalendarPerms.where((u) => u != null).toList();
+          debugPrint('Users with calendar perm: ${_users.length}');
         });
       }
     } catch (e) {
