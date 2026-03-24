@@ -376,7 +376,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           final screenWidth = MediaQuery.of(context).size.width;
 
           return Container(
-            width: isDesktop ? 2800.0 : double.infinity,
+            width: isDesktop ? screenWidth : double.infinity,
             decoration: const BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
