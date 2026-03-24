@@ -21,7 +21,6 @@ class _PowerBiPageState extends State<PowerBiPage> {
   bool _isLoading = true;
   bool get _isAdmin => widget.role == 'admin' || widget.role == 'superadmin';
   String _searchQuery = '';
-  String _userSearchQuery = '';
 
   @override
   void initState() {
@@ -397,6 +396,8 @@ class _PowerBiPageState extends State<PowerBiPage> {
   }
 
   Widget _buildUserAccessList(String linkId) {
+    String localSearchQuery = '';
+
     return StatefulBuilder(
       builder: (context, setLocalState) {
         return Column(
@@ -420,7 +421,8 @@ class _PowerBiPageState extends State<PowerBiPage> {
                 ),
                 style: const TextStyle(fontSize: 13),
                 onChanged: (value) {
-                  setState(() => _userSearchQuery = value);
+                  localSearchQuery = value;
+                  setLocalState(() {});
                 },
               ),
             ),
@@ -446,21 +448,23 @@ class _PowerBiPageState extends State<PowerBiPage> {
 
                   // Filtrar usuarios por nombre o correo
                   final filteredUsers = _availableUsers.where((user) {
-                    if (_userSearchQuery.isEmpty) return true;
+                    if (localSearchQuery.isEmpty) return true;
                     final fullName =
                         '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
                             .trim()
                             .toLowerCase();
                     final email =
                         (user['email'] ?? '').toString().toLowerCase();
-                    final query = _userSearchQuery.toLowerCase();
+                    final query = localSearchQuery.toLowerCase();
                     return fullName.contains(query) || email.contains(query);
                   }).toList();
 
                   if (filteredUsers.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text('No hay usuarios disponibles'),
+                    return Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(localSearchQuery.isEmpty
+                          ? 'No hay usuarios disponibles'
+                          : 'Sin resultados'),
                     );
                   }
 
