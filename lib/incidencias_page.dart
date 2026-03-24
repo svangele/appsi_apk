@@ -69,16 +69,14 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
               ),
             ),
           ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
         _buildGlassPill(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(12),
           child: InkWell(
             onTap: () => _showIncidenciaForm(),
             borderRadius: BorderRadius.circular(30),
-            child: const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Icon(Icons.add, size: 22, color: Colors.black87),
-            ),
+            child:
+                Icon(Icons.add, size: 22, color: theme.colorScheme.secondary),
           ),
         ),
       ],
