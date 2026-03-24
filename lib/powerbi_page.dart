@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 class PowerBiPage extends StatefulWidget {
   final String role;
@@ -133,16 +133,15 @@ class _PowerBiPageState extends State<PowerBiPage> {
     final htmlCode = link['html_code'] as String?;
 
     if (url != null && url.isNotEmpty) {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.inAppWebView);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo abrir el enlace')),
-          );
-        }
-      }
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => _BiWebView(
+          url: url,
+          title: link['title'] ?? 'Reporte',
+        ),
+      );
     } else if (htmlCode != null && htmlCode.isNotEmpty) {
       if (mounted) {
         _showHtmlViewer(htmlCode, link['title'] ?? 'Reporte');
@@ -935,6 +934,139 @@ class _UserSwitchCardState extends State<_UserSwitchCard> {
             }
           }
         },
+      ),
+    );
+  }
+}
+
+class _BiWebView extends StatefulWidget {
+  final String url;
+  final String title;
+
+  const _BiWebView({required this.url, required this.title});
+
+  @override
+  State<_BiWebView> createState() => _BiWebViewState();
+}
+
+class _BiWebViewState extends State<_BiWebView> {
+  double _loadingProgress = 0;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.9,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 48),
+              ],
+            ),
+          ),
+          if (_loadingProgress < 1.0 && !_hasError)
+            LinearProgressIndicator(
+              value: _loadingProgress,
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          Expanded(
+            child: _hasError
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error al cargar',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: Text(
+                            _errorMessage,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _hasError = false;
+                              _loadingProgress = 0;
+                            });
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  )
+                : InAppWebView(
+                    initialUrlRequest: URLRequest(url: Uri.parse(widget.url)),
+                    onLoadStart: (controller, url) {
+                      setState(() {
+                        _loadingProgress = 0;
+                        _hasError = false;
+                      });
+                    },
+                    onProgressChanged: (controller, progress) {
+                      setState(() {
+                        _loadingProgress = progress / 100;
+                      });
+                    },
+                    onLoadError: (controller, url, code, message) {
+                      setState(() {
+                        _hasError = true;
+                        _errorMessage = message;
+                      });
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
