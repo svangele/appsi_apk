@@ -706,58 +706,44 @@ class _AdminDashboardState extends State<AdminDashboard> {
       String key,
       Map<String, bool> obscureMap,
       StateSetter setDialogState) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey)),
+        Expanded(
+          child: TextField(
+            controller: uCtrl,
+            decoration: InputDecoration(
+              labelText: '$label Usuario',
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+            ),
+            style: const TextStyle(fontSize: 14),
+          ),
         ),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: uCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Usuario',
-                  isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: pCtrl,
+            obscureText: obscureMap[key] ?? true,
+            decoration: InputDecoration(
+              labelText: 'Contraseña',
+              isDense: true,
+              contentPadding:
+                  const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  (obscureMap[key] ?? true)
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 18,
                 ),
-                style: const TextStyle(fontSize: 14),
+                onPressed: () => setDialogState(
+                    () => obscureMap[key] = !(obscureMap[key] ?? true)),
               ),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: TextField(
-                controller: pCtrl,
-                obscureText: obscureMap[key] ?? true,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  isDense: true,
-                  contentPadding:
-                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      (obscureMap[key] ?? true)
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 18,
-                    ),
-                    onPressed: () => setDialogState(
-                        () => obscureMap[key] = !(obscureMap[key] ?? true)),
-                  ),
-                ),
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-          ],
+            style: const TextStyle(fontSize: 14),
+          ),
         ),
-        const SizedBox(height: 12),
       ],
     );
   }
