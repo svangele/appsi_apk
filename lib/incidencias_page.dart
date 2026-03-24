@@ -837,68 +837,121 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       backgroundColor: Colors.transparent,
       builder: (context) => StatefulBuilder(
         builder: (context, setModalState) => Container(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: 20,
-            left: 20,
-            right: 20,
-          ),
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 24,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancelar',
+                          style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    ),
                     Text(
                       isEditing ? 'Editar Incidencia' : 'Nueva Incidencia',
                       style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF344092)),
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
-                    IconButton(
-                        onPressed: () => Navigator.pop(context),
-                        icon: const Icon(Icons.close)),
+                    TextButton(
+                      onPressed: () async {
+                        if (diasController.text.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Completa todos los campos')),
+                          );
+                          return;
+                        }
+
+                        final data = {
+                          if (!isEditing) 'nombre_usuario': _userFullName,
+                          'periodo': periodController.text,
+                          'dias': int.parse(diasController.text),
+                          'fecha_inicio': fechaInicio.toIso8601String(),
+                          'fecha_fin': fechaFin.toIso8601String(),
+                          'fecha_regreso': fechaRegreso.toIso8601String(),
+                          if (!isEditing)
+                            'usuario_id': _selectedUserId ??
+                                Supabase.instance.client.auth.currentUser!.id,
+                        };
+
+                        try {
+                          if (isEditing) {
+                            await Supabase.instance.client
+                                .from('incidencias')
+                                .update(data)
+                                .eq('id', incidencia['id']);
+                          } else {
+                            await Supabase.instance.client
+                                .from('incidencias')
+                                .insert(data);
+                            await NotificationService.send(
+                              title: 'Nueva Incidencia',
+                              message:
+                                  '$_userFullName ha creado una nueva petición.',
+                              type: 'new_incidencia',
+                            );
+                          }
+                          if (mounted) {
+                            Navigator.pop(context);
+                            _fetchIncidencias();
+                          }
+                        } catch (e) {
+                          debugPrint('Error saving incidencia: $e');
+                        }
+                      },
+                      child: Text(
+                        isEditing ? 'Guardar' : 'Crear',
+                        style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                _buildFieldLabel('Nombre (Automático)'),
+                const SizedBox(height: 24),
                 Text(
-                    isEditing
-                        ? (incidencia['nombre_usuario'] ?? '...')
-                        : (_userFullName ?? '...'),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                _buildFieldLabel('Periodo'),
+                  isEditing
+                      ? (incidencia['nombre_usuario'] ?? '...')
+                      : (_userFullName ?? '...'),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: periodController.text,
-                  items: [
-                    '2020 – 2021',
-                    '2021 – 2022',
-                    '2022 – 2023',
-                    '2024 – 2025',
-                    '2025 – 2026'
-                  ]
+                  items: ['2024 – 2025', '2025 – 2026']
                       .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                       .toList(),
                   onChanged: (val) => periodController.text = val!,
-                  decoration:
-                      const InputDecoration(border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                    labelText: 'Periodo',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
                 const SizedBox(height: 16),
-                _buildFieldLabel('Días'),
                 TextField(
                   controller: diasController,
                   keyboardType: TextInputType.number,
                   maxLength: 2,
                   decoration: const InputDecoration(
-                      border: OutlineInputBorder(), counterText: ""),
+                    labelText: 'Días',
+                    border: OutlineInputBorder(),
+                    counterText: "",
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -907,7 +960,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                       child: _buildDatePicker('Fecha Inicio', fechaInicio,
                           (d) => setModalState(() => fechaInicio = d)),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: _buildDatePicker('Fecha Final', fechaFin,
                           (d) => setModalState(() => fechaFin = d)),
@@ -917,56 +970,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 const SizedBox(height: 16),
                 _buildDatePicker('Fecha Regreso', fechaRegreso,
                     (d) => setModalState(() => fechaRegreso = d)),
-                const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (diasController.text.isEmpty) return;
-
-                      final data = {
-                        if (!isEditing) 'nombre_usuario': _userFullName,
-                        'periodo': periodController.text,
-                        'dias': int.parse(diasController.text),
-                        'fecha_inicio': fechaInicio.toIso8601String(),
-                        'fecha_fin': fechaFin.toIso8601String(),
-                        'fecha_regreso': fechaRegreso.toIso8601String(),
-                        if (!isEditing)
-                          'usuario_id': _selectedUserId ??
-                              Supabase.instance.client.auth.currentUser!.id,
-                      };
-
-                      try {
-                        if (isEditing) {
-                          await Supabase.instance.client
-                              .from('incidencias')
-                              .update(data)
-                              .eq('id', incidencia['id']);
-                        } else {
-                          await Supabase.instance.client
-                              .from('incidencias')
-                              .insert(data);
-                          // Notificar a administradores (global)
-                          await NotificationService.send(
-                            title: 'Nueva Incidencia',
-                            message:
-                                '$_userFullName ha creado una nueva petición.',
-                            type: 'new_incidencia',
-                          );
-                        }
-                        if (mounted) {
-                          Navigator.pop(context);
-                          _fetchIncidencias();
-                        }
-                      } catch (e) {
-                        debugPrint('Error saving incidencia: $e');
-                      }
-                    },
-                    child:
-                        Text(isEditing ? 'GUARDAR CAMBIOS' : 'CREAR PETICIÓN'),
-                  ),
-                ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -975,44 +979,28 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     );
   }
 
-  Widget _buildFieldLabel(String label) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(label,
-            style: const TextStyle(
-                fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
-      );
-
   Widget _buildDatePicker(
       String label, DateTime current, Function(DateTime) onPick) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFieldLabel(label),
-        InkWell(
-          onTap: () async {
-            final d = await showDatePicker(
-              context: context,
-              initialDate: current,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-            );
-            if (d != null) onPick(d);
-          },
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(4)),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('${current.day}/${current.month}/${current.year}'),
-                const Icon(Icons.calendar_today, size: 16),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return TextField(
+      readOnly: true,
+      onTap: () async {
+        final d = await showDatePicker(
+          context: context,
+          initialDate: current,
+          firstDate: DateTime(2020),
+          lastDate: DateTime(2030),
+        );
+        if (d != null) onPick(d);
+      },
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+        suffixIcon: const Icon(Icons.calendar_today, size: 18),
+      ),
+      controller: TextEditingController(
+        text:
+            '${current.day.toString().padLeft(2, '0')}/${current.month.toString().padLeft(2, '0')}/${current.year}',
+      ),
     );
   }
 
