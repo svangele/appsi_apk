@@ -126,6 +126,22 @@ class _CalendarPageState extends State<CalendarPage> {
         // Also get followed users' events (both private and public)
         if (followedUserIds.isNotEmpty) {
           debugPrint('Fetching followed users events...');
+
+          // First, test: fetch ALL events without filters
+          try {
+            final allEvents = await _supabase
+                .from('events')
+                .select('id, creator_id, title')
+                .limit(5);
+            debugPrint('TEST - All events (no filter): ${allEvents.length}');
+            for (var ev in allEvents) {
+              debugPrint(
+                  '  Event: id=${ev['id']}, creator=${ev['creator_id']}, title=${ev['title']}');
+            }
+          } catch (e) {
+            debugPrint('TEST - Error fetching all events: $e');
+          }
+
           for (var followedId in followedUserIds) {
             try {
               debugPrint('Fetching events for followedId: $followedId');
