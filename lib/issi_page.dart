@@ -497,9 +497,14 @@ class _IssiPageState extends State<IssiPage> {
         for (var i = 0; i < fields.length; i += 4) {
           final rowFields = fields.skip(i).take(4).toList();
           while (rowFields.length < 4) rowFields.add(const SizedBox());
+          final rowChildren = <Widget>[];
+          for (var j = 0; j < rowFields.length; j++) {
+            if (j > 0) rowChildren.add(const SizedBox(width: 16));
+            rowChildren.add(Expanded(child: rowFields[j]));
+          }
           rows.add(Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: rowFields.map((f) => Expanded(child: f)).toList()));
+              children: rowChildren));
         }
         return Column(mainAxisSize: MainAxisSize.min, children: rows);
       } else {
