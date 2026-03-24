@@ -136,7 +136,9 @@ class _PowerBiPageState extends State<PowerBiPage> {
     final htmlCode = link['html_code'] as String?;
 
     if (url != null && url.isNotEmpty) {
-      if (kIsWeb || !Platform.isAndroid && !Platform.isIOS) {
+      final isMobile = Platform.isAndroid || Platform.isIOS;
+
+      if (kIsWeb || !isMobile) {
         final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
