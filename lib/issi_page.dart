@@ -932,22 +932,10 @@ class _IssiPageState extends State<IssiPage> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 24, vertical: 20),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('ISSI - Inventario',
                             style: TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold)),
-                        if (_isAdmin)
-                          ElevatedButton.icon(
-                            onPressed: () => _showItemForm(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: theme.colorScheme.secondary,
-                              foregroundColor: Colors.white,
-                              minimumSize: const Size(120, 48),
-                            ),
-                            icon: const Icon(Icons.add),
-                            label: const Text('NUEVO'),
-                          ),
                       ],
                     ),
                   ),

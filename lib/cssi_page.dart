@@ -1208,22 +1208,10 @@ class _CssiPageState extends State<CssiPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const Text('Directorio de Colaboradores',
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
-                    if (widget.role == 'admin')
-                      ElevatedButton.icon(
-                        onPressed: () => _showForm(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: theme.colorScheme.secondary,
-                          foregroundColor: Colors.white,
-                          minimumSize: const Size(120, 48),
-                        ),
-                        icon: const Icon(Icons.add),
-                        label: const Text('NUEVO'),
-                      ),
                   ],
                 ),
               ),
