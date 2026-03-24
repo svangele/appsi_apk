@@ -41,20 +41,61 @@ class _PowerBiPageState extends State<PowerBiPage> {
         _links = List<Map<String, dynamic>>.from(linksData);
       }
 
-      final userLinksData = await _supabase
-          .from('powerbi_link_users')
-          .select(
-              'link_id, powerbi_links(id, title, url, html_code, is_active)')
-          .eq('user_id', userId ?? '');
+      // Obtener perfil del usuario actual para verificar permisos
+      Map<String, dynamic>? currentUserProfile;
+      try {
+        final profileData = await _supabase
+            .from('profiles')
+            .select('permissions')
+            .eq('id', userId ?? '')
+            .single();
+        currentUserProfile = Map<String, dynamic>.from(profileData);
+      } catch (e) {
+        debugPrint('Error fetching current user profile: $e');
+      }
 
-      _userLinks = (userLinksData as List)
-          .where((item) {
-            final link = item['powerbi_links'];
-            return link != null && link['is_active'] == true;
-          })
-          .map(
-              (item) => Map<String, dynamic>.from(item['powerbi_links'] as Map))
-          .toList();
+      final hasPowerBiPermission = currentUserProfile?['permissions'] is Map &&
+          currentUserProfile?['permissions']['show_powerbi'] == true;
+
+      // Si tiene permiso show_powerbi, puede ver los enlaces asignados o creados
+      if (hasPowerBiPermission) {
+        // Enlaces donde el usuario está asignado
+        final userLinksData = await _supabase
+            .from('powerbi_link_users')
+            .select(
+                'link_id, powerbi_links(id, title, url, html_code, is_active, created_by)')
+            .eq('user_id', userId ?? '');
+
+        final assignedLinks = (userLinksData as List)
+            .where((item) {
+              final link = item['powerbi_links'];
+              return link != null && link['is_active'] == true;
+            })
+            .map((item) =>
+                Map<String, dynamic>.from(item['powerbi_links'] as Map))
+            .toList();
+
+        // Enlaces donde el usuario es el creador
+        final createdLinksData = await _supabase
+            .from('powerbi_links')
+            .select('id, title, url, html_code, is_active, created_by')
+            .eq('created_by', userId ?? '')
+            .eq('is_active', true);
+
+        final createdLinks = (createdLinksData as List)
+            .map((link) => Map<String, dynamic>.from(link))
+            .toList();
+
+        // Combinar y eliminar duplicados
+        final allLinks = [...assignedLinks, ...createdLinks];
+        final uniqueLinks = <String, Map<String, dynamic>>{};
+        for (final link in allLinks) {
+          uniqueLinks[link['id'].toString()] = link;
+        }
+        _userLinks = uniqueLinks.values.toList();
+      } else {
+        _userLinks = [];
+      }
 
       if (_isAdmin) {
         final usersData = await _supabase
