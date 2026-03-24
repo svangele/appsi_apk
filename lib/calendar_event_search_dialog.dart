@@ -171,39 +171,16 @@ class _EventSearchDialogState extends State<EventSearchDialog>
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) throw Exception('No se encontró usuario');
 
-      // First, deactivate all existing subscriptions
-      await _supabase
-          .from('calendar_subscriptions')
-          .update({'is_active': false}).eq('subscriber_id', userId);
-
-      // Then activate selected ones
       for (var user in _users) {
         final userId2 = user['id'] as String;
         final isActive = _subscriptions[userId2] ?? false;
 
-        if (isActive) {
-          // Check if exists
-          final existing = await _supabase
-              .from('calendar_subscriptions')
-              .select('id')
-              .eq('subscriber_id', userId)
-              .eq('followed_user_id', userId2)
-              .maybeSingle();
-
-          if (existing != null) {
-            // Update existing
-            await _supabase
-                .from('calendar_subscriptions')
-                .update({'is_active': true}).eq('id', existing['id']);
-          } else {
-            // Insert new
-            await _supabase.from('calendar_subscriptions').insert({
-              'subscriber_id': userId,
-              'followed_user_id': userId2,
-              'is_active': true,
-            });
-          }
-        }
+        // Use upsert with onConflict to handle both insert and update
+        await _supabase.from('calendar_subscriptions').upsert({
+          'subscriber_id': userId,
+          'followed_user_id': userId2,
+          'is_active': isActive,
+        }, onConflict: 'subscriber_id,followed_user_id');
       }
 
       if (mounted) {
