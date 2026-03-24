@@ -1375,7 +1375,7 @@ class _EventFormDialogState extends State<EventFormDialog> {
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(_isEditMode ? 'Guardar' : 'Añadir',
+                          : const Text('Guardar',
                               style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
