@@ -66,7 +66,7 @@ class _EventSearchDialogState extends State<EventSearchDialog>
       final users = await _supabase
           .from('profiles')
           .select('id, full_name, email, permissions, role')
-          .eq('system_sys', 'ACTIVO')
+          .eq('status_sys', 'ACTIVO')
           .eq('show_calendar', true)
           .neq('id', currentUserId ?? '')
           .order('full_name');
