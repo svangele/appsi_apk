@@ -31,11 +31,18 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           padding: padding ??
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.85),
             borderRadius: BorderRadius.circular(30),
             border: Border.all(color: Colors.grey.withOpacity(0.2)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+            ],
           ),
           child: child,
         ),
@@ -45,6 +52,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
 
   Widget _buildControls(ThemeData theme) {
     return _buildGlassPill(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -54,7 +62,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 value: _selectedUserId,
                 isDense: true,
                 icon: const Icon(Icons.keyboard_arrow_down,
-                    color: Colors.black87),
+                    color: Colors.black87, size: 20),
                 items: _adminUserList.map((user) {
                   final name =
                       '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
@@ -62,17 +70,19 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   return DropdownMenuItem(
                     value: user['id'] as String,
                     child: Text(name.isEmpty ? 'Usuario' : name,
-                        style: const TextStyle(fontSize: 14)),
+                        style: const TextStyle(fontSize: 13)),
                   );
                 }).toList(),
                 onChanged: _onUserSelected,
               ),
             ),
           const VerticalDivider(
-              width: 1, thickness: 1, indent: 12, endIndent: 12),
-          IconButton(
-            onPressed: () => _showIncidenciaForm(),
-            icon: const Icon(Icons.add, size: 22, color: Colors.black87),
+              width: 1, thickness: 1, indent: 8, endIndent: 8),
+          GestureDetector(
+            onTap: () => _showIncidenciaForm(),
+            child: const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Icon(Icons.add, size: 22, color: Colors.black87)),
           ),
         ],
       ),
