@@ -584,8 +584,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         ? null
                                         : passwordController.text.trim(),
                               });
-                              debugPrint(
-                                  'Saving mail credentials: mail_user=${mailUser.text.trim()}, mail_pass=${mailPass.text.trim()}');
                               await Supabase.instance.client
                                   .from('profiles')
                                   .update({
@@ -602,7 +600,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 'otro_user': otroUser.text.trim(),
                                 'otro_pass': otroPass.text.trim(),
                               }).eq('id', user['id']);
-                              debugPrint('Mail credentials saved successfully');
                               if (statusSys != 'ACTIVO') {
                                 try {
                                   await NotificationService.send(
@@ -632,8 +629,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 'user_role': role,
                                 'user_id_param': user['id'],
                               });
-                              debugPrint(
-                                  'Saving mail credentials (granting access): mail_user=${mailUser.text.trim()}, mail_pass=${mailPass.text.trim()}');
                               await Supabase.instance.client
                                   .from('profiles')
                                   .update({
@@ -651,8 +646,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 'otro_pass': otroPass.text.trim(),
                                 'status_sys': 'ACTIVO',
                               }).eq('id', user['id']);
-                              debugPrint(
-                                  'Mail credentials saved successfully (granting access)');
                             } else {
                               final response = await Supabase.instance.client
                                   .rpc('create_user_admin', params: {
