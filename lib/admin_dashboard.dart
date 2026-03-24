@@ -508,6 +508,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                         ? null
                                         : passwordController.text.trim(),
                               });
+                              await Supabase.instance.client
+                                  .from('profiles')
+                                  .update({
+                                'mail_user': mailUser.text.trim(),
+                                'mail_pass': mailPass.text.trim(),
+                                'drp_user': drpUser.text.trim(),
+                                'drp_pass': drpPass.text.trim(),
+                                'gp_user': gpUser.text.trim(),
+                                'gp_pass': gpPass.text.trim(),
+                                'bitrix_user': bitrixUser.text.trim(),
+                                'bitrix_pass': bitrixPass.text.trim(),
+                                'ek_user': ekUser.text.trim(),
+                                'ek_pass': ekPass.text.trim(),
+                                'otro_user': otroUser.text.trim(),
+                                'otro_pass': otroPass.text.trim(),
+                              }).eq('id', user['id']);
                               if (statusSys != 'ACTIVO') {
                                 try {
                                   await NotificationService.send(
