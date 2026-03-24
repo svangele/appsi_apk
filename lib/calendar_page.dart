@@ -76,27 +76,18 @@ class _CalendarPageState extends State<CalendarPage> {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
-      debugPrint('=== _fetchEvents START ===');
-      debugPrint('userId: $userId, calendarMode: $_calendarMode');
-
       // Get followed users first
       Set<String> followedUserIds = {};
       if (_calendarMode == 0) {
-        try {
-          final subscriptions = await _supabase
-              .from('calendar_subscriptions')
-              .select('followed_user_id')
-              .eq('subscriber_id', userId)
-              .eq('is_active', true);
+        final subscriptions = await _supabase
+            .from('calendar_subscriptions')
+            .select('followed_user_id')
+            .eq('subscriber_id', userId)
+            .eq('is_active', true);
 
-          followedUserIds = {
-            for (var s in subscriptions) s['followed_user_id'] as String
-          };
-          debugPrint('Subscriptions fetched: $subscriptions');
-          debugPrint('followedUserIds: $followedUserIds');
-        } catch (e) {
-          debugPrint('Error fetching subscriptions: $e');
-        }
+        followedUserIds = {
+          for (var s in subscriptions) s['followed_user_id'] as String
+        };
       }
 
       // Fetch events based on calendar mode
@@ -110,57 +101,27 @@ class _CalendarPageState extends State<CalendarPage> {
             .order('start_time');
       } else {
         // Personal - user's own events (private)
-        try {
-          final myEvents = await _supabase
-              .from('events')
-              .select('*, profiles(full_name, id)')
-              .eq('creator_id', userId)
-              .eq('is_public', false)
-              .order('start_time');
-          debugPrint('My private events count: ${myEvents.length}');
-          response = [...myEvents];
-        } catch (e) {
-          debugPrint('Error fetching my events: $e');
-        }
+        final myEvents = await _supabase
+            .from('events')
+            .select('*, profiles(full_name, id)')
+            .eq('creator_id', userId)
+            .eq('is_public', false)
+            .order('start_time');
+        response = [...myEvents];
 
         // Also get followed users' events (both private and public)
         if (followedUserIds.isNotEmpty) {
-          debugPrint('Fetching followed users events...');
-
-          // First, test: fetch ALL events without filters
-          try {
-            final allEvents = await _supabase
-                .from('events')
-                .select('id, creator_id, title')
-                .limit(50);
-            debugPrint('TEST - All events (no filter): ${allEvents.length}');
-            for (var ev in allEvents) {
-              debugPrint(
-                  '  Event: id=${ev['id']}, creator=${ev['creator_id']}, title=${ev['title']}');
-            }
-          } catch (e) {
-            debugPrint('TEST - Error fetching all events: $e');
-          }
-
           for (var followedId in followedUserIds) {
-            try {
-              debugPrint('Fetching events for followedId: $followedId');
-              // Get all events from this user (both public and private)
-              final followedEvents = await _supabase
-                  .from('events')
-                  .select('*, profiles(full_name, id)')
-                  .eq('creator_id', followedId)
-                  .order('start_time');
-              debugPrint('Events for $followedId: ${followedEvents.length}');
-              response = [...response, ...followedEvents];
-            } catch (e) {
-              debugPrint('Error fetching events for $followedId: $e');
-            }
+            final followedEvents = await _supabase
+                .from('events')
+                .select('*, profiles(full_name, id)')
+                .eq('creator_id', followedId)
+                .order('start_time');
+            response = [...response, ...followedEvents];
           }
         }
       }
 
-      debugPrint('Total events to display: ${response.length}');
       final List<Appointment> loadedEvents = [];
       for (var ev in response) {
         final startTime = DateTime.parse(ev['start_time']).toLocal();
@@ -192,9 +153,6 @@ class _CalendarPageState extends State<CalendarPage> {
           isAllDay: isAllDay,
         ));
       }
-
-      debugPrint('loadedEvents count: ${loadedEvents.length}');
-      debugPrint('=== _fetchEvents END ===');
 
       if (mounted) {
         _dataSource.updateAppointments(loadedEvents);
