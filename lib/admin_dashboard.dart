@@ -375,134 +375,164 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
           final screenWidth = MediaQuery.of(context).size.width;
 
-          return Center(
-            child: Container(
-              width: isDesktop ? screenWidth * 0.75 : double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.9,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 16),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(20)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancelar',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.grey)),
-                        ),
-                        Text(
-                          isGrantingAccess
-                              ? 'Conceder Acceso'
-                              : (isEditing
-                                  ? 'Editar ${user['nombre'] ?? ''} ${user['paterno'] ?? ''}'
-                                  : 'Crear Nuevo Usuario'),
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        TextButton(
-                          onPressed: () async {
-                            if (!isEditing || isGrantingAccess) {
-                              if (emailController.text.trim().isEmpty ||
-                                  passwordController.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text(
-                                          'Correo y contraseña son obligatorios')),
-                                );
-                                return;
-                              }
-                            }
-                            if (isEditing && !isGrantingAccess) {
-                              if (emailController.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content:
-                                          Text('El correo es obligatorio')),
-                                );
-                                return;
-                              }
-                            }
-                            if (passwordController.text.trim().isNotEmpty &&
-                                passwordController.text.trim().length < 8) {
+          return Container(
+            width: isDesktop ? screenWidth * 0.75 : double.infinity,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancelar',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)),
+                      ),
+                      Text(
+                        isGrantingAccess
+                            ? 'Conceder Acceso'
+                            : (isEditing
+                                ? 'Editar ${user['nombre'] ?? ''} ${user['paterno'] ?? ''}'
+                                : 'Crear Nuevo Usuario'),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          if (!isEditing || isGrantingAccess) {
+                            if (emailController.text.trim().isEmpty ||
+                                passwordController.text.trim().isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                     content: Text(
-                                        'La contraseña debe tener al menos 8 caracteres')),
+                                        'Correo y contraseña son obligatorios')),
                               );
                               return;
                             }
-                            try {
-                              if (isEditing && !isGrantingAccess) {
-                                await Supabase.instance.client
-                                    .rpc('update_user_admin', params: {
-                                  'user_id_param': user['id'],
-                                  'new_email': emailController.text.trim(),
-                                  'new_full_name':
-                                      '${nombreController.text} ${paternoController.text} ${maternoController.text}'
-                                          .trim(),
-                                  'new_role': role,
-                                  'new_status_sys': statusSys,
-                                  'is_blocked_param': isBlocked,
-                                  'new_permissions': permissions,
-                                  'new_password':
-                                      passwordController.text.trim().isEmpty
-                                          ? null
-                                          : passwordController.text.trim(),
-                                });
-                                if (statusSys != 'ACTIVO') {
-                                  try {
-                                    await NotificationService.send(
-                                      title:
-                                          'Estatus Sys: ${nombreController.text} ${paternoController.text}',
-                                      message:
-                                          'El colaborador ha sido marcado como $statusSys',
-                                      type: 'collaborator_alert',
-                                      metadata: {
-                                        'profile_id': user['id'],
-                                        'status': statusSys
-                                      },
-                                    );
-                                  } catch (notifErr) {
-                                    debugPrint(
-                                        '[NOTIF] ❌ Error al enviar: $notifErr');
-                                  }
+                          }
+                          if (isEditing && !isGrantingAccess) {
+                            if (emailController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('El correo es obligatorio')),
+                              );
+                              return;
+                            }
+                          }
+                          if (passwordController.text.trim().isNotEmpty &&
+                              passwordController.text.trim().length < 8) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'La contraseña debe tener al menos 8 caracteres')),
+                            );
+                            return;
+                          }
+                          try {
+                            if (isEditing && !isGrantingAccess) {
+                              await Supabase.instance.client
+                                  .rpc('update_user_admin', params: {
+                                'user_id_param': user['id'],
+                                'new_email': emailController.text.trim(),
+                                'new_full_name':
+                                    '${nombreController.text} ${paternoController.text} ${maternoController.text}'
+                                        .trim(),
+                                'new_role': role,
+                                'new_status_sys': statusSys,
+                                'is_blocked_param': isBlocked,
+                                'new_permissions': permissions,
+                                'new_password':
+                                    passwordController.text.trim().isEmpty
+                                        ? null
+                                        : passwordController.text.trim(),
+                              });
+                              if (statusSys != 'ACTIVO') {
+                                try {
+                                  await NotificationService.send(
+                                    title:
+                                        'Estatus Sys: ${nombreController.text} ${paternoController.text}',
+                                    message:
+                                        'El colaborador ha sido marcado como $statusSys',
+                                    type: 'collaborator_alert',
+                                    metadata: {
+                                      'profile_id': user['id'],
+                                      'status': statusSys
+                                    },
+                                  );
+                                } catch (notifErr) {
+                                  debugPrint(
+                                      '[NOTIF] ❌ Error al enviar: $notifErr');
                                 }
-                              } else if (isGrantingAccess) {
-                                await Supabase.instance.client
-                                    .rpc('create_user_admin', params: {
-                                  'email': emailController.text.trim(),
-                                  'password': passwordController.text.trim(),
-                                  'full_name':
-                                      '${nombreController.text} ${paternoController.text} ${maternoController.text}'
-                                          .trim(),
-                                  'user_role': role,
-                                  'user_id_param': user['id'],
-                                });
+                              }
+                            } else if (isGrantingAccess) {
+                              await Supabase.instance.client
+                                  .rpc('create_user_admin', params: {
+                                'email': emailController.text.trim(),
+                                'password': passwordController.text.trim(),
+                                'full_name':
+                                    '${nombreController.text} ${paternoController.text} ${maternoController.text}'
+                                        .trim(),
+                                'user_role': role,
+                                'user_id_param': user['id'],
+                              });
+                              await Supabase.instance.client
+                                  .from('profiles')
+                                  .update({
+                                'drp_user': drpUser.text.trim(),
+                                'drp_pass': drpPass.text.trim(),
+                                'gp_user': gpUser.text.trim(),
+                                'gp_pass': gpPass.text.trim(),
+                                'bitrix_user': bitrixUser.text.trim(),
+                                'bitrix_pass': bitrixPass.text.trim(),
+                                'ek_user': ekUser.text.trim(),
+                                'ek_pass': ekPass.text.trim(),
+                                'otro_user': otroUser.text.trim(),
+                                'otro_pass': otroPass.text.trim(),
+                                'status_sys': 'ACTIVO',
+                              }).eq('id', user['id']);
+                            } else {
+                              final response = await Supabase.instance.client
+                                  .rpc('create_user_admin', params: {
+                                'email': emailController.text.trim(),
+                                'password': passwordController.text.trim(),
+                                'full_name':
+                                    '${nombreController.text.trim()} ${paternoController.text.trim()} ${maternoController.text.trim()}'
+                                        .trim(),
+                                'user_role': role,
+                              });
+                              final userId = response as String?;
+                              if (userId != null) {
                                 await Supabase.instance.client
                                     .from('profiles')
                                     .update({
+                                  'nombre': nombreController.text.trim(),
+                                  'paterno': paternoController.text.trim(),
+                                  'materno': maternoController.text.trim(),
+                                  'email': emailController.text.trim(),
+                                  'numero_empleado':
+                                      employeeNumberController.text.trim(),
                                   'drp_user': drpUser.text.trim(),
                                   'drp_pass': drpPass.text.trim(),
                                   'gp_user': gpUser.text.trim(),
@@ -513,137 +543,103 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   'ek_pass': ekPass.text.trim(),
                                   'otro_user': otroUser.text.trim(),
                                   'otro_pass': otroPass.text.trim(),
-                                  'status_sys': 'ACTIVO',
-                                }).eq('id', user['id']);
-                              } else {
-                                final response = await Supabase.instance.client
-                                    .rpc('create_user_admin', params: {
-                                  'email': emailController.text.trim(),
-                                  'password': passwordController.text.trim(),
-                                  'full_name':
-                                      '${nombreController.text.trim()} ${paternoController.text.trim()} ${maternoController.text.trim()}'
-                                          .trim(),
-                                  'user_role': role,
-                                });
-                                final userId = response as String?;
-                                if (userId != null) {
-                                  await Supabase.instance.client
-                                      .from('profiles')
-                                      .update({
-                                    'nombre': nombreController.text.trim(),
-                                    'paterno': paternoController.text.trim(),
-                                    'materno': maternoController.text.trim(),
-                                    'email': emailController.text.trim(),
-                                    'numero_empleado':
-                                        employeeNumberController.text.trim(),
-                                    'drp_user': drpUser.text.trim(),
-                                    'drp_pass': drpPass.text.trim(),
-                                    'gp_user': gpUser.text.trim(),
-                                    'gp_pass': gpPass.text.trim(),
-                                    'bitrix_user': bitrixUser.text.trim(),
-                                    'bitrix_pass': bitrixPass.text.trim(),
-                                    'ek_user': ekUser.text.trim(),
-                                    'ek_pass': ekPass.text.trim(),
-                                    'otro_user': otroUser.text.trim(),
-                                    'otro_pass': otroPass.text.trim(),
-                                    'status_sys': statusSys,
-                                    'permissions': permissions,
-                                    'role': role,
-                                  }).eq('id', userId);
-                                  if (statusSys != 'ACTIVO') {
-                                    try {
-                                      await NotificationService.send(
-                                        title:
-                                            'Estatus Sys: ${nombreController.text} ${paternoController.text}',
-                                        message:
-                                            'Nuevo colaborador creado con estatus $statusSys',
-                                        type: 'collaborator_alert',
-                                        metadata: {
-                                          'profile_id': userId,
-                                          'status': statusSys
-                                        },
-                                      );
-                                    } catch (notifErr) {
-                                      debugPrint(
-                                          '[NOTIF] ❌ Error al enviar (crear): $notifErr');
-                                    }
+                                  'status_sys': statusSys,
+                                  'permissions': permissions,
+                                  'role': role,
+                                }).eq('id', userId);
+                                if (statusSys != 'ACTIVO') {
+                                  try {
+                                    await NotificationService.send(
+                                      title:
+                                          'Estatus Sys: ${nombreController.text} ${paternoController.text}',
+                                      message:
+                                          'Nuevo colaborador creado con estatus $statusSys',
+                                      type: 'collaborator_alert',
+                                      metadata: {
+                                        'profile_id': userId,
+                                        'status': statusSys
+                                      },
+                                    );
+                                  } catch (notifErr) {
+                                    debugPrint(
+                                        '[NOTIF] ❌ Error al enviar (crear): $notifErr');
                                   }
                                 }
                               }
-                              if (mounted) {
-                                Navigator.pop(context);
-                                _fetchUsers();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(isGrantingAccess
-                                        ? 'Acceso concedido exitosamente'
-                                        : (isEditing
-                                            ? 'Usuario actualizado'
-                                            : 'Usuario creado')),
-                                    backgroundColor: const Color(0xFFB1CB34),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                      content: Text('Error: $e'),
-                                      backgroundColor: Colors.red),
-                                );
-                              }
                             }
-                          },
-                          child: Text(
-                              isGrantingAccess
-                                  ? 'Conceder'
-                                  : (isEditing ? 'Guardar' : 'Crear'),
-                              style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue)),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Flexible(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.only(
-                        left: 24,
-                        right: 24,
-                        top: 16,
-                        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                            if (mounted) {
+                              Navigator.pop(context);
+                              _fetchUsers();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(isGrantingAccess
+                                      ? 'Acceso concedido exitosamente'
+                                      : (isEditing
+                                          ? 'Usuario actualizado'
+                                          : 'Usuario creado')),
+                                  backgroundColor: const Color(0xFFB1CB34),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text('Error: $e'),
+                                    backgroundColor: Colors.red),
+                              );
+                            }
+                          }
+                        },
+                        child: Text(
+                            isGrantingAccess
+                                ? 'Conceder'
+                                : (isEditing ? 'Guardar' : 'Crear'),
+                            style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue)),
                       ),
-                      child: isDesktop
-                          ? Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: generalSection),
-                                const SizedBox(width: 32),
-                                Expanded(child: permissionsSection),
-                                const SizedBox(width: 32),
-                                Expanded(child: credentialsSection),
-                              ],
-                            )
-                          : Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                generalSection,
-                                const SizedBox(height: 24),
-                                const Divider(),
-                                const SizedBox(height: 24),
-                                permissionsSection,
-                                const SizedBox(height: 24),
-                                const Divider(),
-                                const SizedBox(height: 24),
-                                credentialsSection,
-                              ],
-                            ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.only(
+                      left: 24,
+                      right: 24,
+                      top: 16,
+                      bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+                    ),
+                    child: isDesktop
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(child: generalSection),
+                              const SizedBox(width: 32),
+                              Expanded(child: permissionsSection),
+                              const SizedBox(width: 32),
+                              Expanded(child: credentialsSection),
+                            ],
+                          )
+                        : Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              generalSection,
+                              const SizedBox(height: 24),
+                              const Divider(),
+                              const SizedBox(height: 24),
+                              permissionsSection,
+                              const SizedBox(height: 24),
+                              const Divider(),
+                              const SizedBox(height: 24),
+                              credentialsSection,
+                            ],
+                          ),
+                  ),
+                ),
+              ],
             ),
           );
         },
