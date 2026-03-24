@@ -913,7 +913,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                         }
                       },
                       child: Text(
-                        isEditing ? 'Guardar' : 'Crear',
+                        'Guardar',
                         style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
