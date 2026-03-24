@@ -61,9 +61,12 @@ class _EventSearchDialogState extends State<EventSearchDialog>
 
   Future<void> _loadUsers() async {
     try {
+      final currentUserId = _supabase.auth.currentUser?.id;
+
       final users = await _supabase
           .from('profiles')
-          .select('id, full_name, email')
+          .select('id, full_name, email, permissions')
+          .neq('id', currentUserId ?? '')
           .order('full_name');
 
       final usersWithCalendarPerms =
