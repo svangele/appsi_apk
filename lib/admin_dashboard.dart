@@ -260,6 +260,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
         });
 
     // Credential Controllers
+    final mailUser = TextEditingController(text: user?['mail_user']);
+    final mailPass = TextEditingController(text: user?['mail_pass']);
     final drpUser = TextEditingController(text: user?['drp_user']);
     final drpPass = TextEditingController(text: user?['drp_pass']);
     final gpUser = TextEditingController(text: user?['gp_user']);
@@ -272,6 +274,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final otroPass = TextEditingController(text: user?['otro_pass']);
 
     final Map<String, bool> obscureStatus = {
+      'mail': true,
       'drp': true,
       'gp': true,
       'bitrix': true,
@@ -395,6 +398,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.primary)),
               const SizedBox(height: 16),
+              _buildCredentialRow('Mail', mailUser, mailPass, 'mail',
+                  obscureStatus, setDialogState),
               _buildCredentialRow('DRP', drpUser, drpPass, 'drp', obscureStatus,
                   setDialogState),
               _buildCredentialRow(
@@ -535,6 +540,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               await Supabase.instance.client
                                   .from('profiles')
                                   .update({
+                                'mail_user': mailUser.text.trim(),
+                                'mail_pass': mailPass.text.trim(),
                                 'drp_user': drpUser.text.trim(),
                                 'drp_pass': drpPass.text.trim(),
                                 'gp_user': gpUser.text.trim(),
@@ -568,6 +575,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   'email': emailController.text.trim(),
                                   'numero_empleado':
                                       employeeNumberController.text.trim(),
+                                  'mail_user': mailUser.text.trim(),
+                                  'mail_pass': mailPass.text.trim(),
                                   'drp_user': drpUser.text.trim(),
                                   'drp_pass': drpPass.text.trim(),
                                   'gp_user': gpUser.text.trim(),
