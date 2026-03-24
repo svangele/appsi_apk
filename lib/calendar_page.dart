@@ -76,22 +76,31 @@ class _CalendarPageState extends State<CalendarPage> {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return;
 
+      debugPrint('=== _fetchEvents START ===');
+      debugPrint('userId: $userId, calendarMode: $_calendarMode');
+
       // Get followed users first
       Set<String> followedUserIds = {};
       if (_calendarMode == 0) {
-        final subscriptions = await _supabase
-            .from('calendar_subscriptions')
-            .select('followed_user_id')
-            .eq('subscriber_id', userId)
-            .eq('is_active', true);
+        try {
+          final subscriptions = await _supabase
+              .from('calendar_subscriptions')
+              .select('followed_user_id')
+              .eq('subscriber_id', userId)
+              .eq('is_active', true);
 
-        followedUserIds = {
-          for (var s in subscriptions) s['followed_user_id'] as String
-        };
+          followedUserIds = {
+            for (var s in subscriptions) s['followed_user_id'] as String
+          };
+          debugPrint('Subscriptions fetched: $subscriptions');
+          debugPrint('followedUserIds: $followedUserIds');
+        } catch (e) {
+          debugPrint('Error fetching subscriptions: $e');
+        }
       }
 
       // Fetch events based on calendar mode
-      List<dynamic> response;
+      List<dynamic> response = [];
       if (_calendarMode == 1) {
         // Grupal - only public events
         response = await _supabase
@@ -101,27 +110,41 @@ class _CalendarPageState extends State<CalendarPage> {
             .order('start_time');
       } else {
         // Personal - user's own events (private)
-        response = await _supabase
-            .from('events')
-            .select('*, profiles(full_name, id)')
-            .eq('creator_id', userId)
-            .eq('is_public', false)
-            .order('start_time');
+        try {
+          final myEvents = await _supabase
+              .from('events')
+              .select('*, profiles(full_name, id)')
+              .eq('creator_id', userId)
+              .eq('is_public', false)
+              .order('start_time');
+          debugPrint('My private events count: ${myEvents.length}');
+          response = [...myEvents];
+        } catch (e) {
+          debugPrint('Error fetching my events: $e');
+        }
 
         // Also get followed users' private events
         if (followedUserIds.isNotEmpty) {
+          debugPrint('Fetching followed users events...');
           for (var followedId in followedUserIds) {
-            final followedPrivateEvents = await _supabase
-                .from('events')
-                .select('*, profiles(full_name, id)')
-                .eq('creator_id', followedId)
-                .eq('is_public', false)
-                .order('start_time');
-            response = [...response, ...followedPrivateEvents];
+            try {
+              debugPrint('Fetching events for followedId: $followedId');
+              final followedPrivateEvents = await _supabase
+                  .from('events')
+                  .select('*, profiles(full_name, id)')
+                  .eq('creator_id', followedId)
+                  .order('start_time');
+              debugPrint(
+                  'Events for $followedId: ${followedPrivateEvents.length}');
+              response = [...response, ...followedPrivateEvents];
+            } catch (e) {
+              debugPrint('Error fetching events for $followedId: $e');
+            }
           }
         }
       }
 
+      debugPrint('Total events to display: ${response.length}');
       final List<Appointment> loadedEvents = [];
       for (var ev in response) {
         final startTime = DateTime.parse(ev['start_time']).toLocal();
@@ -153,6 +176,9 @@ class _CalendarPageState extends State<CalendarPage> {
           isAllDay: isAllDay,
         ));
       }
+
+      debugPrint('loadedEvents count: ${loadedEvents.length}');
+      debugPrint('=== _fetchEvents END ===');
 
       if (mounted) {
         _dataSource.updateAppointments(loadedEvents);
