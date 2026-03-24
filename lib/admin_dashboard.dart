@@ -377,7 +377,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
           return Container(
             width: isDesktop
-                ? (screenWidth > 1400 ? 1400 : screenWidth * 0.95)
+                ? (screenWidth > 2800 ? 2800 : screenWidth * 0.95)
                 : double.infinity,
             decoration: const BoxDecoration(
               color: Colors.white,
