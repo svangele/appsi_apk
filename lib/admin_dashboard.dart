@@ -462,6 +462,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   setDialogState),
               _buildPermissionSwitch('Asistencia', 'show_asistencia',
                   Icons.fingerprint, permissions, setDialogState),
+              _buildPermissionSwitch('Power BI', 'show_powerbi',
+                  Icons.bar_chart, permissions, setDialogState),
             ],
           );
 

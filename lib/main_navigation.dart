@@ -11,11 +11,13 @@ import 'external_contacts_page.dart';
 import 'widgets/notification_bell.dart';
 import 'calendar_page.dart';
 import 'attendance_hub_page.dart';
+import 'powerbi_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
   final Map<String, dynamic> permissions;
-  const MainNavigation({super.key, required this.role, required this.permissions});
+  const MainNavigation(
+      {super.key, required this.role, required this.permissions});
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -27,7 +29,7 @@ class _MainNavigationState extends State<MainNavigation> {
 
   List<Map<String, dynamic>> get _availablePages {
     final pages = <Map<String, dynamic>>[];
-    
+
     // Perfil siempre disponible
     pages.add({
       'title': 'Mi Perfil',
@@ -109,13 +111,23 @@ class _MainNavigationState extends State<MainNavigation> {
       });
     }
 
- 
-    if (widget.permissions['show_asistencia'] == true) {  
+    if (widget.permissions['show_asistencia'] == true) {
       pages.add({
         'title': 'Asistencia',
         'icon': Icons.fingerprint,
         'activeIcon': Icons.fingerprint,
-        'widget': AttendanceHubPage(role: widget.role, permissions: widget.permissions),
+        'widget': AttendanceHubPage(
+            role: widget.role, permissions: widget.permissions),
+      });
+    }
+
+    if (widget.permissions['show_powerbi'] == true) {
+      pages.add({
+        'title': 'BI',
+        'icon': Icons.bar_chart_outlined,
+        'activeIcon': Icons.bar_chart,
+        'widget':
+            PowerBiPage(role: widget.role, permissions: widget.permissions),
       });
     }
 
@@ -126,7 +138,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final pages = _availablePages;
-    
+
     // Safety check for index out of bounds if permissions change
     if (_selectedIndex >= pages.length) {
       _selectedIndex = 0;
@@ -141,7 +153,8 @@ class _MainNavigationState extends State<MainNavigation> {
             permissions: widget.permissions,
             currentUserId: Supabase.instance.client.auth.currentUser?.id ?? '',
             onNavigateToCalendar: (eventId) {
-              final calendarIndex = pages.indexWhere((p) => p['title'] == 'Calendario');
+              final calendarIndex =
+                  pages.indexWhere((p) => p['title'] == 'Calendario');
               if (calendarIndex != -1) {
                 setState(() {
                   _selectedIndex = calendarIndex;
@@ -165,11 +178,13 @@ class _MainNavigationState extends State<MainNavigation> {
         unselectedItemColor: Colors.grey,
         showUnselectedLabels: true,
         type: BottomNavigationBarType.fixed,
-        items: pages.map((p) => BottomNavigationBarItem(
-          icon: Icon(p['icon']),
-          activeIcon: Icon(p['activeIcon']),
-          label: p['title'],
-        )).toList(),
+        items: pages
+            .map((p) => BottomNavigationBarItem(
+                  icon: Icon(p['icon']),
+                  activeIcon: Icon(p['activeIcon']),
+                  label: p['title'],
+                ))
+            .toList(),
       ),
     );
   }
