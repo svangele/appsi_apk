@@ -63,42 +63,29 @@ class _EventSearchDialogState extends State<EventSearchDialog>
     try {
       final currentUserId = _supabase.auth.currentUser?.id;
 
-      debugPrint('Loading users...');
-
       final users = await _supabase
           .from('profiles')
           .select('id, full_name, email, permissions, role')
+          .eq('system_sys', 'ACTIVO')
+          .eq('show_calendar', true)
           .neq('id', currentUserId ?? '')
           .order('full_name');
 
-      debugPrint('Total users fetched: ${users.length}');
-
-      final usersWithCalendarPerms =
+      final usersWithEventCount =
           await Future.wait((users as List).map((user) async {
-        final perms = user['permissions'] as Map<String, dynamic>?;
-        final hasPerm = perms?['show_calendar'] == true ||
-            perms?['show_calendar'] == 'true';
+        final eventCount = await _supabase
+            .from('events')
+            .select('id')
+            .eq('creator_id', user['id'])
+            .count(CountOption.exact);
 
-        debugPrint(
-            'User ${user['full_name']}: role=${user['role']}, show_calendar=$hasPerm');
-
-        if (hasPerm) {
-          final eventCount = await _supabase
-              .from('events')
-              .select('id')
-              .eq('creator_id', user['id'])
-              .count(CountOption.exact);
-
-          user['event_count'] = eventCount.count;
-          return user;
-        }
-        return null;
+        user['event_count'] = eventCount.count;
+        return user;
       }));
 
       if (mounted) {
         setState(() {
-          _users = usersWithCalendarPerms.where((u) => u != null).toList();
-          debugPrint('Users with calendar perm: ${_users.length}');
+          _users = usersWithEventCount;
         });
       }
     } catch (e) {
