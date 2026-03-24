@@ -6,6 +6,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+bool get _isMobilePlatform {
+  if (kIsWeb) return false;
+  try {
+    return Platform.isAndroid || Platform.isIOS;
+  } catch (_) {
+    return false;
+  }
+}
+
 class PowerBiPage extends StatefulWidget {
   final String role;
   final Map<String, dynamic> permissions;
@@ -136,9 +145,7 @@ class _PowerBiPageState extends State<PowerBiPage> {
     final htmlCode = link['html_code'] as String?;
 
     if (url != null && url.isNotEmpty) {
-      final isMobile = Platform.isAndroid || Platform.isIOS;
-
-      if (kIsWeb || !isMobile) {
+      if (!_isMobilePlatform) {
         final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
           await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
