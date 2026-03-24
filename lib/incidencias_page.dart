@@ -44,17 +44,17 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   }
 
   Widget _buildControls(ThemeData theme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (_userRole == 'admin' && _adminUserList.isNotEmpty)
-          _buildGlassPill(
-            child: DropdownButtonHideUnderline(
+    return _buildGlassPill(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_userRole == 'admin' && _adminUserList.isNotEmpty)
+            DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedUserId,
                 isDense: true,
-                icon: Icon(Icons.keyboard_arrow_down,
-                    color: theme.colorScheme.secondary),
+                icon: const Icon(Icons.keyboard_arrow_down,
+                    color: Colors.black87),
                 items: _adminUserList.map((user) {
                   final name =
                       '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
@@ -68,18 +68,14 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 onChanged: _onUserSelected,
               ),
             ),
+          const VerticalDivider(
+              width: 1, thickness: 1, indent: 12, endIndent: 12),
+          IconButton(
+            onPressed: () => _showIncidenciaForm(),
+            icon: const Icon(Icons.add, size: 22, color: Colors.black87),
           ),
-        const SizedBox(width: 8),
-        _buildGlassPill(
-          padding: const EdgeInsets.all(12),
-          child: InkWell(
-            onTap: () => _showIncidenciaForm(),
-            borderRadius: BorderRadius.circular(30),
-            child:
-                Icon(Icons.add, size: 22, color: theme.colorScheme.secondary),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
