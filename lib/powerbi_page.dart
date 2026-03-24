@@ -352,23 +352,39 @@ class _PowerBiPageState extends State<PowerBiPage> {
   }
 
   Widget _buildUserAccessList(String linkId) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getLinkUsers(linkId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
+    final Set<String> _assignedIds = {};
+    bool _loading = true;
+
+    Future<void> _loadUsers() async {
+      try {
+        final data = await _getLinkUsers(linkId);
+        _assignedIds.clear();
+        _assignedIds.addAll(data.map((u) => u['user_id'].toString()));
+      } finally {
+        if (mounted) {
+          setState(() => _loading = false);
+        }
+      }
+    }
+
+    _loadUsers();
+
+    return StatefulBuilder(
+      builder: (context, setLocalState) {
+        if (_loading) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+        if (_availableUsers.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Text('No hay usuarios disponibles con permiso Power BI'),
+          );
         }
-
-        final assignedUserIds =
-            snapshot.data?.map((u) => u['user_id'] as String).toSet() ?? {};
 
         return Column(
           children: _availableUsers.map((user) {
-            final isAssigned = assignedUserIds.contains(user['id']);
+            final isAssigned = _assignedIds.contains(user['id'].toString());
             final fullName =
                 '${user['nombre'] ?? ''} ${user['paterno'] ?? ''} ${user['materno'] ?? ''}'
                     .trim();
@@ -385,14 +401,16 @@ class _PowerBiPageState extends State<PowerBiPage> {
                         'link_id': linkId,
                         'user_id': user['id'],
                       });
+                      _assignedIds.add(user['id'].toString());
                     } else {
                       await _supabase
                           .from('powerbi_link_users')
                           .delete()
                           .eq('link_id', linkId)
                           .eq('user_id', user['id']);
+                      _assignedIds.remove(user['id'].toString());
                     }
-                    setState(() {});
+                    setLocalState(() {});
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
