@@ -715,44 +715,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
       String key,
       Map<String, bool> obscureMap,
       StateSetter setDialogState) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: TextField(
-            controller: uCtrl,
-            decoration: InputDecoration(
-              labelText: '$label Usuario',
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-            ),
-            style: const TextStyle(fontSize: 14),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: TextField(
-            controller: pCtrl,
-            obscureText: obscureMap[key] ?? true,
-            decoration: InputDecoration(
-              labelText: 'Contraseña',
-              isDense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-              suffixIcon: IconButton(
-                icon: Icon(
-                  (obscureMap[key] ?? true)
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined,
-                  size: 18,
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: uCtrl,
+                decoration: InputDecoration(
+                  labelText: '$label Usuario',
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
                 ),
-                onPressed: () => setDialogState(
-                    () => obscureMap[key] = !(obscureMap[key] ?? true)),
+                style: const TextStyle(fontSize: 14),
               ),
             ),
-            style: const TextStyle(fontSize: 14),
-          ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: TextField(
+                controller: pCtrl,
+                obscureText: obscureMap[key] ?? true,
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      (obscureMap[key] ?? true)
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      size: 18,
+                    ),
+                    onPressed: () => setDialogState(
+                        () => obscureMap[key] = !(obscureMap[key] ?? true)),
+                  ),
+                ),
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          ],
         ),
+        const SizedBox(height: 10),
       ],
     );
   }
