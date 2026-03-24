@@ -2,7 +2,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/notification_service.dart';
-import 'widgets/page_header.dart';
 
 class IncidenciasPage extends StatefulWidget {
   const IncidenciasPage({super.key});
@@ -48,49 +47,47 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        _buildGlassPill(
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedUserId,
-              isDense: true,
-              icon: Icon(Icons.keyboard_arrow_down,
-                  color: theme.colorScheme.secondary),
-              items: _adminUserList.map((user) {
-                final name =
-                    '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
-                        .trim();
-                return DropdownMenuItem(
-                  value: user['id'] as String,
-                  child: Text(name.isEmpty ? 'Usuario' : name,
-                      style: const TextStyle(fontSize: 14)),
-                );
-              }).toList(),
-              onChanged: _onUserSelected,
+        if (_userRole == 'admin' && _adminUserList.isNotEmpty)
+          _buildGlassPill(
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedUserId,
+                isDense: true,
+                icon: Icon(Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.secondary),
+                items: _adminUserList.map((user) {
+                  final name =
+                      '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
+                          .trim();
+                  return DropdownMenuItem(
+                    value: user['id'] as String,
+                    child: Text(name.isEmpty ? 'Usuario' : name,
+                        style: const TextStyle(fontSize: 14)),
+                  );
+                }).toList(),
+                onChanged: _onUserSelected,
+              ),
             ),
           ),
-        ),
         const SizedBox(width: 12),
         _buildGlassPill(
-          padding: EdgeInsets.zero,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: InkWell(
             onTap: () => _showIncidenciaForm(),
             borderRadius: BorderRadius.circular(30),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.add, size: 20, color: theme.colorScheme.secondary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'NUEVO',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.secondary,
-                    ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.add, size: 22, color: Colors.black87),
+                const SizedBox(width: 8),
+                Text(
+                  'NUEVO',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -1366,49 +1363,37 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = constraints.maxWidth <= 800;
-                final hasSelector =
-                    _userRole == 'admin' && _adminUserList.isNotEmpty;
-
-                Widget? selectorWidget = hasSelector
-                    ? _buildGlassPill(
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedUserId,
-                            isDense: true,
-                            icon: Icon(Icons.keyboard_arrow_down,
-                                color: theme.colorScheme.secondary),
-                            items: _adminUserList.map((user) {
-                              final name =
-                                  '${user['nombre']} ${user['paterno']} ${user['materno'] ?? ''}'
-                                      .trim();
-                              return DropdownMenuItem(
-                                value: user['id'] as String,
-                                child: Text(name.isEmpty ? 'Usuario' : name,
-                                    style: const TextStyle(fontSize: 14)),
-                              );
-                            }).toList(),
-                            onChanged: _onUserSelected,
-                          ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    theme.colorScheme.primary,
+                    theme.colorScheme.primary.withOpacity(0.8)
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Incidencias y Peticiones',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
                         ),
-                      )
-                    : null;
-
-                return PageHeader(
-                  title: 'Incidencias y Peticiones',
-                  trailing: (!isMobile && hasSelector)
-                      ? _buildAdminControls(theme)
-                      : null,
-                  bottom: (isMobile && selectorWidget != null)
-                      ? [
-                          SizedBox(
-                              width: double.infinity, child: selectorWidget)
-                        ]
-                      : null,
-                );
-              },
+                      ),
+                    ),
+                    _buildAdminControls(theme),
+                  ],
+                ),
+              ),
             ),
           ),
           // Main content (Responsive layout)
