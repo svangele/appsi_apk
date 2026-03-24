@@ -64,6 +64,10 @@ class _PowerBiPageState extends State<PowerBiPage> {
             .order('nombre');
 
         _availableUsers = (usersData as List)
+            .where((user) {
+              final perms = user['permissions'];
+              return perms is Map && perms['show_powerbi'] == true;
+            })
             .map((user) => Map<String, dynamic>.from(user))
             .toList();
       }
@@ -796,12 +800,15 @@ class _UserSwitchCardState extends State<_UserSwitchCard> {
 
   @override
   Widget build(BuildContext context) {
-    final userId = widget.user['id'].toString();
-
     return Card(
+      margin: const EdgeInsets.symmetric(vertical: 2),
       child: SwitchListTile(
-        title: Text(widget.fullName),
-        subtitle: Text(userId.substring(0, 8) + '...'),
+        dense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        title: Text(
+          widget.fullName,
+          style: const TextStyle(fontSize: 13),
+        ),
         value: isAssigned,
         onChanged: (value) async {
           setState(() => isAssigned = value);
