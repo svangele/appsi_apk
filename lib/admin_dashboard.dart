@@ -4,6 +4,43 @@ import 'widgets/page_header.dart';
 import 'services/notification_service.dart';
 import 'attendance_admin_page.dart';
 
+Future<T?> showFullWidthModal<T>({
+  required BuildContext context,
+  required Widget Function(BuildContext) builder,
+}) {
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isDesktop = screenWidth > 800;
+
+  if (isDesktop) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Dismiss',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: screenWidth,
+              child: builder(dialogContext),
+            ),
+          ),
+        );
+      },
+    );
+  } else {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: builder,
+    );
+  }
+}
+
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
@@ -242,10 +279,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
       'otro': true,
     };
 
-    showModalBottomSheet(
+    showFullWidthModal(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
       builder: (sheetContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           final isDesktop = MediaQuery.of(context).size.width > 800;
