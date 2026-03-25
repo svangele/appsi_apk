@@ -724,39 +724,92 @@ class _BiPageState extends State<BiPage> {
     }
 
     return SliverFillRemaining(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: PaginatedDataTable(
-          header: const Text('Mis Reportes',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          columns: const [
-            DataColumn(
-                label: Text('Título',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(
-                label: Text('Tipo',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(
-                label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
-          ],
-          source: _LinksDataSource(
-            links: filteredLinks,
-            isAdmin: false,
-            onEdit: (link) {},
-            onDelete: (id) {},
-            onTap: (link) => _openLink(link),
-          ),
-          rowsPerPage: filteredLinks.length > 10
-              ? 10
-              : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
-          showCheckboxColumn: false,
-          horizontalMargin: 16,
-          columnSpacing: 24,
-          dataRowMinHeight: 40,
-          dataRowMaxHeight: 48,
-          headingRowHeight: 48,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 800;
+          return isDesktop
+              ? _buildUserTableDesktop(filteredLinks)
+              : _buildUserListMobile(filteredLinks, theme);
+        },
       ),
+    );
+  }
+
+  Widget _buildUserTableDesktop(List<Map<String, dynamic>> filteredLinks) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: PaginatedDataTable(
+        header: const Text('Mis Reportes',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        columns: const [
+          DataColumn(
+              label: Text('Título',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(
+              label:
+                  Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(
+              label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
+        ],
+        source: _LinksDataSource(
+          links: filteredLinks,
+          isAdmin: false,
+          onEdit: (link) {},
+          onDelete: (id) {},
+          onTap: (link) => _openLink(link),
+        ),
+        rowsPerPage: filteredLinks.length > 10
+            ? 10
+            : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
+        showCheckboxColumn: false,
+        horizontalMargin: 16,
+        columnSpacing: 24,
+        dataRowMinHeight: 40,
+        dataRowMaxHeight: 48,
+        headingRowHeight: 48,
+      ),
+    );
+  }
+
+  Widget _buildUserListMobile(
+      List<Map<String, dynamic>> filteredLinks, ThemeData theme) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: filteredLinks.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final link = filteredLinks[index];
+        final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
+        final hasHtml = link['html_code'] != null &&
+            link['html_code'].toString().isNotEmpty;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[200]!),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                hasHtml ? Icons.code : Icons.link,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            title: Text(
+              link['title'] ?? 'Sin título',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-')),
+            trailing: Icon(Icons.arrow_forward_ios,
+                size: 16, color: Colors.grey[400]),
+            onTap: () => _openLink(link),
+          ),
+        );
+      },
     );
   }
 
@@ -793,40 +846,104 @@ class _BiPageState extends State<BiPage> {
     }
 
     return SliverFillRemaining(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: PaginatedDataTable(
-          header: const Text('Enlaces BI',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          columns: const [
-            DataColumn(
-                label: Text('Título',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(
-                label: Text('Tipo',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(
-                label: Text('Acciones',
-                    style: TextStyle(fontWeight: FontWeight.bold))),
-          ],
-          source: _LinksDataSource(
-            links: filteredLinks,
-            isAdmin: true,
-            onEdit: (link) => _showLinkForm(link: link),
-            onDelete: (id) => _deleteLink(id),
-            onTap: (link) => _openLink(link),
-          ),
-          rowsPerPage: filteredLinks.length > 10
-              ? 10
-              : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
-          showCheckboxColumn: false,
-          horizontalMargin: 16,
-          columnSpacing: 24,
-          dataRowMinHeight: 40,
-          dataRowMaxHeight: 48,
-          headingRowHeight: 48,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 800;
+          return isDesktop
+              ? _buildAdminTableDesktop(filteredLinks)
+              : _buildAdminListMobile(filteredLinks, theme);
+        },
       ),
+    );
+  }
+
+  Widget _buildAdminTableDesktop(List<Map<String, dynamic>> filteredLinks) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: PaginatedDataTable(
+        header: const Text('Enlaces BI',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        columns: const [
+          DataColumn(
+              label: Text('Título',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(
+              label:
+                  Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+          DataColumn(
+              label: Text('Acciones',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
+        ],
+        source: _LinksDataSource(
+          links: filteredLinks,
+          isAdmin: true,
+          onEdit: (link) => _showLinkForm(link: link),
+          onDelete: (id) => _deleteLink(id),
+          onTap: (link) => _openLink(link),
+        ),
+        rowsPerPage: filteredLinks.length > 10
+            ? 10
+            : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
+        showCheckboxColumn: false,
+        horizontalMargin: 16,
+        columnSpacing: 24,
+        dataRowMinHeight: 40,
+        dataRowMaxHeight: 48,
+        headingRowHeight: 48,
+      ),
+    );
+  }
+
+  Widget _buildAdminListMobile(
+      List<Map<String, dynamic>> filteredLinks, ThemeData theme) {
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: filteredLinks.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final link = filteredLinks[index];
+        final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
+        final hasHtml = link['html_code'] != null &&
+            link['html_code'].toString().isNotEmpty;
+
+        return Card(
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey[200]!),
+          ),
+          child: ListTile(
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            leading: CircleAvatar(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              child: Icon(
+                hasHtml ? Icons.code : Icons.link,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+            title: Text(
+              link['title'] ?? 'Sin título',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-')),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 20),
+                  onPressed: () => _showLinkForm(link: link),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
+                  onPressed: () => _deleteLink(link['id']),
+                ),
+              ],
+            ),
+            onTap: () => _openLink(link),
+          ),
+        );
+      },
     );
   }
 }
