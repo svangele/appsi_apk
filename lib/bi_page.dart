@@ -58,7 +58,7 @@ class _BiPageState extends State<BiPage> {
         final userLinksData = await _supabase
             .from('powerbi_link_users')
             .select(
-                'link_id, powerbi_links(id, title, url, html_code, is_active, created_by)')
+                'link_id, powerbi_links(id, title, url, descripcion, is_active, created_by)')
             .eq('user_id', userId ?? '');
 
         final assignedLinks = (userLinksData as List)
@@ -73,7 +73,7 @@ class _BiPageState extends State<BiPage> {
         // Enlaces donde el usuario es el creador
         final createdLinksData = await _supabase
             .from('powerbi_links')
-            .select('id, title, url, html_code, is_active, created_by')
+            .select('id, title, url, descripcion, is_active, created_by')
             .eq('created_by', userId ?? '')
             .eq('is_active', true);
 
@@ -126,7 +126,7 @@ class _BiPageState extends State<BiPage> {
 
   Future<void> _openLink(Map<String, dynamic> link) async {
     final url = link['url'] as String?;
-    final htmlCode = link['html_code'] as String?;
+    final htmlCode = link['descripcion'] as String?;
 
     if (url != null && url.isNotEmpty) {
       showGeneralDialog(
@@ -223,7 +223,7 @@ class _BiPageState extends State<BiPage> {
     final isEditing = link != null;
     final titleCtrl = TextEditingController(text: link?['title']);
     final urlCtrl = TextEditingController(text: link?['url']);
-    final htmlCtrl = TextEditingController(text: link?['html_code']);
+    final htmlCtrl = TextEditingController(text: link?['descripcion']);
     bool saving = false;
 
     showDialog(
@@ -258,7 +258,7 @@ class _BiPageState extends State<BiPage> {
                 TextField(
                   controller: htmlCtrl,
                   decoration: const InputDecoration(
-                    labelText: 'Código HTML',
+                    labelText: 'Descripción',
                     prefixIcon: Icon(Icons.code),
                     hintText: '<html>...</html>',
                   ),
@@ -341,7 +341,7 @@ class _BiPageState extends State<BiPage> {
                         'url': urlCtrl.text.trim().isEmpty
                             ? null
                             : urlCtrl.text.trim(),
-                        'html_code': htmlCtrl.text.trim().isEmpty
+                        'descripcion': htmlCtrl.text.trim().isEmpty
                             ? null
                             : htmlCtrl.text.trim(),
                         'is_active': true,
@@ -780,8 +780,8 @@ class _BiPageState extends State<BiPage> {
       itemBuilder: (context, index) {
         final link = filteredLinks[index];
         final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-        final hasHtml = link['html_code'] != null &&
-            link['html_code'].toString().isNotEmpty;
+        final hasHtml = link['descripcion'] != null &&
+            link['descripcion'].toString().isNotEmpty;
 
         return Card(
           elevation: 0,
@@ -803,7 +803,7 @@ class _BiPageState extends State<BiPage> {
               link['title'] ?? 'Sin título',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-')),
+            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-')),
             trailing: Icon(Icons.arrow_forward_ios,
                 size: 16, color: Colors.grey[400]),
             onTap: () => _openLink(link),
@@ -903,8 +903,8 @@ class _BiPageState extends State<BiPage> {
       itemBuilder: (context, index) {
         final link = filteredLinks[index];
         final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-        final hasHtml = link['html_code'] != null &&
-            link['html_code'].toString().isNotEmpty;
+        final hasHtml = link['descripcion'] != null &&
+            link['descripcion'].toString().isNotEmpty;
 
         return Card(
           elevation: 0,
@@ -926,7 +926,7 @@ class _BiPageState extends State<BiPage> {
               link['title'] ?? 'Sin título',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-')),
+            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-')),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1286,8 +1286,8 @@ class _LinksDataSource extends DataTableSource {
     if (index >= links.length) return null;
     final link = links[index];
     final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-    final hasHtml =
-        link['html_code'] != null && link['html_code'].toString().isNotEmpty;
+    final hasHtml = link['descripcion'] != null &&
+        link['descripcion'].toString().isNotEmpty;
 
     return DataRow.byIndex(
       index: index,
@@ -1310,7 +1310,7 @@ class _LinksDataSource extends DataTableSource {
           ),
           onTap: () => onTap(link),
         ),
-        DataCell(Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-'))),
+        DataCell(Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-'))),
         if (isAdmin)
           DataCell(Row(
             mainAxisSize: MainAxisSize.min,
