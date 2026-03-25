@@ -36,14 +36,6 @@ class _BiPageState extends State<BiPage> {
     try {
       final userId = _supabase.auth.currentUser?.id;
 
-      if (_isAdmin) {
-        final linksData = await _supabase
-            .from('powerbi_links')
-            .select('*')
-            .order('created_at', ascending: false);
-        _links = List<Map<String, dynamic>>.from(linksData);
-      }
-
       // Obtener perfil del usuario actual para verificar permisos
       Map<String, dynamic>? currentUserProfile;
       try {
@@ -95,10 +87,11 @@ class _BiPageState extends State<BiPage> {
         for (final link in allLinks) {
           uniqueLinks[link['id'].toString()] = link;
         }
-        _userLinks = uniqueLinks.values.toList();
+        _links = uniqueLinks.values.toList();
       } else {
-        _userLinks = [];
+        _links = [];
       }
+      _userLinks = _links;
 
       if (_isAdmin) {
         final usersData = await _supabase
