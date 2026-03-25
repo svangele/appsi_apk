@@ -11,7 +11,7 @@ import 'external_contacts_page.dart';
 import 'widgets/notification_bell.dart';
 import 'calendar_page.dart';
 import 'attendance_hub_page.dart';
-import 'powerbi_page.dart';
+import 'bi_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
@@ -126,8 +126,7 @@ class _MainNavigationState extends State<MainNavigation> {
         'title': 'BI',
         'icon': Icons.bar_chart_outlined,
         'activeIcon': Icons.bar_chart,
-        'widget':
-            PowerBiPage(role: widget.role, permissions: widget.permissions),
+        'widget': BiPage(role: widget.role, permissions: widget.permissions),
       });
     }
 

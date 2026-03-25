@@ -3,20 +3,20 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:webviewx_plus/webviewx_plus.dart';
-import 'web_iframe_stub.dart' if (dart.library.html) 'web_iframe.dart'
+import 'bi_web_iframe_stub.dart' if (dart.library.html) 'bi_web_iframe.dart'
     as iframe_impl;
 
-class PowerBiPage extends StatefulWidget {
+class BiPage extends StatefulWidget {
   final String role;
   final Map<String, dynamic> permissions;
 
-  const PowerBiPage({super.key, required this.role, required this.permissions});
+  const BiPage({super.key, required this.role, required this.permissions});
 
   @override
-  State<PowerBiPage> createState() => _PowerBiPageState();
+  State<BiPage> createState() => _BiPageState();
 }
 
-class _PowerBiPageState extends State<PowerBiPage> {
+class _BiPageState extends State<BiPage> {
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _links = [];
   List<Map<String, dynamic>> _userLinks = [];
