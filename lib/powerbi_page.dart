@@ -1163,7 +1163,7 @@ class _LinkViewerState extends State<_LinkViewer> {
           ),
           SizedBox(
             height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
-            width: double.infinity,
+            width: MediaQuery.of(context).size.width.toDouble(),
             child: WebViewX(
               initialContent: widget.url,
               initialSourceType: SourceType.urlBypass,
