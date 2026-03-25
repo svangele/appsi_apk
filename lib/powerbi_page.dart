@@ -1055,16 +1055,20 @@ class _BiWebViewState extends State<_BiWebView> {
                       ],
                     ),
                   )
-                : WebViewX(
-                    key: ValueKey(_hasError),
-                    initialContent: widget.url,
-                    initialSourceType: SourceType.urlBypass,
-                    height: double.infinity,
-                    width: double.infinity,
-                    javascriptMode: JavascriptMode.unrestricted,
-                    onWebResourceError: (error) {
-                      setState(() => _hasError = true);
-                    },
+                : SizedBox(
+                    height: MediaQuery.of(context).size.height,
+                    width: MediaQuery.of(context).size.width,
+                    child: WebViewX(
+                      key: ValueKey(_hasError),
+                      initialContent: widget.url,
+                      initialSourceType: SourceType.urlBypass,
+                      height: MediaQuery.of(context).size.height,
+                      width: MediaQuery.of(context).size.width,
+                      javascriptMode: JavascriptMode.unrestricted,
+                      onWebResourceError: (error) {
+                        setState(() => _hasError = true);
+                      },
+                    ),
                   ),
           ),
         ],
@@ -1144,12 +1148,16 @@ class _LinkViewerState extends State<_LinkViewer> {
             ),
           ),
           Expanded(
-            child: WebViewX(
-              initialContent: widget.url,
-              initialSourceType: SourceType.urlBypass,
+            child: SizedBox(
               height: double.infinity,
               width: double.infinity,
-              javascriptMode: JavascriptMode.unrestricted,
+              child: WebViewX(
+                initialContent: widget.url,
+                initialSourceType: SourceType.urlBypass,
+                height: double.infinity,
+                width: double.infinity,
+                javascriptMode: JavascriptMode.unrestricted,
+              ),
             ),
           ),
         ],
