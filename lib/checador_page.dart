@@ -719,9 +719,15 @@ class _CameraPreviewWidget extends StatelessWidget {
       );
     }
 
-    return Transform.scale(
-      scaleX: -1,
-      child: CameraPreview(controller!),
+    return Transform(
+      alignment: Alignment.center,
+      transform: Matrix4.identity()
+        ..setEntry(3, 2, 0.001)
+        ..rotateZ(-3.14159 / 2),
+      child: Transform.scale(
+        scaleX: -1,
+        child: CameraPreview(controller!),
+      ),
     );
   }
 }
