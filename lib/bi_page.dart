@@ -927,16 +927,35 @@ class _BiPageState extends State<BiPage> {
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
             subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-')),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: () => _showLinkForm(link: link),
+            trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  _showLinkForm(link: link);
+                } else if (value == 'delete') {
+                  _deleteLink(link['id']);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 12),
+                      Text('Editar'),
+                    ],
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, size: 20, color: Colors.red),
-                  onPressed: () => _deleteLink(link['id']),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, size: 20, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Eliminar', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
                 ),
               ],
             ),
