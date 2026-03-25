@@ -8,10 +8,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  supabase_flutter: ^2.6.0
+  supabase_flutter: 2.5.3
   flutter_dotenv: ^5.1.0
   image_picker: ^1.0.7
-  geolocator: any
+  geolocator: 12.0.0
   flutter_localizations:
     sdk: flutter
   intl: any
@@ -22,7 +22,8 @@ dependencies:
   syncfusion_localizations: any
   url_launcher: ^6.3.0
   http: ^1.2.0
-  flutter_inappwebview: ^5.8.0
+  webviewx_plus: ^0.5.1
+  app_links: 5.0.0
 
 dev_dependencies:
   flutter_test:
@@ -37,7 +38,6 @@ flutter:
     - .env
 
 dependency_overrides:
-  app_links: 6.1.1
 
 flutter_launcher_icons:
   image_path: "assets/sisolok.png"

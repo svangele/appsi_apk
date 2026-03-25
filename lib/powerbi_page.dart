@@ -1,19 +1,7 @@
-import 'dart:io';
 import 'dart:ui';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-bool get _isMobilePlatform {
-  if (kIsWeb) return false;
-  try {
-    return Platform.isAndroid || Platform.isIOS;
-  } catch (_) {
-    return false;
-  }
-}
+import 'package:webviewx_plus/webviewx_plus.dart';
 
 class PowerBiPage extends StatefulWidget {
   final String role;
@@ -145,37 +133,30 @@ class _PowerBiPageState extends State<PowerBiPage> {
     final htmlCode = link['html_code'] as String?;
 
     if (url != null && url.isNotEmpty) {
-      if (_isMobilePlatform) {
-        showGeneralDialog(
-          context: context,
-          barrierDismissible: true,
-          barrierLabel: 'Dismiss',
-          barrierColor: Colors.black54,
-          transitionDuration: const Duration(milliseconds: 300),
-          pageBuilder: (dialogContext, animation, secondaryAnimation) {
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: Material(
-                color: Colors.transparent,
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  height: MediaQuery.of(context).size.height,
-                  child: _BiWebView(
-                    url: url,
-                    title: link['title'] ?? 'Reporte',
-                    onClose: () => Navigator.pop(dialogContext),
-                  ),
+      showGeneralDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierLabel: 'Dismiss',
+        barrierColor: Colors.black54,
+        transitionDuration: const Duration(milliseconds: 300),
+        pageBuilder: (dialogContext, animation, secondaryAnimation) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Material(
+              color: Colors.transparent,
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width,
+                height: MediaQuery.of(context).size.height,
+                child: _LinkViewer(
+                  url: url,
+                  title: link['title'] ?? 'Reporte',
+                  onClose: () => Navigator.pop(dialogContext),
                 ),
               ),
-            );
-          },
-        );
-      } else {
-        final uri = Uri.parse(url);
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.platformDefault);
-        }
-      }
+            ),
+          );
+        },
+      );
     } else if (htmlCode != null && htmlCode.isNotEmpty) {
       if (mounted) {
         _showHtmlViewer(htmlCode, link['title'] ?? 'Reporte');
@@ -985,10 +966,125 @@ class _BiWebView extends StatefulWidget {
 }
 
 class _BiWebViewState extends State<_BiWebView> {
-  double _loadingProgress = 0;
   bool _hasError = false;
-  String _errorMessage = '';
 
+  void _handleClose() {
+    if (widget.onClose != null) {
+      widget.onClose!();
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  void _retry() {
+    setState(() => _hasError = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isFullScreen = screenHeight > 600;
+
+    return Container(
+      height: isFullScreen ? screenHeight : screenHeight * 0.9,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: isFullScreen
+            ? BorderRadius.zero
+            : const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: isFullScreen
+                  ? BorderRadius.zero
+                  : const BorderRadius.vertical(top: Radius.circular(20)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: _handleClose,
+                ),
+                Expanded(
+                  child: Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 48),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _hasError
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          size: 64,
+                          color: Colors.red,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error al cargar',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: _retry,
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  )
+                : WebViewX(
+                    key: ValueKey(_hasError),
+                    initialContent: widget.url,
+                    initialSourceType: SourceType.urlBypass,
+                    height: double.infinity,
+                    width: double.infinity,
+                    javascriptMode: JavascriptMode.unrestricted,
+                    onWebResourceError: (error) {
+                      setState(() => _hasError = true);
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LinkViewer extends StatefulWidget {
+  final String url;
+  final String title;
+  final VoidCallback? onClose;
+
+  const _LinkViewer({required this.url, required this.title, this.onClose});
+
+  @override
+  State<_LinkViewer> createState() => _LinkViewerState();
+}
+
+class _LinkViewerState extends State<_LinkViewer> {
   void _handleClose() {
     if (widget.onClose != null) {
       widget.onClose!();
@@ -1047,73 +1143,14 @@ class _BiWebViewState extends State<_BiWebView> {
               ],
             ),
           ),
-          if (_loadingProgress < 1.0 && !_hasError)
-            LinearProgressIndicator(
-              value: _loadingProgress,
-              backgroundColor: Colors.grey[200],
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
-            ),
           Expanded(
-            child: _hasError
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error al cargar',
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 32),
-                          child: Text(
-                            _errorMessage,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.grey[600]),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _hasError = false;
-                              _loadingProgress = 0;
-                            });
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Reintentar'),
-                        ),
-                      ],
-                    ),
-                  )
-                : InAppWebView(
-                    initialUrlRequest: URLRequest(url: Uri.parse(widget.url)),
-                    onLoadStart: (controller, url) {
-                      setState(() {
-                        _loadingProgress = 0;
-                        _hasError = false;
-                      });
-                    },
-                    onProgressChanged: (controller, progress) {
-                      setState(() {
-                        _loadingProgress = progress / 100;
-                      });
-                    },
-                    onLoadError: (controller, url, code, message) {
-                      setState(() {
-                        _hasError = true;
-                        _errorMessage = message;
-                      });
-                    },
-                  ),
+            child: WebViewX(
+              initialContent: widget.url,
+              initialSourceType: SourceType.urlBypass,
+              height: double.infinity,
+              width: double.infinity,
+              javascriptMode: JavascriptMode.unrestricted,
+            ),
           ),
         ],
       ),

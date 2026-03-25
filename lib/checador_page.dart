@@ -7,8 +7,8 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:ui_web' as ui_web;
-import 'dart:html' as html;
+import 'checador_camera_native.dart'
+    if (dart.library.html) 'checador_web_impl.dart' as camera_impl;
 
 class ChecadorPage extends StatefulWidget {
   const ChecadorPage({super.key});
@@ -27,14 +27,13 @@ class _ChecadorPageState extends State<ChecadorPage> {
   final _supabase = Supabase.instance.client;
   Timer? _clockTimer;
   DateTime _currentTime = DateTime.now();
-  html.MediaStream? _cameraStream;
-  final String _viewId =
-      'camera-preview-${DateTime.now().millisecondsSinceEpoch}';
+  late camera_impl.CameraController _cameraController;
   bool _cameraReady = false;
 
   @override
   void initState() {
     super.initState();
+    _cameraController = camera_impl.CameraController();
     _fetchData();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _currentTime = DateTime.now());
@@ -43,38 +42,14 @@ class _ChecadorPageState extends State<ChecadorPage> {
   }
 
   Future<void> _initCamera() async {
-    try {
-      final stream = await html.window.navigator.mediaDevices!
-          .getUserMedia(<String, Object>{
-        'video': {'facingMode': 'user'},
-        'audio': false
-      });
-      _cameraStream = stream;
-      ui_web.platformViewRegistry.registerViewFactory(_viewId, (int id) {
-        final video = html.VideoElement()
-          ..srcObject = stream
-          ..autoplay = true
-          ..muted = true
-          ..style.width = '100%'
-          ..style.height = '100%'
-          ..style.objectFit = 'cover'
-          ..style.transform = 'scaleX(-1)';
-        return video;
-      });
-      if (mounted) setState(() => _cameraReady = true);
-    } catch (e) {
-      debugPrint('Error iniciando cámara: $e');
-    }
+    await _cameraController.initCamera();
+    if (mounted) setState(() => _cameraReady = _cameraController.isReady);
   }
 
   @override
   void dispose() {
     _clockTimer?.cancel();
-    if (_cameraStream != null) {
-      for (final track in _cameraStream!.getTracks()) {
-        track.stop();
-      }
-    }
+    _cameraController.dispose();
     super.dispose();
   }
 
@@ -173,32 +148,13 @@ class _ChecadorPageState extends State<ChecadorPage> {
       debugPrint('Capturando foto...');
       Uint8List bytes;
 
-      if (kIsWeb && _cameraStream != null) {
-        // Obtener el video element a través del DOM
-        final videos = html.document.querySelectorAll('video');
-        html.VideoElement? videoEl;
-        for (final el in videos) {
-          if (el is html.VideoElement && el.srcObject != null) {
-            videoEl = el;
-            break;
-          }
+      if (kIsWeb && _cameraReady) {
+        final captured = await _cameraController.captureFrame();
+        if (captured != null) {
+          bytes = captured;
+        } else {
+          throw 'No se pudo capturar imagen de la cámara web';
         }
-        if (videoEl == null) throw 'No se encontró el video activo';
-
-        final w = videoEl.videoWidth > 0 ? videoEl.videoWidth : 640;
-        final h = videoEl.videoHeight > 0 ? videoEl.videoHeight : 480;
-        final canvas = html.CanvasElement()
-          ..width = w.toInt()
-          ..height = h.toInt();
-        final ctx = canvas.getContext('2d') as html.CanvasRenderingContext2D;
-        ctx.translate(w.toDouble(), 0);
-        ctx.scale(-1, 1);
-        ctx.drawImage(videoEl, 0, 0);
-
-        final blob = await canvas.toBlob('image/jpeg', 0.85);
-        final reader = html.FileReader()..readAsArrayBuffer(blob);
-        await reader.onLoad.first;
-        bytes = Uint8List.fromList(reader.result as List<int>);
       } else {
         // Nativo (Android/iOS)
         final ImagePicker picker = ImagePicker();
@@ -530,7 +486,7 @@ class _ChecadorPageState extends State<ChecadorPage> {
             children: [
               // Live camera or placeholder
               if (kIsWeb && _cameraReady)
-                HtmlElementView(viewType: _viewId)
+                HtmlElementView(viewType: _cameraController.viewId)
               else
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
