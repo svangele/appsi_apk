@@ -819,16 +819,15 @@ class _BiPageState extends State<BiPage> {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: () => _openLink(link),
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => _openLink(link),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -866,34 +865,7 @@ class _BiPageState extends State<BiPage> {
                       ],
                     ),
                   ),
-                ],
-              ),
-              if (isAdmin)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _showLinkForm(link: link),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.edit, size: 20),
-                      ),
-                    ),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => _deleteLink(link['id']),
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.delete, size: 20, color: Colors.red),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
+                  if (!isAdmin) ...[
                     Text(
                       'Ver reporte',
                       style: TextStyle(
@@ -908,10 +880,35 @@ class _BiPageState extends State<BiPage> {
                       color: theme.colorScheme.primary,
                     ),
                   ],
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
+          if (isAdmin)
+            Container(
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade200),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: () => _showLinkForm(link: link),
+                    icon: const Icon(Icons.edit, size: 18),
+                    label: const Text('Editar'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _deleteLink(link['id']),
+                    icon: const Icon(Icons.delete, size: 18),
+                    label: const Text('Eliminar'),
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
