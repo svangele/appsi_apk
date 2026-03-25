@@ -1,20 +1,75 @@
 import 'dart:typed_data';
+import 'package:camera/camera.dart' as cam;
 
-String createCameraViewId() {
-  return 'camera-preview-${DateTime.now().millisecondsSinceEpoch}';
-}
+class NativeCameraController {
+  cam.CameraController? _controller;
+  List<cam.CameraDescription>? _cameras;
+  bool _isInitialized = false;
+  int _currentCameraIndex = 0;
 
-class CameraController {
-  final String viewId;
-  bool _isReady = false;
+  bool get isReady => _isInitialized;
+  cam.CameraController? get controller => _controller;
+  String get viewId => 'native-camera-preview';
 
-  CameraController() : viewId = createCameraViewId();
+  Future<void> initCamera() async {
+    try {
+      _cameras = await cam.availableCameras();
+      if (_cameras == null || _cameras!.isEmpty) {
+        return;
+      }
 
-  bool get isReady => _isReady;
+      final frontCamera = _cameras!.firstWhere(
+        (camera) => camera.lensDirection == cam.CameraLensDirection.front,
+        orElse: () => _cameras!.first,
+      );
 
-  Future<void> initCamera() async {}
+      _currentCameraIndex = _cameras!.indexOf(frontCamera);
 
-  void dispose() {}
+      _controller = cam.CameraController(
+        frontCamera,
+        cam.ResolutionPreset.medium,
+        enableAudio: false,
+      );
 
-  Future<Uint8List?> captureFrame() async => null;
+      await _controller!.initialize();
+      _isInitialized = true;
+    } catch (e) {
+      _isInitialized = false;
+      rethrow;
+    }
+  }
+
+  Future<void> switchCamera() async {
+    if (_cameras == null || _cameras!.length < 2) return;
+
+    _currentCameraIndex = (_currentCameraIndex + 1) % _cameras!.length;
+    await _controller?.dispose();
+
+    _controller = cam.CameraController(
+      _cameras![_currentCameraIndex],
+      cam.ResolutionPreset.medium,
+      enableAudio: false,
+    );
+
+    await _controller!.initialize();
+  }
+
+  void dispose() {
+    _controller?.dispose();
+    _controller = null;
+    _isInitialized = false;
+  }
+
+  Future<Uint8List?> captureFrame() async {
+    if (_controller == null || !_controller!.value.isInitialized) {
+      return null;
+    }
+
+    try {
+      final cam.XFile file = await _controller!.takePicture();
+      return await file.readAsBytes();
+    } catch (e) {
+      return null;
+    }
+  }
 }

@@ -24,6 +24,7 @@ dependencies:
   http: ^1.2.0
   webviewx_plus: ^0.5.1
   app_links: 5.0.0
+  camera: ^0.11.0+2
 
 dev_dependencies:
   flutter_test:

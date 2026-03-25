@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:camera/camera.dart';
 import 'checador_camera_native.dart'
     if (dart.library.html) 'checador_web_impl.dart' as camera_impl;
 
@@ -27,18 +28,18 @@ class _ChecadorPageState extends State<ChecadorPage> {
   final _supabase = Supabase.instance.client;
   Timer? _clockTimer;
   DateTime _currentTime = DateTime.now();
-  late camera_impl.CameraController _cameraController;
+  late camera_impl.NativeCameraController _cameraController;
   bool _cameraReady = false;
 
   @override
   void initState() {
     super.initState();
-    _cameraController = camera_impl.CameraController();
+    _cameraController = camera_impl.NativeCameraController();
     _fetchData();
     _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _currentTime = DateTime.now());
     });
-    if (kIsWeb) _initCamera();
+    _initCamera();
   }
 
   Future<void> _initCamera() async {
@@ -144,19 +145,19 @@ class _ChecadorPageState extends State<ChecadorPage> {
             headingAccuracy: 0.0);
       });
 
-      // 2. Capturar foto del stream de cámara activo (web) o image_picker (nativo)
+      // 2. Capturar foto de la cámara
       debugPrint('Capturando foto...');
       Uint8List bytes;
 
-      if (kIsWeb && _cameraReady) {
+      if (_cameraReady) {
         final captured = await _cameraController.captureFrame();
         if (captured != null) {
           bytes = captured;
         } else {
-          throw 'No se pudo capturar imagen de la cámara web';
+          throw 'No se pudo capturar imagen de la cámara';
         }
       } else {
-        // Nativo (Android/iOS)
+        // Fallback a image_picker si la cámara no está disponible
         final ImagePicker picker = ImagePicker();
         final XFile? photo = await picker
             .pickImage(
@@ -484,9 +485,12 @@ class _ChecadorPageState extends State<ChecadorPage> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Live camera or placeholder
-              if (kIsWeb && _cameraReady)
-                HtmlElementView(viewType: _cameraController.viewId)
+              // Live camera preview
+              if (_cameraReady)
+                kIsWeb
+                    ? HtmlElementView(viewType: _cameraController.viewId)
+                    : _CameraPreviewWidget(
+                        controller: _cameraController.controller)
               else
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -495,7 +499,7 @@ class _ChecadorPageState extends State<ChecadorPage> {
                         size: 64, color: Colors.white.withOpacity(0.25)),
                     const SizedBox(height: 12),
                     Text(
-                      kIsWeb ? 'Iniciando cámara...' : 'Vista previa de cámara',
+                      'Iniciando cámara...',
                       style: TextStyle(
                           color: Colors.white.withOpacity(0.4), fontSize: 13),
                     ),
@@ -697,6 +701,27 @@ class _ChecadorPageState extends State<ChecadorPage> {
           ),
         );
       },
+    );
+  }
+}
+
+class _CameraPreviewWidget extends StatelessWidget {
+  final CameraController? controller;
+
+  const _CameraPreviewWidget({this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    if (controller == null || !controller!.value.isInitialized) {
+      return Container(
+        color: Colors.black,
+        child: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Transform.scale(
+      scaleX: -1,
+      child: CameraPreview(controller!),
     );
   }
 }
