@@ -984,6 +984,9 @@ class _BiWebViewState extends State<_BiWebView> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final isFullScreen = screenHeight > 600;
+    final headerHeight = 56.0;
+    final webViewHeight =
+        (isFullScreen ? screenHeight : screenHeight * 0.9) - headerHeight;
 
     return Container(
       height: isFullScreen ? screenHeight : screenHeight * 0.9,
@@ -994,9 +997,11 @@ class _BiWebViewState extends State<_BiWebView> {
             : const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            height: headerHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: isFullScreen
@@ -1030,7 +1035,9 @@ class _BiWebViewState extends State<_BiWebView> {
               ],
             ),
           ),
-          Expanded(
+          SizedBox(
+            height: webViewHeight > 0 ? webViewHeight : 400,
+            width: double.infinity,
             child: _hasError
                 ? Center(
                     child: Column(
@@ -1055,22 +1062,16 @@ class _BiWebViewState extends State<_BiWebView> {
                       ],
                     ),
                   )
-                : LayoutBuilder(
-                    builder: (context, constraints) => SizedBox(
-                      height: constraints.maxHeight,
-                      width: constraints.maxWidth,
-                      child: WebViewX(
-                        key: ValueKey(_hasError),
-                        initialContent: widget.url,
-                        initialSourceType: SourceType.urlBypass,
-                        height: constraints.maxHeight,
-                        width: constraints.maxWidth,
-                        javascriptMode: JavascriptMode.unrestricted,
-                        onWebResourceError: (error) {
-                          setState(() => _hasError = true);
-                        },
-                      ),
-                    ),
+                : WebViewX(
+                    key: ValueKey(_hasError),
+                    initialContent: widget.url,
+                    initialSourceType: SourceType.urlBypass,
+                    height: webViewHeight > 0 ? webViewHeight : 400,
+                    width: MediaQuery.of(context).size.width,
+                    javascriptMode: JavascriptMode.unrestricted,
+                    onWebResourceError: (error) {
+                      setState(() => _hasError = true);
+                    },
                   ),
           ),
         ],
@@ -1103,6 +1104,9 @@ class _LinkViewerState extends State<_LinkViewer> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final isFullScreen = screenHeight > 600;
+    final headerHeight = 56.0;
+    final webViewHeight =
+        isFullScreen ? screenHeight : screenHeight * 0.9 - headerHeight;
 
     return Container(
       height: isFullScreen ? screenHeight : screenHeight * 0.9,
@@ -1113,9 +1117,11 @@ class _LinkViewerState extends State<_LinkViewer> {
             : const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            height: headerHeight,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: isFullScreen
@@ -1149,19 +1155,15 @@ class _LinkViewerState extends State<_LinkViewer> {
               ],
             ),
           ),
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => SizedBox(
-                height: constraints.maxHeight,
-                width: constraints.maxWidth,
-                child: WebViewX(
-                  initialContent: widget.url,
-                  initialSourceType: SourceType.urlBypass,
-                  height: constraints.maxHeight,
-                  width: constraints.maxWidth,
-                  javascriptMode: JavascriptMode.unrestricted,
-                ),
-              ),
+          SizedBox(
+            height: webViewHeight > 0 ? webViewHeight : 400,
+            width: double.infinity,
+            child: WebViewX(
+              initialContent: widget.url,
+              initialSourceType: SourceType.urlBypass,
+              height: webViewHeight > 0 ? webViewHeight : 400,
+              width: MediaQuery.of(context).size.width,
+              javascriptMode: JavascriptMode.unrestricted,
             ),
           ),
         ],
