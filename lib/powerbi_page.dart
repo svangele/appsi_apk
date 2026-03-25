@@ -1036,8 +1036,8 @@ class _BiWebViewState extends State<_BiWebView> {
             ),
           ),
           SizedBox(
-            height: webViewHeight > 0 ? webViewHeight : 400,
-            width: double.infinity,
+            height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
+            width: MediaQuery.of(context).size.width.toDouble(),
             child: _hasError
                 ? Center(
                     child: Column(
