@@ -1019,13 +1019,16 @@ class _BiWebViewState extends State<_BiWebView> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final topPadding = MediaQuery.of(context).padding.top;
     final isFullScreen = screenHeight > 600;
     final headerHeight = 56.0;
-    final webViewHeight =
-        (isFullScreen ? screenHeight : screenHeight * 0.9) - headerHeight;
+    final availableHeight = screenHeight - topPadding - bottomPadding;
+    final modalHeight = isFullScreen ? availableHeight : availableHeight * 0.9;
+    final webViewHeight = modalHeight - headerHeight;
 
     return Container(
-      height: isFullScreen ? screenHeight : screenHeight * 0.9,
+      height: modalHeight,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: isFullScreen
@@ -1071,9 +1074,7 @@ class _BiWebViewState extends State<_BiWebView> {
               ],
             ),
           ),
-          SizedBox(
-            height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
-            width: MediaQuery.of(context).size.width.toDouble(),
+          Expanded(
             child: _hasError
                 ? Center(
                     child: Column(
@@ -1104,26 +1105,20 @@ class _BiWebViewState extends State<_BiWebView> {
                         height: webViewHeight > 0
                             ? webViewHeight.toDouble()
                             : 400.0,
-                        width: 800.0,
+                        width: MediaQuery.of(context).size.width,
                       )
-                    : SizedBox(
+                    : WebViewX(
+                        key: ValueKey(_hasError),
+                        initialContent: widget.url,
+                        initialSourceType: SourceType.urlBypass,
                         height: webViewHeight > 0
                             ? webViewHeight.toDouble()
                             : 400.0,
-                        width: 800.0,
-                        child: WebViewX(
-                          key: ValueKey(_hasError),
-                          initialContent: widget.url,
-                          initialSourceType: SourceType.urlBypass,
-                          height: webViewHeight > 0
-                              ? webViewHeight.toDouble()
-                              : 400.0,
-                          width: 800.0,
-                          javascriptMode: JavascriptMode.unrestricted,
-                          onWebResourceError: (error) {
-                            setState(() => _hasError = true);
-                          },
-                        ),
+                        width: MediaQuery.of(context).size.width,
+                        javascriptMode: JavascriptMode.unrestricted,
+                        onWebResourceError: (error) {
+                          setState(() => _hasError = true);
+                        },
                       ),
           ),
         ],
@@ -1155,13 +1150,16 @@ class _LinkViewerState extends State<_LinkViewer> {
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final topPadding = MediaQuery.of(context).padding.top;
     final isFullScreen = screenHeight > 600;
     final headerHeight = 56.0;
-    final webViewHeight =
-        isFullScreen ? screenHeight : screenHeight * 0.9 - headerHeight;
+    final availableHeight = screenHeight - topPadding - bottomPadding;
+    final modalHeight = isFullScreen ? availableHeight : availableHeight * 0.9;
+    final webViewHeight = modalHeight - headerHeight;
 
     return Container(
-      height: isFullScreen ? screenHeight : screenHeight * 0.9,
+      height: modalHeight,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: isFullScreen
@@ -1207,22 +1205,20 @@ class _LinkViewerState extends State<_LinkViewer> {
               ],
             ),
           ),
-          SizedBox(
-            height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
-            width: MediaQuery.of(context).size.width.toDouble(),
+          Expanded(
             child: kIsWeb
                 ? iframe_impl.WebIframeWidget(
                     url: widget.url,
                     height:
                         webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
-                    width: MediaQuery.of(context).size.width.toDouble(),
+                    width: MediaQuery.of(context).size.width,
                   )
                 : WebViewX(
                     initialContent: widget.url,
                     initialSourceType: SourceType.urlBypass,
                     height:
                         webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
-                    width: MediaQuery.of(context).size.width.toDouble(),
+                    width: MediaQuery.of(context).size.width,
                     javascriptMode: JavascriptMode.unrestricted,
                   ),
           ),
