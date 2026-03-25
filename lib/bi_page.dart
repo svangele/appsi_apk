@@ -872,16 +872,21 @@ class _BiPageState extends State<BiPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
-                      onPressed: () => _showLinkForm(link: link),
-                      tooltip: 'Editar',
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _showLinkForm(link: link),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.edit, size: 20),
+                      ),
                     ),
-                    IconButton(
-                      icon:
-                          const Icon(Icons.delete, size: 20, color: Colors.red),
-                      onPressed: () => _deleteLink(link['id']),
-                      tooltip: 'Eliminar',
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _deleteLink(link['id']),
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.delete, size: 20, color: Colors.red),
+                      ),
                     ),
                   ],
                 )
