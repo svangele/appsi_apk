@@ -723,21 +723,38 @@ class _BiPageState extends State<BiPage> {
       );
     }
 
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 400,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final link = filteredLinks[index];
-            return _buildLinkCard(link, theme, isAdmin: false);
-          },
-          childCount: filteredLinks.length,
+    return SliverFillRemaining(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: PaginatedDataTable(
+          header: const Text('Mis Reportes',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          columns: const [
+            DataColumn(
+                label: Text('Título',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+                label: Text('Tipo',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+                label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
+          ],
+          source: _LinksDataSource(
+            links: filteredLinks,
+            isAdmin: false,
+            onEdit: (link) {},
+            onDelete: (id) {},
+            onTap: (link) => _openLink(link),
+          ),
+          rowsPerPage: filteredLinks.length > 10
+              ? 10
+              : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
+          showCheckboxColumn: false,
+          horizontalMargin: 16,
+          columnSpacing: 24,
+          dataRowMinHeight: 40,
+          dataRowMaxHeight: 48,
+          headingRowHeight: 48,
         ),
       ),
     );
@@ -775,107 +792,40 @@ class _BiPageState extends State<BiPage> {
       );
     }
 
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      sliver: SliverGrid(
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 400,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 2,
-        ),
-        delegate: SliverChildBuilderDelegate(
-          (context, index) {
-            final link = filteredLinks[index];
-            return _buildLinkCard(link, theme, isAdmin: true);
-          },
-          childCount: filteredLinks.length,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLinkCard(Map<String, dynamic> link, ThemeData theme,
-      {required bool isAdmin}) {
-    final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-    final hasHtml =
-        link['html_code'] != null && link['html_code'].toString().isNotEmpty;
-
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () => _openLink(link),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      hasHtml ? Icons.code : Icons.bar_chart,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          link['title'] ?? 'Sin título',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          hasUrl ? 'URL' : (hasHtml ? 'HTML' : 'Sin contenido'),
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (isAdmin)
-                    IconButton(
-                      icon: const Icon(Icons.edit, size: 20),
-                      onPressed: () => _showLinkForm(link: link),
-                      tooltip: 'Editar',
-                    )
-                  else ...[
-                    Text(
-                      'Ver reporte',
-                      style: TextStyle(
-                        color: theme.colorScheme.primary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward,
-                      size: 16,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ],
-                ],
-              ),
-            ),
+    return SliverFillRemaining(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: PaginatedDataTable(
+          header: const Text('Enlaces BI',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          columns: const [
+            DataColumn(
+                label: Text('Título',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+                label: Text('Tipo',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+                label: Text('Acciones',
+                    style: TextStyle(fontWeight: FontWeight.bold))),
+          ],
+          source: _LinksDataSource(
+            links: filteredLinks,
+            isAdmin: true,
+            onEdit: (link) => _showLinkForm(link: link),
+            onDelete: (id) => _deleteLink(id),
+            onTap: (link) => _openLink(link),
           ),
-        ],
+          rowsPerPage: filteredLinks.length > 10
+              ? 10
+              : (filteredLinks.isEmpty ? 1 : filteredLinks.length),
+          showCheckboxColumn: false,
+          horizontalMargin: 16,
+          columnSpacing: 24,
+          dataRowMinHeight: 40,
+          dataRowMaxHeight: 48,
+          headingRowHeight: 48,
+        ),
       ),
     );
   }
@@ -1197,4 +1147,83 @@ class _LinkViewerState extends State<_LinkViewer> {
       ),
     );
   }
+}
+
+class _LinksDataSource extends DataTableSource {
+  final List<Map<String, dynamic>> links;
+  final bool isAdmin;
+  final void Function(Map<String, dynamic>) onEdit;
+  final void Function(String) onDelete;
+  final void Function(Map<String, dynamic>) onTap;
+
+  _LinksDataSource({
+    required this.links,
+    required this.isAdmin,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onTap,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= links.length) return null;
+    final link = links[index];
+    final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
+    final hasHtml =
+        link['html_code'] != null && link['html_code'].toString().isNotEmpty;
+
+    return DataRow.byIndex(
+      index: index,
+      cells: [
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                hasHtml ? Icons.code : Icons.link,
+                size: 18,
+                color: Colors.grey[600],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                link['title'] ?? 'Sin título',
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+          onTap: () => onTap(link),
+        ),
+        DataCell(Text(hasUrl ? 'URL' : (hasHtml ? 'HTML' : '-'))),
+        if (isAdmin)
+          DataCell(Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit, size: 18),
+                onPressed: () => onEdit(link),
+                tooltip: 'Editar',
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, size: 18, color: Colors.red),
+                onPressed: () => onDelete(link['id']),
+                tooltip: 'Eliminar',
+              ),
+            ],
+          ))
+        else
+          DataCell(
+            Icon(Icons.arrow_forward, size: 18, color: Colors.grey[600]),
+          ),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => links.length;
+
+  @override
+  int get selectedRowCount => 0;
 }
