@@ -286,6 +286,39 @@ class _BiPageState extends State<BiPage> {
           ),
         ),
         actions: [
+          if (isEditing)
+            TextButton.icon(
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: dialogContext,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Eliminar Enlace'),
+                    content:
+                        const Text('¿Estás seguro de eliminar este enlace?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Cancelar'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style:
+                            TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Eliminar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true && mounted) {
+                  Navigator.pop(dialogContext);
+                  _deleteLink(link['id']);
+                }
+              },
+              icon: const Icon(Icons.delete),
+              label: const Text('Eliminar'),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+            ),
+          const Spacer(),
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancelar'),
@@ -817,7 +850,13 @@ class _BiPageState extends State<BiPage> {
                       ],
                     ),
                   ),
-                  if (!isAdmin) ...[
+                  if (isAdmin)
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20),
+                      onPressed: () => _showLinkForm(link: link),
+                      tooltip: 'Editar',
+                    )
+                  else ...[
                     Text(
                       'Ver reporte',
                       style: TextStyle(
@@ -836,30 +875,6 @@ class _BiPageState extends State<BiPage> {
               ),
             ),
           ),
-          if (isAdmin)
-            Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton.icon(
-                    onPressed: () => _showLinkForm(link: link),
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Editar'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _deleteLink(link['id']),
-                    icon: const Icon(Icons.delete, size: 18),
-                    label: const Text('Eliminar'),
-                    style: TextButton.styleFrom(foregroundColor: Colors.red),
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
