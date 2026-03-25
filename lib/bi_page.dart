@@ -590,12 +590,37 @@ class _BiPageState extends State<BiPage> {
 
   Widget _buildUserHeader(ThemeData theme) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        Text(
-          'Mis Reportes',
-          style:
-              theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+        _buildGlassPill(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 200),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Buscar...',
+                hintStyle: TextStyle(color: Colors.grey.shade400),
+                prefixIcon: const Icon(Icons.search, size: 20),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                isDense: true,
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () => setState(() => _searchQuery = ''),
+                      )
+                    : null,
+              ),
+              style: const TextStyle(fontSize: 14),
+              onChanged: (value) => setState(() => _searchQuery = value),
+            ),
+          ),
         ),
       ],
     );
@@ -678,16 +703,31 @@ class _BiPageState extends State<BiPage> {
   }
 
   Widget _buildUserContent(ThemeData theme) {
-    if (_userLinks.isEmpty) {
+    final filteredLinks = _searchQuery.isEmpty
+        ? _userLinks
+        : _userLinks.where((link) {
+            final title = (link['title'] ?? '').toString().toLowerCase();
+            return title.contains(_searchQuery.toLowerCase());
+          }).toList();
+
+    if (filteredLinks.isEmpty) {
       return SliverFillRemaining(
         child: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.bar_chart_outlined, size: 64, color: Colors.grey[300]),
+              Icon(
+                _searchQuery.isEmpty
+                    ? Icons.bar_chart_outlined
+                    : Icons.search_off,
+                size: 64,
+                color: Colors.grey[300],
+              ),
               const SizedBox(height: 16),
               Text(
-                'No tienes acceso a ningún reporte',
+                _searchQuery.isEmpty
+                    ? 'No tienes acceso a ningún reporte'
+                    : 'No se encontraron resultados',
                 style: TextStyle(color: Colors.grey[500]),
               ),
             ],
@@ -707,10 +747,10 @@ class _BiPageState extends State<BiPage> {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            final link = _userLinks[index];
+            final link = filteredLinks[index];
             return _buildLinkCard(link, theme, isAdmin: false);
           },
-          childCount: _userLinks.length,
+          childCount: filteredLinks.length,
         ),
       ),
     );
