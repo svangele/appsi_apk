@@ -1062,16 +1062,22 @@ class _BiWebViewState extends State<_BiWebView> {
                       ],
                     ),
                   )
-                : WebViewX(
-                    key: ValueKey(_hasError),
-                    initialContent: widget.url,
-                    initialSourceType: SourceType.urlBypass,
-                    height: webViewHeight > 0 ? webViewHeight : 400,
-                    width: MediaQuery.of(context).size.width,
-                    javascriptMode: JavascriptMode.unrestricted,
-                    onWebResourceError: (error) {
-                      setState(() => _hasError = true);
-                    },
+                : SizedBox(
+                    height:
+                        webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
+                    width: 800.0,
+                    child: WebViewX(
+                      key: ValueKey(_hasError),
+                      initialContent: widget.url,
+                      initialSourceType: SourceType.urlBypass,
+                      height:
+                          webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
+                      width: 800.0,
+                      javascriptMode: JavascriptMode.unrestricted,
+                      onWebResourceError: (error) {
+                        setState(() => _hasError = true);
+                      },
+                    ),
                   ),
           ),
         ],
@@ -1156,13 +1162,13 @@ class _LinkViewerState extends State<_LinkViewer> {
             ),
           ),
           SizedBox(
-            height: webViewHeight > 0 ? webViewHeight : 400,
+            height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
             width: double.infinity,
             child: WebViewX(
               initialContent: widget.url,
               initialSourceType: SourceType.urlBypass,
-              height: webViewHeight > 0 ? webViewHeight : 400,
-              width: MediaQuery.of(context).size.width,
+              height: webViewHeight > 0 ? webViewHeight.toDouble() : 400.0,
+              width: MediaQuery.of(context).size.width.toDouble(),
               javascriptMode: JavascriptMode.unrestricted,
             ),
           ),
