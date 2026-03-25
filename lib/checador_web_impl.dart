@@ -15,6 +15,7 @@ class CameraController {
 
   bool get isReady => _isReady;
   dynamic get cameraStream => _cameraStream;
+  dynamic get controller => null;
 
   Future<void> initCamera() async {
     try {
@@ -78,6 +79,8 @@ class CameraController {
     return reader.result as Uint8List?;
   }
 }
+
+typedef NativeCameraController = CameraController;
 
 class WebCameraController {
   final String viewId;

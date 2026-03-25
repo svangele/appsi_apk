@@ -218,6 +218,8 @@ class _BiPageState extends State<BiPage> {
   }
 
   void _showLinkForm({Map<String, dynamic>? link}) {
+    if (!mounted) return;
+
     final isEditing = link != null;
     final titleCtrl = TextEditingController(text: link?['title']);
     final urlCtrl = TextEditingController(text: link?['url']);

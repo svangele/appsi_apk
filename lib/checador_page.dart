@@ -7,9 +7,11 @@ import 'dart:typed_data';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:camera/camera.dart';
 import 'checador_camera_native.dart'
     if (dart.library.html) 'checador_web_impl.dart' as camera_impl;
+import 'checador_camera_preview_native.dart'
+    if (dart.library.html) 'checador_camera_preview_stub.dart'
+    as camera_preview;
 
 class ChecadorPage extends StatefulWidget {
   const ChecadorPage({super.key});
@@ -489,7 +491,7 @@ class _ChecadorPageState extends State<ChecadorPage> {
               if (_cameraReady)
                 kIsWeb
                     ? HtmlElementView(viewType: _cameraController.viewId)
-                    : _CameraPreviewWidget(
+                    : camera_preview.NativeCameraPreview(
                         controller: _cameraController.controller)
               else
                 Column(
@@ -701,33 +703,6 @@ class _ChecadorPageState extends State<ChecadorPage> {
           ),
         );
       },
-    );
-  }
-}
-
-class _CameraPreviewWidget extends StatelessWidget {
-  final CameraController? controller;
-
-  const _CameraPreviewWidget({this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    if (controller == null || !controller!.value.isInitialized) {
-      return Container(
-        color: Colors.black,
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Transform(
-      alignment: Alignment.center,
-      transform: Matrix4.identity()
-        ..setEntry(3, 2, 0.001)
-        ..rotateZ(-3.14159 / 2),
-      child: Transform.scale(
-        scaleX: -1,
-        child: CameraPreview(controller!),
-      ),
     );
   }
 }
