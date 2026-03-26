@@ -418,18 +418,15 @@ class _BiPageState extends State<BiPage> {
                                               .trim();
                                       final isAssigned =
                                           assignedIds.contains(userId);
-                                      return CheckboxListTile(
+                                      return SwitchListTile(
                                         dense: true,
                                         title: Text(fullName,
                                             style:
                                                 const TextStyle(fontSize: 14)),
-                                        subtitle: Text(user['email'] ?? '',
-                                            style:
-                                                const TextStyle(fontSize: 12)),
                                         value: isAssigned,
                                         onChanged: (value) async {
-                                          await _toggleUserAccess(link['id'],
-                                              userId, value ?? false);
+                                          await _toggleUserAccess(
+                                              link['id'], userId, value);
                                           setListState(() {});
                                         },
                                       );
