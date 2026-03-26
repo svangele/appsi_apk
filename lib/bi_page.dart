@@ -219,13 +219,20 @@ class _BiPageState extends State<BiPage> {
 
   void _showLinkForm({Map<String, dynamic>? link}) {
     if (!mounted) return;
+    debugPrint('Opening link form dialog, isEditing: ${link != null}');
     showDialog(
       context: context,
-      builder: (context) => _LinkFormDialog(
+      builder: (dialogContext) => _LinkFormDialog(
         link: link,
         availableUsers: _availableUsers,
-        onSaved: () => _fetchData(),
-        onDeleted: (id) => _deleteLink(id),
+        onSaved: () {
+          debugPrint('Link saved, refreshing data');
+          _fetchData();
+        },
+        onDeleted: (id) {
+          debugPrint('Link deleted: $id');
+          _deleteLink(id);
+        },
       ),
     );
   }
@@ -810,6 +817,7 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('Building _LinkFormDialog, isEditing: $_isEditing');
     return AlertDialog(
       title: Text(_isEditing ? 'Editar Enlace' : 'Nuevo Enlace'),
       content: SizedBox(
