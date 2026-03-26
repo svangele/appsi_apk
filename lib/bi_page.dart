@@ -726,9 +726,7 @@ class _BiPageState extends State<BiPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final link = filteredLinks[index];
-        final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-        final hasHtml = link['descripcion'] != null &&
-            link['descripcion'].toString().isNotEmpty;
+        final descripcion = link['descripcion']?.toString() ?? '';
 
         return Card(
           elevation: 0,
@@ -742,7 +740,7 @@ class _BiPageState extends State<BiPage> {
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
               child: Icon(
-                hasHtml ? Icons.code : Icons.link,
+                Icons.assessment,
                 color: theme.colorScheme.primary,
               ),
             ),
@@ -750,7 +748,7 @@ class _BiPageState extends State<BiPage> {
               link['title'] ?? 'Sin título',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-')),
+            subtitle: Text(descripcion.isEmpty ? '-' : descripcion),
             trailing: Icon(Icons.arrow_forward_ios,
                 size: 16, color: Colors.grey[400]),
             onTap: () => _openLink(link),
@@ -849,9 +847,7 @@ class _BiPageState extends State<BiPage> {
       separatorBuilder: (context, index) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final link = filteredLinks[index];
-        final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-        final hasHtml = link['descripcion'] != null &&
-            link['descripcion'].toString().isNotEmpty;
+        final descripcion = link['descripcion']?.toString() ?? '';
 
         return Card(
           elevation: 0,
@@ -865,7 +861,7 @@ class _BiPageState extends State<BiPage> {
             leading: CircleAvatar(
               backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
               child: Icon(
-                hasHtml ? Icons.code : Icons.link,
+                Icons.assessment,
                 color: theme.colorScheme.primary,
               ),
             ),
@@ -873,7 +869,7 @@ class _BiPageState extends State<BiPage> {
               link['title'] ?? 'Sin título',
               style: const TextStyle(fontWeight: FontWeight.w500),
             ),
-            subtitle: Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-')),
+            subtitle: Text(descripcion.isEmpty ? '-' : descripcion),
             trailing: PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
