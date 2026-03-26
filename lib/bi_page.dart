@@ -826,6 +826,17 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
             controller: _titleCtrl,
             decoration: const InputDecoration(labelText: 'Título *'),
           ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _urlCtrl,
+            decoration: const InputDecoration(labelText: 'URL'),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _htmlCtrl,
+            decoration: const InputDecoration(labelText: 'Descripción'),
+            maxLines: 3,
+          ),
         ],
       ),
       actions: [
