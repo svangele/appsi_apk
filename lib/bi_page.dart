@@ -819,71 +819,23 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(_isEditing ? 'Editar Enlace' : 'Nuevo Enlace'),
-      content: SizedBox(
-        width: 400,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              TextField(
-                controller: _titleCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Título *',
-                  prefixIcon: Icon(Icons.title),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _urlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'URL',
-                  prefixIcon: Icon(Icons.link),
-                  hintText: 'https://...',
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _htmlCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Descripción',
-                  prefixIcon: Icon(Icons.code),
-                  hintText: '<html>...</html>',
-                ),
-                maxLines: 5,
-              ),
-              if (_isEditing) ...[
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                const Text('Usuarios con acceso'),
-              ],
-            ],
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _titleCtrl,
+            decoration: const InputDecoration(labelText: 'Título *'),
           ),
-        ),
+        ],
       ),
       actions: [
-        if (_isEditing)
-          TextButton.icon(
-            onPressed: _confirmDelete,
-            icon: const Icon(Icons.delete),
-            label: const Text('Eliminar'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
-        const Spacer(),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
           onPressed: _saving ? null : _save,
-          child: _saving
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : Text(_isEditing ? 'Guardar' : 'Crear'),
+          child: const Text('Crear'),
         ),
       ],
     );
