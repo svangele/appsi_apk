@@ -20,6 +20,7 @@ class _BiPageState extends State<BiPage> {
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _links = [];
   List<Map<String, dynamic>> _userLinks = [];
+  List<Map<String, dynamic>> _availableUsers = [];
   bool _isLoading = true;
   bool get _isAdmin => widget.role == 'admin';
   String _searchQuery = '';
@@ -103,6 +104,53 @@ class _BiPageState extends State<BiPage> {
           SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> _getUsers() async {
+    if (_availableUsers.isNotEmpty) return _availableUsers;
+
+    final usersData = await _supabase
+        .from('profiles')
+        .select('id, nombre, paterno, materno, email, status_sys, permissions')
+        .eq('status_sys', 'ACTIVO')
+        .order('nombre');
+
+    _availableUsers = (usersData as List)
+        .where((user) {
+          final perms = user['permissions'];
+          return perms is Map && perms['show_powerbi'] == true;
+        })
+        .map((user) => Map<String, dynamic>.from(user))
+        .toList();
+
+    return _availableUsers;
+  }
+
+  Future<List<String>> _getLinkUserIds(String linkId) async {
+    final data = await _supabase
+        .from('powerbi_link_users')
+        .select('user_id')
+        .eq('link_id', linkId);
+    return (data as List).map((e) => e['user_id'].toString()).toList();
+  }
+
+  Future<void> _toggleUserAccess(String linkId, String userId, bool add) async {
+    try {
+      if (add) {
+        await _supabase.from('powerbi_link_users').insert({
+          'link_id': linkId,
+          'user_id': userId,
+        });
+      } else {
+        await _supabase
+            .from('powerbi_link_users')
+            .delete()
+            .eq('link_id', linkId)
+            .eq('user_id', userId);
+      }
+    } catch (e) {
+      debugPrint('Error toggling user access: $e');
     }
   }
 
@@ -323,6 +371,80 @@ class _BiPageState extends State<BiPage> {
                       decoration: const InputDecoration(
                           labelText: 'Descripción',
                           prefixIcon: Icon(Icons.code))),
+                  if (isEditing && _isAdmin) ...[
+                    const SizedBox(height: 24),
+                    const Divider(),
+                    const SizedBox(height: 16),
+                    const Text('Asignar a usuarios',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      height: 200,
+                      child: FutureBuilder<List<String>>(
+                        future: _getLinkUserIds(link['id']),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                          final assignedIds = snapshot.data!.toSet();
+                          return FutureBuilder<List<Map<String, dynamic>>>(
+                            future: _getUsers(),
+                            builder: (context, userSnapshot) {
+                              if (!userSnapshot.hasData) {
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                              return ListView.builder(
+                                itemCount: userSnapshot.data!.length,
+                                itemBuilder: (context, index) {
+                                  final user = userSnapshot.data![index];
+                                  final userId = user['id'].toString();
+                                  final fullName =
+                                      '${user['nombre']} ${user['paterno']} ${user['materno']}'
+                                          .trim();
+                                  final isAssigned =
+                                      assignedIds.contains(userId);
+                                  return StatefulBuilder(
+                                    builder: (context, setUserState) {
+                                      return StatefulBuilder(
+                                        builder: (ctx, setInnerState) {
+                                          return StatefulBuilder(
+                                            builder: (c, setSwitchState) {
+                                              return CheckboxListTile(
+                                                dense: true,
+                                                title: Text(fullName,
+                                                    style: const TextStyle(
+                                                        fontSize: 14)),
+                                                subtitle: Text(
+                                                    user['email'] ?? '',
+                                                    style: const TextStyle(
+                                                        fontSize: 12)),
+                                                value: isAssigned,
+                                                onChanged: (value) async {
+                                                  await _toggleUserAccess(
+                                                      link['id'],
+                                                      userId,
+                                                      value ?? false);
+                                                  setSwitchState(() {});
+                                                  setUserState(() {});
+                                                },
+                                              );
+                                            },
+                                          );
+                                        },
+                                      );
+                                    },
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
