@@ -855,13 +855,30 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
               if (_isEditing) ...[
                 const SizedBox(height: 24),
                 const Divider(),
+                const SizedBox(height: 16),
                 const Text('Usuarios con acceso'),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 200,
+                  child: _UserAccessList(
+                    linkId: widget.link!['id'],
+                    availableUsers: widget.availableUsers,
+                  ),
+                ),
               ],
             ],
           ),
         ),
       ),
       actions: [
+        if (_isEditing)
+          TextButton.icon(
+            onPressed: _confirmDelete,
+            icon: const Icon(Icons.delete),
+            label: const Text('Eliminar'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        const Spacer(),
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancelar'),
