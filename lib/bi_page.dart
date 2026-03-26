@@ -574,8 +574,8 @@ class _BiPageState extends State<BiPage> {
               label: Text('Título',
                   style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(
-              label:
-                  Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+              label: Text('Descripción',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(
               label: Text('', style: TextStyle(fontWeight: FontWeight.bold))),
         ],
@@ -696,8 +696,8 @@ class _BiPageState extends State<BiPage> {
               label: Text('Título',
                   style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(
-              label:
-                  Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+              label: Text('Descripción',
+                  style: TextStyle(fontWeight: FontWeight.bold))),
           DataColumn(
               label: Text('Acciones',
                   style: TextStyle(fontWeight: FontWeight.bold))),
@@ -1150,48 +1150,62 @@ class _LinksDataSource extends DataTableSource {
   DataRow? getRow(int index) {
     if (index >= links.length) return null;
     final link = links[index];
-    final hasUrl = link['url'] != null && link['url'].toString().isNotEmpty;
-    final hasHtml = link['descripcion'] != null &&
-        link['descripcion'].toString().isNotEmpty;
+    final descripcion = link['descripcion']?.toString() ?? '-';
+    final truncateDesc = descripcion.length > 50
+        ? '${descripcion.substring(0, 50)}...'
+        : descripcion;
 
     return DataRow.byIndex(
       index: index,
       cells: [
         DataCell(
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                hasHtml ? Icons.code : Icons.link,
-                size: 18,
-                color: Colors.grey[600],
-              ),
-              const SizedBox(width: 8),
-              Text(
-                link['title'] ?? 'Sin título',
-                style: const TextStyle(fontWeight: FontWeight.w500),
-              ),
-            ],
+          Text(
+            link['title'] ?? 'Sin título',
+            style: const TextStyle(fontWeight: FontWeight.w500),
           ),
           onTap: () => onTap(link),
         ),
-        DataCell(Text(hasUrl ? 'URL' : (hasHtml ? 'Descripción' : '-'))),
+        DataCell(
+          Tooltip(
+            message: descripcion,
+            child: Text(truncateDesc),
+          ),
+        ),
         if (isAdmin)
-          DataCell(Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit, size: 18),
-                onPressed: () => onEdit(link),
-                tooltip: 'Editar',
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                onPressed: () => onDelete(link['id']),
-                tooltip: 'Eliminar',
-              ),
-            ],
-          ))
+          DataCell(
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'edit') {
+                  onEdit(link);
+                } else if (value == 'delete') {
+                  onDelete(link['id']);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 20),
+                      SizedBox(width: 12),
+                      Text('Editar'),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, size: 20, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Eliminar', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )
         else
           DataCell(
             Icon(Icons.arrow_forward, size: 18, color: Colors.grey[600]),
