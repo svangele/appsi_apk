@@ -790,6 +790,14 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
                 prefixIcon: Icon(Icons.title),
               ),
             ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _urlCtrl,
+              decoration: const InputDecoration(
+                labelText: 'URL',
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
           ],
         ),
       ),
