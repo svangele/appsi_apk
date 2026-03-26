@@ -1134,8 +1134,9 @@ class _LinkViewerState extends State<_LinkViewer> {
     final isFullScreen = screenHeight > 600;
     const headerHeight = 56.0;
     final availableHeight = screenHeight - topPadding - bottomPadding;
-    final modalHeight = isFullScreen ? availableHeight : availableHeight * 0.9;
-    final webViewHeight = modalHeight - headerHeight;
+    final double modalHeight =
+        isFullScreen ? availableHeight : availableHeight * 0.9;
+    final double webViewHeight = modalHeight - headerHeight;
 
     return Container(
       height: modalHeight,
@@ -1212,18 +1213,14 @@ class _LinkViewerState extends State<_LinkViewer> {
                 : kIsWeb
                     ? iframe_impl.WebIframeWidget(
                         url: widget.url,
-                        height: webViewHeight > 0
-                            ? webViewHeight.toDouble()
-                            : 400.0,
+                        height: webViewHeight > 0 ? webViewHeight : 400.0,
                         width: MediaQuery.of(context).size.width,
                       )
                     : WebViewX(
                         key: ValueKey(_hasError),
                         initialContent: widget.url,
                         initialSourceType: SourceType.urlBypass,
-                        height: webViewHeight > 0
-                            ? webViewHeight.toDouble()
-                            : 400.0,
+                        height: webViewHeight > 0 ? webViewHeight : 400.0,
                         width: MediaQuery.of(context).size.width,
                         javascriptMode: JavascriptMode.unrestricted,
                         onWebResourceError: widget.showErrorHandling
