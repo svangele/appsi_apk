@@ -390,27 +390,24 @@ class _BiPageState extends State<BiPage> {
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 200,
-                      child: FutureBuilder<List<Map<String, dynamic>>>(
-                        future: _getUsers(),
-                        builder: (context, userSnapshot) {
-                          if (!userSnapshot.hasData) {
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          }
-                          return FutureBuilder<List<String>>(
-                            future: _getLinkUserIds(link['id']),
-                            builder: (ctx, assignedSnapshot) {
-                              if (!assignedSnapshot.hasData) {
+                      child: StatefulBuilder(
+                        builder: (ctx, setListState) {
+                          return FutureBuilder<List<Map<String, dynamic>>>(
+                            future: _getUsers(),
+                            builder: (usersCtx, userSnapshot) {
+                              if (!userSnapshot.hasData) {
                                 return const Center(
                                     child: CircularProgressIndicator());
                               }
-                              final assignedIds =
-                                  assignedSnapshot.data!.toSet();
-                              return StatefulBuilder(
-                                builder: (c, setListState) {
+                              return FutureBuilder<List<String>>(
+                                future: _getLinkUserIds(link['id']),
+                                builder: (assignedCtx, assignedSnapshot) {
+                                  final assignedIds = assignedSnapshot.hasData
+                                      ? assignedSnapshot.data!.toSet()
+                                      : <String>{};
                                   return ListView.builder(
                                     itemCount: userSnapshot.data!.length,
-                                    itemBuilder: (listContext, index) {
+                                    itemBuilder: (listCtx, index) {
                                       final user = userSnapshot.data![index];
                                       final userId = user['id'].toString();
                                       final fullName =
@@ -427,6 +424,11 @@ class _BiPageState extends State<BiPage> {
                                         onChanged: (value) async {
                                           await _toggleUserAccess(
                                               link['id'], userId, value);
+                                          if (value) {
+                                            assignedIds.add(userId);
+                                          } else {
+                                            assignedIds.remove(userId);
+                                          }
                                           setListState(() {});
                                         },
                                       );
