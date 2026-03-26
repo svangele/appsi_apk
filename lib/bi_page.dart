@@ -743,8 +743,50 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
   }
 
   Future<void> _save() async {
-    debugPrint('Save called');
-    Navigator.pop(context);
+    if (_titleCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El título es obligatorio')),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      final data = {
+        'title': _titleCtrl.text.trim().toUpperCase(),
+        'url': _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim(),
+        'descripcion':
+            _htmlCtrl.text.trim().isEmpty ? null : _htmlCtrl.text.trim(),
+        'is_active': true,
+        'created_by': _supabase.auth.currentUser?.id,
+      };
+
+      if (_isEditing) {
+        await _supabase
+            .from('powerbi_links')
+            .update(data)
+            .eq('id', widget.link!['id']);
+      } else {
+        await _supabase.from('powerbi_links').insert(data);
+      }
+
+      if (mounted) {
+        Navigator.pop(context);
+        widget.onSaved();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isEditing ? 'Enlace actualizado' : 'Enlace creado'),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => _saving = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -775,39 +817,43 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Building _LinkFormDialog');
     return AlertDialog(
-      title: const Text('Nuevo Enlace'),
+      title: Text(_isEditing ? 'Editar Enlace' : 'Nuevo Enlace'),
       content: SizedBox(
         width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: _titleCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Título *',
-                prefixIcon: Icon(Icons.title),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextField(
+                controller: _titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Título *',
+                  prefixIcon: Icon(Icons.title),
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _urlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'URL',
-                prefixIcon: Icon(Icons.link),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _urlCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'URL',
+                  prefixIcon: Icon(Icons.link),
+                  hintText: 'https://...',
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _htmlCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Descripción',
-                prefixIcon: Icon(Icons.code),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _htmlCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Descripción',
+                  prefixIcon: Icon(Icons.code),
+                  hintText: '<html>...</html>',
+                ),
+                maxLines: 5,
               ),
-              maxLines: 5,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
@@ -816,8 +862,14 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
           child: const Text('Cancelar'),
         ),
         ElevatedButton(
-          onPressed: _save,
-          child: const Text('Crear'),
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(_isEditing ? 'Guardar' : 'Crear'),
         ),
       ],
     );
