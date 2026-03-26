@@ -219,19 +219,132 @@ class _BiPageState extends State<BiPage> {
 
   void _showLinkForm({Map<String, dynamic>? link}) {
     if (!mounted) return;
-    debugPrint('Opening link form dialog, isEditing: ${link != null}');
-    showDialog(
+    final isEditing = link != null;
+    final titleCtrl = TextEditingController(text: link?['title']);
+    final urlCtrl = TextEditingController(text: link?['url']);
+    final htmlCtrl = TextEditingController(text: link?['descripcion']);
+
+    showModalBottomSheet(
       context: context,
-      builder: (dialogContext) => _LinkFormDialog(
-        link: link,
-        availableUsers: _availableUsers,
-        onSaved: () {
-          debugPrint('Link saved, refreshing data');
-          _fetchData();
-        },
-        onDeleted: (id) {
-          debugPrint('Link deleted: $id');
-          _deleteLink(id);
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          bool saving = false;
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancelar',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)),
+                      ),
+                      Text(
+                        isEditing ? 'Editar Enlace' : 'Nuevo Enlace',
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          if (titleCtrl.text.trim().isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('El título es obligatorio')));
+                            return;
+                          }
+                          setModalState(() => saving = true);
+                          try {
+                            final data = {
+                              'title': titleCtrl.text.trim().toUpperCase(),
+                              'url': urlCtrl.text.trim().isEmpty
+                                  ? null
+                                  : urlCtrl.text.trim(),
+                              'descripcion': htmlCtrl.text.trim().isEmpty
+                                  ? null
+                                  : htmlCtrl.text.trim(),
+                              'is_active': true,
+                              'created_by': _supabase.auth.currentUser?.id,
+                            };
+                            if (isEditing) {
+                              await _supabase
+                                  .from('powerbi_links')
+                                  .update(data)
+                                  .eq('id', link['id']);
+                            } else {
+                              await _supabase
+                                  .from('powerbi_links')
+                                  .insert(data);
+                            }
+                            if (mounted) {
+                              Navigator.pop(context);
+                              _fetchData();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(isEditing
+                                          ? 'Enlace actualizado'
+                                          : 'Enlace creado')));
+                            }
+                          } catch (e) {
+                            setModalState(() => saving = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red));
+                            }
+                          }
+                        },
+                        child: saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2))
+                            : const Text('Guardar',
+                                style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  TextField(
+                      controller: titleCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Título *',
+                          prefixIcon: Icon(Icons.title))),
+                  const SizedBox(height: 16),
+                  TextField(
+                      controller: urlCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'URL', prefixIcon: Icon(Icons.link))),
+                  const SizedBox(height: 16),
+                  TextField(
+                      controller: htmlCtrl,
+                      decoration: const InputDecoration(
+                          labelText: 'Descripción',
+                          prefixIcon: Icon(Icons.code))),
+                ],
+              ),
+            ),
+          );
         },
       ),
     );
@@ -696,159 +809,6 @@ class _BiPageState extends State<BiPage> {
           ),
         );
       },
-    );
-  }
-}
-
-class _LinkFormDialog extends StatefulWidget {
-  final Map<String, dynamic>? link;
-  final List<Map<String, dynamic>> availableUsers;
-  final VoidCallback onSaved;
-  final void Function(String) onDeleted;
-
-  const _LinkFormDialog({
-    this.link,
-    required this.availableUsers,
-    required this.onSaved,
-    required this.onDeleted,
-  });
-
-  @override
-  State<_LinkFormDialog> createState() => _LinkFormDialogState();
-}
-
-class _LinkFormDialogState extends State<_LinkFormDialog> {
-  late final TextEditingController _titleCtrl;
-  late final TextEditingController _urlCtrl;
-  late final TextEditingController _htmlCtrl;
-  bool _saving = false;
-
-  bool get _isEditing => widget.link != null;
-  SupabaseClient get _supabase => Supabase.instance.client;
-
-  @override
-  void initState() {
-    super.initState();
-    _titleCtrl = TextEditingController(text: widget.link?['title']);
-    _urlCtrl = TextEditingController(text: widget.link?['url']);
-    _htmlCtrl = TextEditingController(text: widget.link?['descripcion']);
-  }
-
-  @override
-  void dispose() {
-    _titleCtrl.dispose();
-    _urlCtrl.dispose();
-    _htmlCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (_titleCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('El título es obligatorio')),
-      );
-      return;
-    }
-
-    setState(() => _saving = true);
-    try {
-      final data = {
-        'title': _titleCtrl.text.trim().toUpperCase(),
-        'url': _urlCtrl.text.trim().isEmpty ? null : _urlCtrl.text.trim(),
-        'descripcion':
-            _htmlCtrl.text.trim().isEmpty ? null : _htmlCtrl.text.trim(),
-        'is_active': true,
-        'created_by': _supabase.auth.currentUser?.id,
-      };
-
-      if (_isEditing) {
-        await _supabase
-            .from('powerbi_links')
-            .update(data)
-            .eq('id', widget.link!['id']);
-      } else {
-        await _supabase.from('powerbi_links').insert(data);
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        widget.onSaved();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isEditing ? 'Enlace actualizado' : 'Enlace creado'),
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() => _saving = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  Future<void> _confirmDelete() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar Enlace'),
-        content: const Text('¿Estás seguro de eliminar este enlace?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Eliminar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      Navigator.pop(context);
-      widget.onDeleted(widget.link!['id']);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_isEditing ? 'Editar Enlace' : 'Nuevo Enlace'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _titleCtrl,
-            decoration: const InputDecoration(labelText: 'Título *'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _urlCtrl,
-            decoration: const InputDecoration(labelText: 'URL'),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _htmlCtrl,
-            decoration: const InputDecoration(labelText: 'Descripción'),
-            maxLines: 3,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        ElevatedButton(
-          onPressed: _saving ? null : _save,
-          child: const Text('Crear'),
-        ),
-      ],
     );
   }
 }
