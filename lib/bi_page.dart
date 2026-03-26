@@ -852,6 +852,11 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
                 ),
                 maxLines: 5,
               ),
+              if (_isEditing) ...[
+                const SizedBox(height: 24),
+                const Divider(),
+                const Text('Usuarios con acceso'),
+              ],
             ],
           ),
         ),
