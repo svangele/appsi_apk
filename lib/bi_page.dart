@@ -778,7 +778,21 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
     debugPrint('Building _LinkFormDialog');
     return AlertDialog(
       title: const Text('Nuevo Enlace'),
-      content: const Text('Formulario de enlace'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _titleCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Título *',
+                prefixIcon: Icon(Icons.title),
+              ),
+            ),
+          ],
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
