@@ -20,7 +20,6 @@ class _BiPageState extends State<BiPage> {
   final _supabase = Supabase.instance.client;
   List<Map<String, dynamic>> _links = [];
   List<Map<String, dynamic>> _userLinks = [];
-  List<Map<String, dynamic>> _availableUsers = [];
   bool _isLoading = true;
   bool get _isAdmin => widget.role == 'admin';
   String _searchQuery = '';
@@ -92,23 +91,6 @@ class _BiPageState extends State<BiPage> {
         _links = [];
       }
       _userLinks = _links;
-
-      if (_isAdmin) {
-        final usersData = await _supabase
-            .from('profiles')
-            .select(
-                'id, nombre, paterno, materno, email, status_sys, permissions')
-            .eq('status_sys', 'ACTIVO')
-            .order('nombre');
-
-        _availableUsers = (usersData as List)
-            .where((user) {
-              final perms = user['permissions'];
-              return perms is Map && perms['show_powerbi'] == true;
-            })
-            .map((user) => Map<String, dynamic>.from(user))
-            .toList();
-      }
 
       if (mounted) {
         setState(() => _isLoading = false);
