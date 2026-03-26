@@ -6,15 +6,12 @@ class AttendanceHubPage extends StatelessWidget {
   final String role;
   final Map<String, dynamic> permissions;
 
-  const AttendanceHubPage({
-    super.key, 
-    required this.role, 
-    required this.permissions
-  });
+  const AttendanceHubPage(
+      {super.key, required this.role, required this.permissions});
 
   @override
   Widget build(BuildContext context) {
-    final bool isAdmin = role == 'admin' || role == 'superadmin';
+    final bool isAdmin = role == 'admin';
 
     // Construir lista dinámica de pestañas
     final List<Map<String, dynamic>> tabs = [
@@ -36,7 +33,8 @@ class AttendanceHubPage extends StatelessWidget {
     if (tabs.isEmpty) {
       return Scaffold(
         appBar: AppBar(title: const Text('Asistencia')),
-        body: const Center(child: Text('No tienes permisos para ver estos módulos.')),
+        body: const Center(
+            child: Text('No tienes permisos para ver estos módulos.')),
       );
     }
 
@@ -57,18 +55,22 @@ class AttendanceHubPage extends StatelessWidget {
                 indicatorSize: TabBarIndicatorSize.label,
                 labelColor: Colors.white,
                 unselectedLabelColor: Colors.white.withOpacity(0.6),
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                tabs: tabs.map((t) => Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(t['icon'] as IconData, size: 20),
-                      const SizedBox(width: 8),
-                      Text(t['title'] as String),
-                    ],
-                  ),
-                )).toList(),
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                tabs: tabs
+                    .map((t) => Tab(
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(t['icon'] as IconData, size: 20),
+                              const SizedBox(width: 8),
+                              Text(t['title'] as String),
+                            ],
+                          ),
+                        ))
+                    .toList(),
               ),
             ),
           ),
