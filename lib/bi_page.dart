@@ -138,10 +138,19 @@ class _BiPageState extends State<BiPage> {
   Future<void> _toggleUserAccess(String linkId, String userId, bool add) async {
     try {
       if (add) {
-        await _supabase.from('powerbi_link_users').insert({
-          'link_id': linkId,
-          'user_id': userId,
-        });
+        final existing = await _supabase
+            .from('powerbi_link_users')
+            .select('id')
+            .eq('link_id', linkId)
+            .eq('user_id', userId)
+            .maybeSingle();
+
+        if (existing == null) {
+          await _supabase.from('powerbi_link_users').insert({
+            'link_id': linkId,
+            'user_id': userId,
+          });
+        }
       } else {
         await _supabase
             .from('powerbi_link_users')
