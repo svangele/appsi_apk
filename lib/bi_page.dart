@@ -422,14 +422,14 @@ class _BiPageState extends State<BiPage> {
                                                 const TextStyle(fontSize: 14)),
                                         value: isAssigned,
                                         onChanged: (value) async {
-                                          await _toggleUserAccess(
-                                              link['id'], userId, value);
                                           if (value) {
                                             assignedIds.add(userId);
                                           } else {
                                             assignedIds.remove(userId);
                                           }
                                           setListState(() {});
+                                          _toggleUserAccess(
+                                              link['id'], userId, value);
                                         },
                                       );
                                     },
