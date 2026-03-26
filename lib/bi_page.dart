@@ -818,6 +818,7 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
   @override
   Widget build(BuildContext context) {
     debugPrint('Building _LinkFormDialog, isEditing: $_isEditing');
+    debugPrint('availableUsers length: ${widget.availableUsers.length}');
     return AlertDialog(
       title: Text(_isEditing ? 'Editar Enlace' : 'Nuevo Enlace'),
       content: SizedBox(
@@ -854,38 +855,11 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
                 ),
                 maxLines: 5,
               ),
-              if (_isEditing) ...[
-                const SizedBox(height: 24),
-                const Divider(),
-                const SizedBox(height: 16),
-                Text(
-                  'Usuarios con acceso',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: _UserAccessList(
-                    linkId: widget.link!['id'],
-                    availableUsers: widget.availableUsers,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
       ),
       actions: [
-        if (_isEditing)
-          TextButton.icon(
-            onPressed: _confirmDelete,
-            icon: const Icon(Icons.delete),
-            label: const Text('Eliminar'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
         const Spacer(),
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -899,7 +873,7 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
                   height: 20,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : Text(_isEditing ? 'Guardar' : 'Crear'),
+              : const Text('Crear'),
         ),
       ],
     );
