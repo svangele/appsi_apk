@@ -390,58 +390,47 @@ class _BiPageState extends State<BiPage> {
                     const SizedBox(height: 8),
                     SizedBox(
                       height: 200,
-                      child: FutureBuilder<List<String>>(
-                        future: _getLinkUserIds(link['id']),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
+                      child: FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _getUsers(),
+                        builder: (context, userSnapshot) {
+                          if (!userSnapshot.hasData) {
                             return const Center(
                                 child: CircularProgressIndicator());
                           }
-                          final assignedIds = snapshot.data!.toSet();
-                          return FutureBuilder<List<Map<String, dynamic>>>(
-                            future: _getUsers(),
-                            builder: (context, userSnapshot) {
-                              if (!userSnapshot.hasData) {
+                          return FutureBuilder<List<String>>(
+                            future: _getLinkUserIds(link['id']),
+                            builder: (ctx, assignedSnapshot) {
+                              if (!assignedSnapshot.hasData) {
                                 return const Center(
                                     child: CircularProgressIndicator());
                               }
-                              return ListView.builder(
-                                itemCount: userSnapshot.data!.length,
-                                itemBuilder: (context, index) {
-                                  final user = userSnapshot.data![index];
-                                  final userId = user['id'].toString();
-                                  final fullName =
-                                      '${user['nombre']} ${user['paterno']} ${user['materno']}'
-                                          .trim();
-                                  final isAssigned =
-                                      assignedIds.contains(userId);
-                                  return StatefulBuilder(
-                                    builder: (context, setUserState) {
-                                      return StatefulBuilder(
-                                        builder: (ctx, setInnerState) {
-                                          return StatefulBuilder(
-                                            builder: (c, setSwitchState) {
-                                              return CheckboxListTile(
-                                                dense: true,
-                                                title: Text(fullName,
-                                                    style: const TextStyle(
-                                                        fontSize: 14)),
-                                                subtitle: Text(
-                                                    user['email'] ?? '',
-                                                    style: const TextStyle(
-                                                        fontSize: 12)),
-                                                value: isAssigned,
-                                                onChanged: (value) async {
-                                                  await _toggleUserAccess(
-                                                      link['id'],
-                                                      userId,
-                                                      value ?? false);
-                                                  setSwitchState(() {});
-                                                  setUserState(() {});
-                                                },
-                                              );
-                                            },
-                                          );
+                              final assignedIds =
+                                  assignedSnapshot.data!.toSet();
+                              return StatefulBuilder(
+                                builder: (c, setListState) {
+                                  return ListView.builder(
+                                    itemCount: userSnapshot.data!.length,
+                                    itemBuilder: (listContext, index) {
+                                      final user = userSnapshot.data![index];
+                                      final userId = user['id'].toString();
+                                      final fullName =
+                                          '${user['nombre']} ${user['paterno']} ${user['materno']}'
+                                              .trim();
+                                      final isAssigned =
+                                          assignedIds.contains(userId);
+                                      return CheckboxListTile(
+                                        dense: true,
+                                        title: Text(fullName,
+                                            style:
+                                                const TextStyle(fontSize: 14)),
+                                        subtitle: Text(user['email'] ?? '',
+                                            style:
+                                                const TextStyle(fontSize: 12)),
+                                        value: isAssigned,
+                                        onChanged: (value) async {
+                                          await _toggleUserAccess(link['id'],
+                                              userId, value ?? false);
+                                          setListState(() {});
                                         },
                                       );
                                     },
