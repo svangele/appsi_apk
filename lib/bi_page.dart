@@ -857,14 +857,6 @@ class _LinkFormDialogState extends State<_LinkFormDialog> {
                 const Divider(),
                 const SizedBox(height: 16),
                 const Text('Usuarios con acceso'),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 200,
-                  child: _UserAccessList(
-                    linkId: widget.link!['id'],
-                    availableUsers: widget.availableUsers,
-                  ),
-                ),
               ],
             ],
           ),
