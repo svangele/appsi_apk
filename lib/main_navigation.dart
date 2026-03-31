@@ -12,6 +12,7 @@ import 'widgets/notification_bell.dart';
 import 'calendar_page.dart';
 import 'attendance_hub_page.dart';
 import 'bi_page.dart';
+import 'signature_generator_page.dart';
 
 class MainNavigation extends StatefulWidget {
   final String role;
@@ -44,6 +45,14 @@ class _MainNavigationState extends State<MainNavigation> {
       'icon': Icons.diversity_3_outlined,
       'activeIcon': Icons.diversity_3,
       'widget': const SocialPage(),
+    });
+
+    // Firmas siempre disponible
+    pages.add({
+      'title': 'Firmas',
+      'icon': Icons.draw_outlined,
+      'activeIcon': Icons.draw,
+      'widget': const SignatureGeneratorPage(),
     });
 
     // Calendario disponible según permisos
