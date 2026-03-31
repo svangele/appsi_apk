@@ -88,7 +88,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     // Wait for animation
     await Future.delayed(const Duration(milliseconds: 300));
 
-    final image = await _screenshotController.capture();
+    final image = await _screenshotController.capture(pixelRatio: 1.0);
     if (image == null) return;
 
     final fileName = 'firma_${DateTime.now().millisecondsSinceEpoch}.png';
