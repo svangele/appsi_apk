@@ -287,7 +287,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             TextField(
               controller: _nameController,
               cursorColor: Colors.white,
-              textCapitalization: TextCapitalization.characters,
+              textCapitalization: TextCapitalization.words, // Allow mixed case and accents
               style: GoogleFonts.lexend(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
@@ -302,7 +302,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
-                hintText: 'NOMBRE',
+                hintText: 'Nombre Completo',
                 hintStyle: TextStyle(color: Colors.white54, fontSize: 22),
               ),
               onChanged: (_) => setState(() {}),
@@ -311,6 +311,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             TextField(
               controller: _positionController,
               cursorColor: Colors.white,
+              textCapitalization: TextCapitalization.sentences, // Allow natural typing
               style: GoogleFonts.lexend(
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
