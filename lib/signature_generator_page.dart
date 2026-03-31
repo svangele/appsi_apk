@@ -85,6 +85,11 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
   }
 
   Future<void> _saveSignature() async {
+    // Remove focus to hide cursor in screenshot
+    FocusScope.of(context).unfocus();
+    // Wait for animation
+    await Future.delayed(const Duration(milliseconds: 300));
+
     final image = await _screenshotController.capture();
     if (image == null) return;
 
@@ -249,33 +254,8 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
         ),
 
         const SizedBox(height: 24),
-
-        // Form Fields
-        Text('Información de Contacto', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _nameController,
-          decoration: const InputDecoration(labelText: 'Nombre Completo', border: OutlineInputBorder()),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _positionController,
-          decoration: const InputDecoration(labelText: 'Puesto / Cargo', border: OutlineInputBorder()),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _phoneController,
-          decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
-          onChanged: (_) => setState(() {}),
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          controller: _emailController,
-          decoration: const InputDecoration(labelText: 'Correo', border: OutlineInputBorder()),
-          onChanged: (_) => setState(() {}),
-        ),
+        Text('Haz clic en la firma para editar tus datos directamente.', 
+          style: theme.textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic, color: Colors.grey[600])),
       ],
     );
   }
@@ -309,22 +289,29 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Name
-            Text(
-              _nameController.text.toUpperCase(),
+            TextField(
+              controller: _nameController,
+              cursorColor: Colors.white,
+              textCapitalization: TextCapitalization.characters,
               style: GoogleFonts.outfit(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
                 letterSpacing: 0.5,
               ),
+              decoration: const InputDecoration.collapsed(hintText: 'NOMBRE', hintStyle: TextStyle(color: Colors.white54)),
+              onChanged: (_) => setState(() {}),
             ),
             // Position
-            Text(
-              _positionController.text,
+            TextField(
+              controller: _positionController,
+              cursorColor: Colors.white,
               style: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 12,
               ),
+              decoration: const InputDecoration.collapsed(hintText: 'Puesto', hintStyle: TextStyle(color: Colors.white54)),
+              onChanged: (_) => setState(() {}),
             ),
             
             const Spacer(),
@@ -340,9 +327,9 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildSignatureItem(Icons.phone_android_outlined, _phoneController.text),
+                      _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono'),
                       const SizedBox(height: 4),
-                      _buildSignatureItem(Icons.email_outlined, _emailController.text),
+                      _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo'),
                     ],
                   ),
                 ),
@@ -355,7 +342,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildSignatureItem(Icons.public, _selectedBrand.web),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 10), // Padding adjusted for editable fields
                       _buildSocialItem(),
                     ],
                   ),
@@ -382,6 +369,25 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             text,
             style: GoogleFonts.inter(color: Colors.white, fontSize: 9),
             overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEditableSignatureItem(IconData icon, TextEditingController controller, String hint) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: const Color(0xFF00BFFF), size: 10),
+        const SizedBox(width: 6),
+        Flexible(
+          child: TextField(
+            controller: controller,
+            cursorColor: Colors.white,
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 9),
+            decoration: InputDecoration.collapsed(hintText: hint, hintStyle: const TextStyle(color: Colors.white54, fontSize: 9)),
+            onChanged: (_) => setState(() {}),
           ),
         ),
       ],
