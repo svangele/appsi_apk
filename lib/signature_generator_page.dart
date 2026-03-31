@@ -295,9 +295,11 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                 fontWeight: FontWeight.w700,
                 fontSize: 22,
                 letterSpacing: 0.5,
+                height: 1.0, // Reduced line height
               ),
               decoration: const InputDecoration(
                 filled: false,
+                isDense: true, // Make it more compact
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -315,9 +317,11 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                 color: Colors.white,
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
+                height: 1.0, // Reduced line height
               ),
               decoration: const InputDecoration(
                 filled: false,
+                isDense: true, // Make it more compact
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
