@@ -296,10 +296,10 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               style: GoogleFonts.outfit(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 18,
+                fontSize: 22,
                 letterSpacing: 0.5,
               ),
-              decoration: const InputDecoration.collapsed(hintText: 'NOMBRE', hintStyle: TextStyle(color: Colors.white54)),
+              decoration: const InputDecoration.collapsed(hintText: 'NOMBRE', hintStyle: TextStyle(color: Colors.white54, fontSize: 22)),
               onChanged: (_) => setState(() {}),
             ),
             // Position
@@ -308,9 +308,9 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               cursorColor: Colors.white,
               style: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.9),
-                fontSize: 12,
+                fontSize: 14,
               ),
-              decoration: const InputDecoration.collapsed(hintText: 'Puesto', hintStyle: TextStyle(color: Colors.white54)),
+              decoration: const InputDecoration.collapsed(hintText: 'Puesto', hintStyle: TextStyle(color: Colors.white54, fontSize: 14)),
               onChanged: (_) => setState(() {}),
             ),
             
@@ -342,7 +342,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildSignatureItem(Icons.public, _selectedBrand.web),
-                      const SizedBox(height: 10), // Padding adjusted for editable fields
+                      const SizedBox(height: 12), // Increased padding for larger font
                       _buildSocialItem(),
                     ],
                   ),
@@ -362,12 +362,12 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFF00BFFF), size: 10),
+        Icon(icon, color: const Color(0xFF00BFFF), size: 12),
         const SizedBox(width: 6),
         Flexible(
           child: Text(
             text,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 9),
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -379,14 +379,14 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFF00BFFF), size: 10),
+        Icon(icon, color: const Color(0xFF00BFFF), size: 12),
         const SizedBox(width: 6),
         Flexible(
           child: TextField(
             controller: controller,
             cursorColor: Colors.white,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 9),
-            decoration: InputDecoration.collapsed(hintText: hint, hintStyle: const TextStyle(color: Colors.white54, fontSize: 9)),
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+            decoration: InputDecoration.collapsed(hintText: hint, hintStyle: const TextStyle(color: Colors.white54, fontSize: 11)),
             onChanged: (_) => setState(() {}),
           ),
         ),
@@ -401,19 +401,19 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (sameHandle) ...[
-          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 10),
+          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 12),
           const SizedBox(width: 4),
-          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 10),
+          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 12),
           const SizedBox(width: 6),
-          Text(_selectedBrand.facebook, style: const TextStyle(color: Colors.white, fontSize: 9)),
+          Text(_selectedBrand.facebook, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
         ] else ...[
-          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 10),
+          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 12),
           const SizedBox(width: 4),
-          Text(_selectedBrand.facebook, style: const TextStyle(color: Colors.white, fontSize: 9)),
+          Text(_selectedBrand.facebook, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
           const SizedBox(width: 8),
-          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 10),
+          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 12),
           const SizedBox(width: 4),
-          Text(_selectedBrand.instagram, style: const TextStyle(color: Colors.white, fontSize: 9)),
+          Text(_selectedBrand.instagram, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
         ],
       ],
     );
