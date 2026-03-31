@@ -221,78 +221,6 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     return years < 0 ? 0 : years;
   }
 
-  /// Calcula el balance detallado para el PDF y el resumen
-  Map<String, dynamic> _calculateDetailedBalance({
-    required String userId,
-    required DateTime? hireDate,
-    required DateTime? rehireDate,
-    required List<Map<String, dynamic>> contextIncidencias,
-  }) {
-    final base = rehireDate ?? hireDate;
-    if (base == null) {
-      return {'totalProp': 0.0, 'totalReq': 0.0, 'totalSaldo': 0.0};
-    }
-
-    final now = DateTime.now();
-    
-    // Años completos
-    int years = now.year - base.year;
-    if (now.month < base.month || (now.month == base.month && now.day < base.day)) years--;
-    final completedYears = years < 0 ? 0 : years;
-
-    final usedDaysMap = <String, int>{};
-    for (final inc in contextIncidencias) {
-      if (inc['usuario_id'] == userId && inc['status'] == 'APROBADA') {
-        final normP = (inc['periodo'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
-        final dias = inc['dias'] as int? ?? 0;
-        if (normP.isNotEmpty) {
-          usedDaysMap[normP] = (usedDaysMap[normP] ?? 0) + dias;
-        }
-      }
-    }
-
-    double totalProp = 0;
-    int totalReq = 0;
-
-    for (int y = 1; y <= completedYears + 1; y++) {
-      final periodEnd = DateTime(base.year + y, base.month, base.day);
-      final periodStart = DateTime(base.year + y - 1, base.month, base.day);
-      final normLabel = '${periodStart.year}${periodEnd.year}';
-
-      final int days;
-      if (periodStart.year >= 2023) {
-        days = _getDaysByYears(y);
-      } else {
-        final cutoff = DateTime(2017, 5, 2);
-        if (base.isBefore(cutoff)) {
-          days = (6 + (y - 1) * 2).clamp(0, 14);
-        } else {
-          days = (8 + (y - 1) * 2).clamp(0, 16);
-        }
-      }
-
-      final daysRequested = usedDaysMap[normLabel] ?? 0;
-      
-      double proporcional;
-      if (periodStart.isAfter(now)) {
-        proporcional = days.toDouble();
-      } else if (periodEnd.isBefore(now) || periodEnd.isAtSameMomentAs(now)) {
-        proporcional = days.toDouble();
-      } else {
-        final elapsed = now.difference(periodStart).inDays + 1;
-        proporcional = (days / 365) * elapsed;
-      }
-
-      totalProp += proporcional;
-      totalReq += daysRequested;
-    }
-
-    return {
-      'totalProp': totalProp,
-      'totalReq': totalReq.toDouble(),
-      'totalSaldo': totalProp - totalReq,
-    };
-  }
 
   /// Devuelve el índice (0-based) de la fila de la tabla que corresponde a los años del usuario
   int _getRowIndex(int years) {
@@ -1130,14 +1058,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   onSelected: (val) async {
                     if (val == 'PDF') {
                       if (_selectedUserProfile != null) {
-                        final balance = _calculateDetailedBalance(
-                          userId: inc['usuario_id'],
-                          hireDate: _fechaIngreso,
-                          rehireDate: _fechaReingreso,
-                          contextIncidencias: _incidencias,
-                        );
                         IncidenciasPdfService.generateVacationRequest(
-                            _selectedUserProfile!, inc, balance);
+                            _selectedUserProfile!, inc);
                       }
                     } else if (val == 'EDIT') {
                       _showIncidenciaForm(incidencia: inc);
@@ -1313,18 +1235,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                                 if (val == 'PDF') {
                                   final uProfile = inc['profiles'] as Map<String, dynamic>? ?? {};
                                   if (uProfile.isNotEmpty) {
-                                    final hireDate = uProfile['fecha_ingreso'] != null ? DateTime.tryParse(uProfile['fecha_ingreso']) : null;
-                                    final rehireDate = uProfile['fecha_reingreso'] != null ? DateTime.tryParse(uProfile['fecha_reingreso']) : null;
-                                    
-                                    // NOTE: On pending table for multiple users, we might not have all their approved incidencias 
-                                    // locally to calculate exact balance. This will use what's available in context.
-                                    final balance = _calculateDetailedBalance(
-                                      userId: inc['usuario_id'],
-                                      hireDate: hireDate,
-                                      rehireDate: rehireDate,
-                                      contextIncidencias: _incidencias, 
-                                    );
-                                    IncidenciasPdfService.generateVacationRequest(uProfile, inc, balance);
+                                    IncidenciasPdfService.generateVacationRequest(uProfile, inc);
                                   }
                                   return;
                                 }
@@ -1419,25 +1330,13 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   isAdmin: _userRole == 'admin',
                   userProfile: _selectedUserProfile,
                   formatDate: _formatDate,
-                  balance: _calculateDetailedBalance(
-                    userId: _selectedUserId ?? '',
-                    hireDate: _fechaIngreso,
-                    rehireDate: _fechaReingreso,
-                    contextIncidencias: _incidencias,
-                  ),
                   getStatusColor: _getStatusColor,
                   onEdit: (item) => _showIncidenciaForm(incidencia: item),
                   onStatusChange: (item, val) async {
                     if (val == 'PDF') {
                       if (_selectedUserProfile != null) {
-                        final balance = _calculateDetailedBalance(
-                          userId: item['usuario_id'],
-                          hireDate: _fechaIngreso,
-                          rehireDate: _fechaReingreso,
-                          contextIncidencias: _incidencias,
-                        );
                         IncidenciasPdfService.generateVacationRequest(
-                            _selectedUserProfile!, item, balance);
+                            _selectedUserProfile!, item);
                       }
                     } else {
                       await Supabase.instance.client
@@ -1622,7 +1521,6 @@ class _IncidenciasDataSource extends DataTableSource {
   final bool isAdmin;
   final Map<String, dynamic>? userProfile;
   final String Function(String) formatDate;
-  final Map<String, dynamic> balance;
 
   final Color Function(String) getStatusColor;
   final Function(Map<String, dynamic>) onEdit;
@@ -1634,7 +1532,6 @@ class _IncidenciasDataSource extends DataTableSource {
     required this.isAdmin,
     this.userProfile,
     required this.formatDate,
-    required this.balance,
     required this.getStatusColor,
     required this.onEdit,
     required this.onStatusChange,

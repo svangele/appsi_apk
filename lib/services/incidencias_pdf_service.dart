@@ -10,7 +10,6 @@ class IncidenciasPdfService {
   static Future<void> generateVacationRequest(
     Map<String, dynamic> profile,
     Map<String, dynamic> incidencia,
-    Map<String, dynamic> balance,
   ) async {
     final pdf = pw.Document();
 
@@ -169,33 +168,6 @@ class IncidenciasPdfService {
               ),
               pw.SizedBox(height: 20),
 
-              // Balance Summary
-              pw.Text('RESUMEN DE SALDO DE VACACIONES', 
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: primaryColor)),
-              pw.SizedBox(height: 5),
-              pw.Table(
-                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                children: [
-                  pw.TableRow(
-                    decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                    children: [
-                      _tableHeader('Días Ganados (Ley)'),
-                      _tableHeader('Días Disfrutados'),
-                      _tableHeader('Esta Solicitud'),
-                      _tableHeader('Saldo Pendiente'),
-                    ],
-                  ),
-                  pw.TableRow(
-                    children: [
-                      _tableCell(balance['totalProp']?.toStringAsFixed(1) ?? '0.0'),
-                      _tableCell(balance['totalReq']?.toString() ?? '0'),
-                      _tableCell(incidencia['dias']?.toString() ?? '0'),
-                      _tableCell(balance['totalSaldo']?.toStringAsFixed(1) ?? '0.0', isBold: true),
-                    ],
-                  ),
-                ],
-              ),
-              
               pw.Spacer(),
 
               // Signatures
@@ -255,26 +227,6 @@ class IncidenciasPdfService {
     );
   }
 
-  static pw.Widget _tableHeader(String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(5),
-      child: pw.Text(text, 
-        textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 8)),
-    );
-  }
-
-  static pw.Widget _tableCell(String text, {bool isBold = false}) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.all(5),
-      child: pw.Text(text, 
-        textAlign: pw.TextAlign.center,
-        style: pw.TextStyle(
-          fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
-          fontSize: 9,
-        )),
-    );
-  }
 
   static pw.Widget _signatureBox(String role, String name, String position) {
     return pw.Column(
