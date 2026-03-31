@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:screenshot/screenshot.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
+import 'services/file_saver_util.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -93,17 +91,8 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     final image = await _screenshotController.capture();
     if (image == null) return;
 
-    try {
-      final tempDir = await getTemporaryDirectory();
-      final file = await File('${tempDir.path}/firma_${DateTime.now().millisecondsSinceEpoch}.png').create();
-      await file.writeAsBytes(image);
-
-      if (mounted) {
-        await Share.shareXFiles([XFile(file.path)], text: 'Mi firma profesional');
-      }
-    } catch (e) {
-      debugPrint('Error sharing signature: $e');
-    }
+    final fileName = 'firma_${DateTime.now().millisecondsSinceEpoch}.png';
+    await FileSaverUtil.saveAndShare(image, fileName);
   }
 
   @override
