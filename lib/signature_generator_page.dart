@@ -109,126 +109,179 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     }
 
     return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Preview Card
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              clipBehavior: Clip.antiAlias,
-              child: Column(
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isDesktop = constraints.maxWidth > 950;
+
+          if (isDesktop) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: double.infinity,
-                    color: Colors.grey[200],
+                  // Left Column: Configuration
+                  Expanded(
+                    flex: 4,
                     child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Screenshot(
-                        controller: _screenshotController,
-                        child: _buildSignaturePreview(),
+                      child: _buildConfigurationForm(theme),
+                    ),
+                  ),
+                  const SizedBox(width: 32),
+                  // Right Column: Preview (Fixed width approx)
+                  Expanded(
+                    flex: 6,
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          _buildPreviewCard(theme),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: _buildDownloadButton(),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Vista Previa (787x200)', 
-                      style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
-                  ),
                 ],
               ),
+            );
+          }
+
+          // Mobile Layout (Current)
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildPreviewCard(theme),
+                const SizedBox(height: 24),
+                _buildConfigurationForm(theme),
+                const SizedBox(height: 32),
+                _buildDownloadButton(),
+                const SizedBox(height: 40),
+              ],
             ),
-            
-            const SizedBox(height: 24),
-            
-            // Brand Selector
-            Text('Selecciona la Marca', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: _brands.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (context, index) {
-                  final brand = _brands[index];
-                  final isSelected = _selectedBrand == brand;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedBrand = brand),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: isSelected ? theme.colorScheme.primary : Colors.grey[300]!, width: 2),
-                            image: DecorationImage(
-                              image: AssetImage(brand.background),
-                              fit: BoxFit.cover,
-                              alignment: Alignment.centerRight,
-                            ),
-                          ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPreviewCard(ThemeData theme) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: Colors.grey[200],
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Screenshot(
+                controller: _screenshotController,
+                child: _buildSignaturePreview(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text('Vista Previa (787x200)', 
+              style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConfigurationForm(ThemeData theme) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Brand Selector
+        Text('Selecciona la Marca', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 100,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _brands.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (context, index) {
+              final brand = _brands[index];
+              final isSelected = _selectedBrand == brand;
+              return InkWell(
+                onTap: () => setState(() => _selectedBrand = brand),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isSelected ? theme.colorScheme.primary : Colors.grey[300]!, width: 2),
+                        image: DecorationImage(
+                          image: AssetImage(brand.background),
+                          fit: BoxFit.cover,
+                          alignment: Alignment.centerRight,
                         ),
-                        const SizedBox(height: 4),
-                        Text(brand.name, style: TextStyle(
-                          fontSize: 10, 
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isSelected ? theme.colorScheme.primary : Colors.black,
-                        )),
-                      ],
+                      ),
                     ),
-                  );
-                },
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Form Fields
-            Text('Información de Contacto', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nombre Completo', border: OutlineInputBorder()),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _positionController,
-              decoration: const InputDecoration(labelText: 'Puesto / Cargo', border: OutlineInputBorder()),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _phoneController,
-              decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Correo', border: OutlineInputBorder()),
-              onChanged: (_) => setState(() {}),
-            ),
-            
-            const SizedBox(height: 32),
-            
-            // Action Button
-            ElevatedButton.icon(
-              onPressed: _saveSignature,
-              icon: const Icon(Icons.download),
-              label: const Text('Descargar Firma (PNG)'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
+                    const SizedBox(height: 4),
+                    Text(brand.name, style: TextStyle(
+                      fontSize: 10, 
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? theme.colorScheme.primary : Colors.black,
+                    )),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
+
+        const SizedBox(height: 24),
+
+        // Form Fields
+        Text('Información de Contacto', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _nameController,
+          decoration: const InputDecoration(labelText: 'Nombre Completo', border: OutlineInputBorder()),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _positionController,
+          decoration: const InputDecoration(labelText: 'Puesto / Cargo', border: OutlineInputBorder()),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _phoneController,
+          decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: _emailController,
+          decoration: const InputDecoration(labelText: 'Correo', border: OutlineInputBorder()),
+          onChanged: (_) => setState(() {}),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDownloadButton() {
+    return ElevatedButton.icon(
+      onPressed: _saveSignature,
+      icon: const Icon(Icons.download),
+      label: const Text('Descargar Firma (PNG)'),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
