@@ -8,6 +8,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:syncfusion_localizations/syncfusion_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   usePathUrlStrategy();
@@ -58,7 +59,7 @@ class MyApp extends StatelessWidget {
       locale: const Locale('es', 'MX'),
       theme: ThemeData(
         useMaterial3: true,
-        textTheme: ThemeData().textTheme,
+        textTheme: GoogleFonts.interTextTheme(ThemeData().textTheme),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF344092),
           primary: const Color(0xFF344092),

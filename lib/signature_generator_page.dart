@@ -5,6 +5,7 @@ import 'package:screenshot/screenshot.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BrandConfig {
   final String name;
@@ -102,68 +103,73 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = Theme.of(context).copyWith(
+      textTheme: GoogleFonts.interTextTheme(Theme.of(context).textTheme),
+    );
 
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isDesktop = constraints.maxWidth > 950;
+    return Theme(
+      data: theme,
+      child: Scaffold(
+        body: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth > 950;
 
-          if (isDesktop) {
-            return Padding(
-              padding: const EdgeInsets.all(24),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Left Column: Configuration
-                  Expanded(
-                    flex: 4,
-                    child: SingleChildScrollView(
-                      child: _buildConfigurationForm(theme),
-                    ),
-                  ),
-                  const SizedBox(width: 32),
-                  // Right Column: Preview (Fixed width approx)
-                  Expanded(
-                    flex: 6,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          _buildPreviewCard(theme),
-                          const SizedBox(height: 24),
-                          SizedBox(
-                            width: double.infinity,
-                            child: _buildDownloadButton(),
-                          ),
-                        ],
+            if (isDesktop) {
+              return Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left Column: Configuration
+                    Expanded(
+                      flex: 4,
+                      child: SingleChildScrollView(
+                        child: _buildConfigurationForm(theme),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 32),
+                    // Right Column: Preview (Fixed width approx)
+                    Expanded(
+                      flex: 6,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            _buildPreviewCard(theme),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              child: _buildDownloadButton(),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            // Mobile Layout (Current)
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _buildPreviewCard(theme),
+                  const SizedBox(height: 24),
+                  _buildConfigurationForm(theme),
+                  const SizedBox(height: 32),
+                  _buildDownloadButton(),
+                  const SizedBox(height: 40),
                 ],
               ),
             );
-          }
-
-          // Mobile Layout (Current)
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _buildPreviewCard(theme),
-                const SizedBox(height: 24),
-                _buildConfigurationForm(theme),
-                const SizedBox(height: 32),
-                _buildDownloadButton(),
-                const SizedBox(height: 40),
-              ],
-            ),
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -305,7 +311,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             // Name
             Text(
               _nameController.text.toUpperCase(),
-              style: const TextStyle(
+              style: GoogleFonts.outfit(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
                 fontSize: 18,
@@ -315,7 +321,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             // Position
             Text(
               _positionController.text,
-              style: TextStyle(
+              style: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 12,
               ),
@@ -374,7 +380,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
         Flexible(
           child: Text(
             text,
-            style: const TextStyle(color: Colors.white, fontSize: 9),
+            style: GoogleFonts.inter(color: Colors.white, fontSize: 9),
             overflow: TextOverflow.ellipsis,
           ),
         ),
