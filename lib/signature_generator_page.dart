@@ -354,7 +354,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono'),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2), // Reduced Gap
               _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo'),
             ],
           ),
@@ -368,7 +368,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildSignatureItem(Icons.public, _selectedBrand.web),
-              const SizedBox(height: 6),
+              const SizedBox(height: 2), // Reduced Gap
               _buildSocialItem(),
             ],
           ),
@@ -392,10 +392,10 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             Expanded(child: _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo')),
           ],
         ),
-        const SizedBox(height: 12), // Increased Gap
+        const SizedBox(height: 4), // Reduced Gap
         // Social Row
         _buildSocialItem(),
-        const SizedBox(height: 12), // Increased Gap
+        const SizedBox(height: 4), // Reduced Gap
         // Web Row
         _buildSignatureItem(Icons.public, _selectedBrand.web),
       ],
@@ -411,7 +411,12 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
         Flexible(
           child: Text(
             text,
-            style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300),
+            style: GoogleFonts.lexend(
+              color: Colors.white,
+              fontSize: 12, // Increased size
+              fontWeight: FontWeight.w300,
+              height: 1.0, // Reduced line height
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -429,15 +434,21 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
           child: TextField(
             controller: controller,
             cursorColor: Colors.white,
-            style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300),
+            style: GoogleFonts.lexend(
+              color: Colors.white,
+              fontSize: 12, // Increased size
+              fontWeight: FontWeight.w300,
+              height: 1.0, // Reduced line height
+            ),
             decoration: InputDecoration(
               filled: false,
+              isDense: true, // Make it more compact
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               contentPadding: EdgeInsets.zero,
               hintText: hint,
-              hintStyle: const TextStyle(color: Colors.white54, fontSize: 11),
+              hintStyle: const TextStyle(color: Colors.white54, fontSize: 12),
             ),
             onChanged: (_) => setState(() {}),
           ),
@@ -458,15 +469,15 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
           const SizedBox(width: 6),
           const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
           const SizedBox(width: 8),
-          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
+          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
         ] else ...[
           const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
           const SizedBox(width: 6),
-          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
+          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
           const SizedBox(width: 10),
           const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
           const SizedBox(width: 6),
-          Text(_selectedBrand.instagram, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
+          Text(_selectedBrand.instagram, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
         ],
       ],
     );
