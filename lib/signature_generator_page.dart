@@ -5,6 +5,38 @@ import 'services/file_saver_util.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+extension StringTitleCase on String {
+  String toTitleCase() {
+    if (isEmpty) return '';
+    
+    // Smart Correction Dictionary: Words that frequently miss accents in legacy databases
+    const Map<String, String> corrections = {
+      'ANGEL': 'Ángel', 'JOSE': 'José', 'MARIA': 'María', 'RAMON': 'Ramón', 'JESUS': 'Jesús', 'JULIAN': 'Julián',
+      'SANCHEZ': 'Sánchez', 'PEREZ': 'Pérez', 'LOPEZ': 'López', 'GARCIA': 'García', 'MARTINEZ': 'Martínez',
+      'RODRIGUEZ': 'Rodríguez', 'GONZALEZ': 'González', 'JIMENEZ': 'Jiménez', 'MENDEZ': 'Méndez', 'NUÑEZ': 'Núñez',
+      'HERNANDEZ': 'Hernández', 'GUTIERREZ': 'Gutiérrez', 'CORTES': 'Cortés', 'FERNANDEZ': 'Fernández', 
+      'GOMEZ': 'Gómez', 'DIAZ': 'Díaz',
+      'DIRECCION': 'Dirección', 'COORDINACION': 'Coordinación', 'SUBDIRECCION': 'Subdirección', 
+      'TECNOLOGIAS': 'Tecnologías', 'INFORMACION': 'Información', 'ADMINISTRACION': 'Administración',
+      'GESTION': 'Gestión', 'SUPERVISION': 'Supervisión', 'PRODUCCION': 'Producción', 'AREA': 'Área',
+      'CAPACITACION': 'Capacitación', 'PUBLICOS': 'Públicos', 'CIENTIFICO': 'Científico', 'OPERACION': 'Operación'
+    };
+
+    return toLowerCase().split(' ').map((word) {
+      if (word.isEmpty) return word;
+      
+      // Match against uppercase dictionary
+      final upper = word.toUpperCase();
+      if (corrections.containsKey(upper)) {
+        return corrections[upper]!;
+      }
+      
+      // Standard Title Case fallback
+      return word[0].toUpperCase() + word.substring(1);
+    }).join(' ');
+  }
+}
+
 class BrandConfig {
   final String name;
   final String background;
