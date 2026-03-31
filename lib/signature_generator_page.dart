@@ -439,25 +439,42 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     final bool sameHandle = _selectedBrand.facebook == _selectedBrand.instagram;
     const Color iconColor = Color(0xFF0dcaf0); // Cyan info color
     
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (sameHandle) ...[
+    if (sameHandle) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
           const SizedBox(width: 6),
           const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
           const SizedBox(width: 8),
           Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
-        ] else ...[
-          const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
-          const SizedBox(width: 6),
-          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
-          const SizedBox(width: 10),
-          const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
-          const SizedBox(width: 6),
-          Text(_selectedBrand.instagram, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
         ],
-      ],
-    );
+      );
+    } else {
+      // Stack vertically if different
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
+              const SizedBox(width: 6),
+              Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
+              const SizedBox(width: 6),
+              Text(_selectedBrand.instagram, style: GoogleFonts.lexend(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w300, height: 1.0)),
+            ],
+          ),
+        ],
+      );
+    }
   }
 }
