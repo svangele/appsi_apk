@@ -11,8 +11,7 @@ class BrandConfig {
   final String facebook;
   final String instagram;
   final String web;
-  final double topMargin; 
-  final bool isStacked; // True for Brands like AG117, Misiones, Vidamar
+  final double topMargin;
 
   BrandConfig({
     required this.name,
@@ -21,7 +20,6 @@ class BrandConfig {
     required this.instagram,
     required this.web,
     required this.topMargin,
-    this.isStacked = false,
   });
 }
 
@@ -36,14 +34,14 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
   
   final List<BrandConfig> _brands = [
-    BrandConfig(name: 'Si Sol', background: 'assets/firmcred/sisol.png', facebook: 'sisolmx', instagram: 'sisolmx', web: 'sisol.com.mx', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'AG 117', background: 'assets/firmcred/ag117.png', facebook: 'ag117cdmx', instagram: 'AG117.cdmx', web: 'sisol.com.mx', topMargin: 16.0, isStacked: true),
-    BrandConfig(name: 'Bonanza', background: 'assets/firmcred/bonanza.png', facebook: 'bonanzaprisma', instagram: 'bonanzaprisma', web: 'bonanzaprisma.com', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'Olympia', background: 'assets/firmcred/olympia.png', facebook: 'olympiaresidencial', instagram: 'olympiaresidencial', web: 'olympiaresidencial.com', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'Misiones', background: 'assets/firmcred/mse.png', facebook: 'misionestoluca', instagram: 'tolucamisiones', web: 'misionesstaesperanza.com', topMargin: 12.0, isStacked: true),
-    BrandConfig(name: 'Punta Pacífico', background: 'assets/firmcred/punta.png', facebook: 'puntapacifico.ensenada', instagram: 'puntapacifico.ensenada', web: 'puntapacifico.com.mx', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'Selva Norte', background: 'assets/firmcred/selva.png', facebook: 'selvanortetulum', instagram: 'selvanortetulum', web: 'selvanorte.com', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'VidaMar', background: 'assets/firmcred/vidamar.png', facebook: 'vidamarresidencial', instagram: 'vidamarresidencial', web: 'vidamarresidencial.com', topMargin: 20.0, isStacked: true),
+    BrandConfig(name: 'Si Sol', background: 'assets/firmcred/sisol.png', facebook: 'sisolmx', instagram: 'sisolmx', web: 'sisol.com.mx', topMargin: 48.0),
+    BrandConfig(name: 'AG 117', background: 'assets/firmcred/ag117.png', facebook: 'ag117cdmx', instagram: 'AG117.cdmx', web: 'sisol.com.mx', topMargin: 16.0),
+    BrandConfig(name: 'Bonanza', background: 'assets/firmcred/bonanza.png', facebook: 'bonanzaprisma', instagram: 'bonanzaprisma', web: 'bonanzaprisma.com', topMargin: 48.0),
+    BrandConfig(name: 'Olympia', background: 'assets/firmcred/olympia.png', facebook: 'olympiaresidencial', instagram: 'olympiaresidencial', web: 'olympiaresidencial.com', topMargin: 48.0),
+    BrandConfig(name: 'Misiones', background: 'assets/firmcred/mse.png', facebook: 'misionestoluca', instagram: 'tolucamisiones', web: 'misionesstaesperanza.com', topMargin: 12.0),
+    BrandConfig(name: 'Punta Pacífico', background: 'assets/firmcred/punta.png', facebook: 'puntapacifico.ensenada', instagram: 'puntapacifico.ensenada', web: 'puntapacifico.com.mx', topMargin: 48.0),
+    BrandConfig(name: 'Selva Norte', background: 'assets/firmcred/selva.png', facebook: 'selvanortetulum', instagram: 'selvanortetulum', web: 'selvanorte.com', topMargin: 48.0),
+    BrandConfig(name: 'VidaMar', background: 'assets/firmcred/vidamar.png', facebook: 'vidamarresidencial', instagram: 'vidamarresidencial', web: 'vidamarresidencial.com', topMargin: 20.0),
   ];
 
   late BrandConfig _selectedBrand;
@@ -332,21 +330,24 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               onChanged: (_) => setState(() {}),
             ),
             
-            SizedBox(height: _selectedBrand.topMargin), // mt-X equivalent
+            // Push everything to bottom
+            const Spacer(),
             
-            // Bottom Info Grid (Dynamically built based on layout type)
-            _selectedBrand.isStacked ? _buildStackedInfoSection() : _buildTwoColumnInfoSection(),
+            // Unified Info Section (2 columns)
+            _buildUnifiedInfoSection(),
+            
+            const SizedBox(height: 20), // Bottom Margin
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTwoColumnInfoSection() {
+  Widget _buildUnifiedInfoSection() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        // Left Column: Phone & Email (Bootstrap col-5)
+        // Left Column: Phone (Top) & Email (Bottom)
         Expanded(
           flex: 5,
           child: Column(
@@ -354,13 +355,13 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono'),
-              const SizedBox(height: 2), // Reduced Gap
+              const SizedBox(height: 4),
               _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo'),
             ],
           ),
         ),
         
-        // Right Column: Web & Social
+        // Right Column: Web (Top) & Social (Bottom)
         Expanded(
           flex: 5,
           child: Column(
@@ -368,36 +369,13 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               _buildSignatureItem(Icons.public, _selectedBrand.web),
-              const SizedBox(height: 2), // Reduced Gap
+              const SizedBox(height: 4),
               _buildSocialItem(),
             ],
           ),
         ),
         
         const Expanded(flex: 3, child: SizedBox()),
-      ],
-    );
-  }
-
-  Widget _buildStackedInfoSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Phone & Email Row
-        Row(
-          children: [
-            Expanded(child: _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono')),
-            const SizedBox(width: 8), // Gap Between Phone & Email
-            Expanded(child: _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo')),
-          ],
-        ),
-        const SizedBox(height: 4), // Reduced Gap
-        // Social Row
-        _buildSocialItem(),
-        const SizedBox(height: 4), // Reduced Gap
-        // Web Row
-        _buildSignatureItem(Icons.public, _selectedBrand.web),
       ],
     );
   }
