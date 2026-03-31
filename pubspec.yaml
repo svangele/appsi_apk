@@ -42,6 +42,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/firmcred/
     - .env
 
 dependency_overrides:
