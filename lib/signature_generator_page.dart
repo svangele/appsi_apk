@@ -70,7 +70,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
         if (mounted && data != null) {
           setState(() {
             _nameController.text = '${data['nombre'] ?? ''} ${data['paterno'] ?? ''} ${data['materno'] ?? ''}'.trim();
-            _positionController.text = data['role'] ?? data['puesto'] ?? '';
+            _positionController.text = data['puesto'] ?? data['role'] ?? '';
             _phoneController.text = data['celular'] ?? data['telefono'] ?? '';
             _emailController.text = user.email ?? '';
             _isLoading = false;
@@ -131,7 +131,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('Vista Previa (600x200 aprox.)', 
+                    child: Text('Vista Previa (787x200)', 
                       style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
                   ),
                 ],
@@ -240,7 +240,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
   Widget _buildSignaturePreview() {
     // Layout mimicking the provided image
     return AspectRatio(
-      aspectRatio: 600 / 200, // Common signature aspect ratio
+      aspectRatio: 787 / 200, // Ratio specified by user
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
