@@ -124,9 +124,12 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                   Container(
                     width: double.infinity,
                     color: Colors.grey[200],
-                    child: Screenshot(
-                      controller: _screenshotController,
-                      child: _buildSignaturePreview(),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Screenshot(
+                        controller: _screenshotController,
+                        child: _buildSignaturePreview(),
+                      ),
                     ),
                   ),
                   Padding(
@@ -165,6 +168,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                             image: DecorationImage(
                               image: AssetImage(brand.background),
                               fit: BoxFit.cover,
+                              alignment: Alignment.centerRight,
                             ),
                           ),
                         ),
@@ -198,24 +202,16 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _phoneController,
-                    decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _emailController,
-                    decoration: const InputDecoration(labelText: 'Correo', border: OutlineInputBorder()),
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-              ],
+            TextField(
+              controller: _phoneController,
+              decoration: const InputDecoration(labelText: 'Teléfono', border: OutlineInputBorder()),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _emailController,
+              decoration: const InputDecoration(labelText: 'Correo', border: OutlineInputBorder()),
+              onChanged: (_) => setState(() {}),
             ),
             
             const SizedBox(height: 32),
@@ -239,13 +235,14 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
 
   Widget _buildSignaturePreview() {
     // Layout mimicking the provided image
-    return AspectRatio(
-      aspectRatio: 787 / 200, // Ratio specified by user
+    return SizedBox(
+      width: 787,
+      height: 200,
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(_selectedBrand.background),
-            fit: BoxFit.cover,
+            fit: BoxFit.fill, // Use fill to ensure it matches the 787x200 exactly
           ),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
