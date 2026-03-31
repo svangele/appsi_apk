@@ -343,6 +343,9 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               ),
               onChanged: (_) => setState(() {}),
             ),
+            
+            const SizedBox(height: 6), // Increased Gap
+            
             // Position
             TextField(
               controller: _positionController,
