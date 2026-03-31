@@ -71,8 +71,12 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
 
         if (mounted && data != null) {
           setState(() {
-            _nameController.text = '${data['nombre'] ?? ''} ${data['paterno'] ?? ''} ${data['materno'] ?? ''}'.trim();
-            _positionController.text = data['puesto'] ?? data['role'] ?? '';
+            final fullName = '${data['nombre'] ?? ''} ${data['paterno'] ?? ''} ${data['materno'] ?? ''}'.trim();
+            _nameController.text = fullName.toTitleCase();
+            
+            final rawPosition = data['puesto'] ?? data['role'] ?? '';
+            _positionController.text = rawPosition.toString().toTitleCase();
+            
             _phoneController.text = data['celular'] ?? data['telefono'] ?? '';
             _emailController.text = user.email ?? '';
             _isLoading = false;
