@@ -396,7 +396,6 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
       ],
     );
   }
-  }
 
   Widget _buildSignatureItem(IconData icon, String text) {
     return Row(
