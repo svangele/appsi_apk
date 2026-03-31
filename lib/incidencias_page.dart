@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/notification_service.dart';
+import '../services/incidencias_pdf_service.dart';
+
 
 class IncidenciasPage extends StatefulWidget {
   const IncidenciasPage({super.key});
@@ -20,6 +22,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
   String? _userFullName;
   DateTime? _fechaIngreso;
   DateTime? _fechaReingreso;
+  Map<String, dynamic>? _selectedUserProfile; // To store the full profile for PDF generation
+
 
   List<Map<String, dynamic>> _adminUserList = [];
   String? _selectedUserId;
@@ -104,7 +108,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final profile = await Supabase.instance.client
           .from('profiles')
           .select(
-              'role, nombre, paterno, materno, fecha_ingreso, fecha_reingreso')
+              '*, role, nombre, paterno, materno, fecha_ingreso, fecha_reingreso, area, ubicacion, puesto, jefe_inmediato, foto_url, numero_empleado')
           .eq('id', user.id)
           .maybeSingle();
 
@@ -125,6 +129,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                 ? DateTime.tryParse(profile['fecha_reingreso'])
                 : null;
             _selectedUserId = user.id;
+            _selectedUserProfile = profile;
           });
 
           if (_userRole == 'admin') {
@@ -143,7 +148,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       final response = await Supabase.instance.client
           .from('profiles')
           .select(
-              'id, nombre, paterno, materno, role, fecha_ingreso, fecha_reingreso')
+              '*, id, nombre, paterno, materno, role, fecha_ingreso, fecha_reingreso, area, ubicacion, puesto, jefe_inmediato, foto_url, numero_empleado')
           .eq('status_sys', 'ACTIVO')
           .order('nombre', ascending: true);
 
@@ -177,6 +182,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
           ? DateTime.tryParse(selectedProfile['fecha_reingreso'])
           : null;
       _isLoading = true; // Show loading while fetching their incidencias
+      _selectedUserProfile = selectedProfile;
     });
 
     _fetchIncidencias();
@@ -1047,7 +1053,18 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                     ),
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.picture_as_pdf_outlined,
+                      size: 20, color: Colors.blueGrey),
+                  onPressed: () {
+                    if (_selectedUserProfile != null) {
+                      IncidenciasPdfService.generateVacationRequest(
+                          _selectedUserProfile!, inc);
+                    }
+                  },
+                ),
                 if (_userRole == 'admin')
+
                   PopupMenuButton<String>(
                     onSelected: (val) async {
                       if (val == 'EDIT') {
@@ -1291,13 +1308,18 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   DataColumn(
                       label: Text('Estatus',
                           style: TextStyle(fontWeight: FontWeight.bold))),
+                  DataColumn(
+                      label: Text('Doc',
+                          style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 source: _IncidenciasDataSource(
                   items: _incidencias,
                   theme: theme,
                   isAdmin: _userRole == 'admin',
+                  userProfile: _selectedUserProfile,
                   formatDate: _formatDate,
                   getStatusColor: _getStatusColor,
+
                   onEdit: (item) => _showIncidenciaForm(incidencia: item),
                   onStatusChange: (item, val) async {
                     await Supabase.instance.client
@@ -1455,18 +1477,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     );
   }
 
-  IconData _getStatusIconData(String status) {
-    switch (status) {
-      case 'APROBADA':
-        return Icons.check_circle_outline;
-      case 'CANCELADA':
-        return Icons.cancel_outlined;
-      default:
-        return Icons.pending_outlined;
-    }
-  }
-
   Color _getStatusColor(String status) {
+
     switch (status) {
       case 'APROBADA':
         return Colors.green;
@@ -1477,11 +1489,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
     }
   }
 
-  Widget _getStatusIcon(String status) {
-    return Icon(_getStatusIconData(status), color: _getStatusColor(status));
-  }
-
   String _formatDate(String iso) {
+
     final d = DateTime.parse(iso);
     return '${d.day}/${d.month}/${d.year}';
   }
@@ -1491,7 +1500,9 @@ class _IncidenciasDataSource extends DataTableSource {
   final List<Map<String, dynamic>> items;
   final ThemeData theme;
   final bool isAdmin;
+  final Map<String, dynamic>? userProfile;
   final String Function(String) formatDate;
+
   final Color Function(String) getStatusColor;
   final Function(Map<String, dynamic>) onEdit;
   final Function(Map<String, dynamic>, String) onStatusChange;
@@ -1500,7 +1511,9 @@ class _IncidenciasDataSource extends DataTableSource {
     required this.items,
     required this.theme,
     required this.isAdmin,
+    this.userProfile,
     required this.formatDate,
+
     required this.getStatusColor,
     required this.onEdit,
     required this.onStatusChange,
@@ -1575,6 +1588,17 @@ class _IncidenciasDataSource extends DataTableSource {
                     icon: const Icon(Icons.edit_outlined, size: 20),
                     onPressed: () => onEdit(inc)),
             ],
+          ),
+        ),
+        DataCell(
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf_outlined,
+                size: 20, color: Colors.blueGrey),
+            onPressed: () {
+              if (userProfile != null) {
+                IncidenciasPdfService.generateVacationRequest(userProfile!, inc);
+              }
+            },
           ),
         ),
       ],

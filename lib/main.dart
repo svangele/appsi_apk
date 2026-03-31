@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'main_navigation.dart';
 import 'login_page.dart';
@@ -10,6 +12,8 @@ import 'package:syncfusion_localizations/syncfusion_localizations.dart';
 void main() async {
   usePathUrlStrategy();
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('es_MX', null);
+
 
   try {
     await dotenv.load(fileName: ".env");
