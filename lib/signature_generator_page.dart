@@ -40,7 +40,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     BrandConfig(name: 'AG 117', background: 'assets/firmcred/ag117.png', facebook: 'ag117cdmx', instagram: 'AG117.cdmx', web: 'sisol.com.mx', topMargin: 16.0, isStacked: true),
     BrandConfig(name: 'Bonanza', background: 'assets/firmcred/bonanza.png', facebook: 'bonanzaprisma', instagram: 'bonanzaprisma', web: 'bonanzaprisma.com', topMargin: 48.0, isStacked: false),
     BrandConfig(name: 'Olympia', background: 'assets/firmcred/olympia.png', facebook: 'olympiaresidencial', instagram: 'olympiaresidencial', web: 'olympiaresidencial.com', topMargin: 48.0, isStacked: false),
-    BrandConfig(name: 'Misiones', background: 'assets/firmcred/mse.png', facebook: 'misionestoluca', instagram: 'tolucamisiones', web: 'misionesstaesperanza.com', topMargin: 8.0, isStacked: true),
+    BrandConfig(name: 'Misiones', background: 'assets/firmcred/mse.png', facebook: 'misionestoluca', instagram: 'tolucamisiones', web: 'misionesstaesperanza.com', topMargin: 12.0, isStacked: true),
     BrandConfig(name: 'Punta Pacífico', background: 'assets/firmcred/punta.png', facebook: 'puntapacifico.ensenada', instagram: 'puntapacifico.ensenada', web: 'puntapacifico.com.mx', topMargin: 48.0, isStacked: false),
     BrandConfig(name: 'Selva Norte', background: 'assets/firmcred/selva.png', facebook: 'selvanortetulum', instagram: 'selvanortetulum', web: 'selvanorte.com', topMargin: 48.0, isStacked: false),
     BrandConfig(name: 'VidaMar', background: 'assets/firmcred/vidamar.png', facebook: 'vidamarresidencial', instagram: 'vidamarresidencial', web: 'vidamarresidencial.com', topMargin: 20.0, isStacked: true),
@@ -384,13 +384,14 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
         Row(
           children: [
             Expanded(child: _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono')),
+            const SizedBox(width: 8), // Gap Between Phone & Email
             Expanded(child: _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo')),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12), // Increased Gap
         // Social Row
         _buildSocialItem(),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12), // Increased Gap
         // Web Row
         _buildSignatureItem(Icons.public, _selectedBrand.web),
       ],
