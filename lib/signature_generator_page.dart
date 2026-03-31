@@ -228,9 +228,13 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Vista Previa (787x220)', 
-              style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text('VISTA PREVIA', 
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: Colors.grey[700],
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.2,
+              )),
           ),
         ],
       ),
@@ -294,7 +298,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     return ElevatedButton.icon(
       onPressed: _saveSignature,
       icon: const Icon(Icons.download),
-      label: const Text('Descargar Firma (PNG)'),
+      label: const Text('Descargar Firma'),
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
