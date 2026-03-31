@@ -11,6 +11,7 @@ class BrandConfig {
   final String facebook;
   final String instagram;
   final String web;
+  final double topMargin; // To match Bootstrap mt-3, mt-4, mt-5
 
   BrandConfig({
     required this.name,
@@ -18,6 +19,7 @@ class BrandConfig {
     required this.facebook,
     required this.instagram,
     required this.web,
+    required this.topMargin,
   });
 }
 
@@ -32,13 +34,13 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
   final ScreenshotController _screenshotController = ScreenshotController();
   
   final List<BrandConfig> _brands = [
-    BrandConfig(name: 'Si Sol', background: 'assets/firmcred/sisol.png', facebook: 'sisolmx', instagram: 'sisolmx', web: 'sisol.com.mx'),
-    BrandConfig(name: 'AG 117', background: 'assets/firmcred/ag117.png', facebook: 'ag117cdmx', instagram: 'AG117.cdmx', web: 'sisol.com.mx'),
-    BrandConfig(name: 'Bonanza', background: 'assets/firmcred/bonanza.png', facebook: 'bonanzaprisma', instagram: 'bonanzaprisma', web: 'bonanzaprisma.com'),
-    BrandConfig(name: 'Olympia', background: 'assets/firmcred/olympia.png', facebook: 'olympiaresidencial', instagram: 'olympiaresidencial', web: 'olympiaresidencial.com'),
-    BrandConfig(name: 'Punta Pacífico', background: 'assets/firmcred/punta.png', facebook: 'puntapacifico.ensenada', instagram: 'puntapacifico.ensenada', web: 'puntapacifico.com.mx'),
-    BrandConfig(name: 'Selva Norte', background: 'assets/firmcred/selva.png', facebook: 'selvanortetulum', instagram: 'selvanortetulum', web: 'selvanorte.com'),
-    BrandConfig(name: 'VidaMar', background: 'assets/firmcred/vidamar.png', facebook: 'vidamarresidencial', instagram: 'vidamarresidencial', web: 'vidamarresidencial.com'),
+    BrandConfig(name: 'Si Sol', background: 'assets/firmcred/sisol.png', facebook: 'sisolmx', instagram: 'sisolmx', web: 'sisol.com.mx', topMargin: 48.0),
+    BrandConfig(name: 'AG 117', background: 'assets/firmcred/ag117.png', facebook: 'ag117cdmx', instagram: 'AG117.cdmx', web: 'sisol.com.mx', topMargin: 24.0),
+    BrandConfig(name: 'Bonanza', background: 'assets/firmcred/bonanza.png', facebook: 'bonanzaprisma', instagram: 'bonanzaprisma', web: 'bonanzaprisma.com', topMargin: 48.0),
+    BrandConfig(name: 'Olympia', background: 'assets/firmcred/olympia.png', facebook: 'olympiaresidencial', instagram: 'olympiaresidencial', web: 'olympiaresidencial.com', topMargin: 48.0),
+    BrandConfig(name: 'Punta Pacífico', background: 'assets/firmcred/punta.png', facebook: 'puntapacifico.ensenada', instagram: 'puntapacifico.ensenada', web: 'puntapacifico.com.mx', topMargin: 48.0),
+    BrandConfig(name: 'Selva Norte', background: 'assets/firmcred/selva.png', facebook: 'selvanortetulum', instagram: 'selvanortetulum', web: 'selvanorte.com', topMargin: 48.0),
+    BrandConfig(name: 'VidaMar', background: 'assets/firmcred/vidamar.png', facebook: 'vidamarresidencial', instagram: 'vidamarresidencial', web: 'vidamarresidencial.com', topMargin: 24.0),
   ];
 
   late BrandConfig _selectedBrand;
@@ -110,6 +112,8 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
       child: Scaffold(
         body: LayoutBuilder(
           builder: (context, constraints) {
+            double previewWidth = 787;
+            double previewHeight = 220; // Corrected height from PHP
             final isDesktop = constraints.maxWidth > 950;
 
             if (isDesktop) {
@@ -188,7 +192,7 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Text('Vista Previa (787x200)', 
+            child: Text('Vista Previa (787x220)', 
               style: theme.textTheme.labelSmall?.copyWith(color: Colors.grey[600])),
           ),
         ],
@@ -265,30 +269,32 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     // Layout mimicking the provided image
     return SizedBox(
       width: 787,
-      height: 200,
+      height: 220,
       child: Container(
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(_selectedBrand.background),
-            fit: BoxFit.fill, // Use fill to ensure it matches the 787x200 exactly
+            fit: BoxFit.fill,
           ),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0), // pt-4 handled by spacers/vertical boxes
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 24), // pt-4 equivalent
             // Name
             TextField(
               controller: _nameController,
               cursorColor: Colors.white,
               textCapitalization: TextCapitalization.characters,
-              style: GoogleFonts.outfit(
+              style: GoogleFonts.lexend(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
                 fontSize: 22,
                 letterSpacing: 0.5,
               ),
               decoration: const InputDecoration(
+                filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -302,11 +308,13 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
             TextField(
               controller: _positionController,
               cursorColor: Colors.white,
-              style: GoogleFonts.inter(
-                color: Colors.white.withOpacity(0.9),
+              style: GoogleFonts.lexend(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
                 fontSize: 14,
               ),
               decoration: const InputDecoration(
+                filled: false,
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
@@ -317,21 +325,21 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
               onChanged: (_) => setState(() {}),
             ),
             
-            const Spacer(),
+            SizedBox(height: _selectedBrand.topMargin), // Bootstrap mt-X equivalent
             
             // Bottom Info Grid
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                // Left Column: Phone & Email
+                // Left Column: Phone & Email (Bootstrap col-5)
                 Expanded(
-                  flex: 3,
+                  flex: 5,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildEditableSignatureItem(Icons.phone_android_outlined, _phoneController, 'Teléfono'),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       _buildEditableSignatureItem(Icons.email_outlined, _emailController, 'Correo'),
                     ],
                   ),
@@ -339,19 +347,19 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
                 
                 // Right Column: Web & Social
                 Expanded(
-                  flex: 3,
+                  flex: 5,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _buildSignatureItem(Icons.public, _selectedBrand.web),
-                      const SizedBox(height: 12), // Increased padding for larger font
+                      const SizedBox(height: 6),
                       _buildSocialItem(),
                     ],
                   ),
                 ),
                 
-                // Logo area (right part of the background contains the logo usually)
+                // Logo area (right part)
                 const Expanded(flex: 3, child: SizedBox()),
               ],
             ),
@@ -365,12 +373,12 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFF00BFFF), size: 12),
-        const SizedBox(width: 6),
+        Icon(icon, color: const Color(0xFF0dcaf0), size: 14), // Cyan info color
+        const SizedBox(width: 8),
         Flexible(
           child: Text(
             text,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+            style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300),
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -382,14 +390,15 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: const Color(0xFF00BFFF), size: 12),
-        const SizedBox(width: 6),
+        Icon(icon, color: const Color(0xFF0dcaf0), size: 14), // Cyan info color
+        const SizedBox(width: 8),
         Flexible(
           child: TextField(
             controller: controller,
             cursorColor: Colors.white,
-            style: GoogleFonts.inter(color: Colors.white, fontSize: 11),
+            style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300),
             decoration: InputDecoration(
+              filled: false,
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
@@ -406,24 +415,25 @@ class _SignatureGeneratorPageState extends State<SignatureGeneratorPage> {
 
   Widget _buildSocialItem() {
     final bool sameHandle = _selectedBrand.facebook == _selectedBrand.instagram;
+    const Color iconColor = Color(0xFF0dcaf0); // Cyan info color
     
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         if (sameHandle) ...[
-          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 12),
-          const SizedBox(width: 4),
-          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 12),
+          const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
           const SizedBox(width: 6),
-          Text(_selectedBrand.facebook, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
-        ] else ...[
-          const FaIcon(FontAwesomeIcons.facebook, color: Color(0xFF00BFFF), size: 12),
-          const SizedBox(width: 4),
-          Text(_selectedBrand.facebook, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
+          const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
           const SizedBox(width: 8),
-          const FaIcon(FontAwesomeIcons.instagram, color: Color(0xFF00BFFF), size: 12),
-          const SizedBox(width: 4),
-          Text(_selectedBrand.instagram, style: GoogleFonts.inter(color: Colors.white, fontSize: 11)),
+          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
+        ] else ...[
+          const FaIcon(FontAwesomeIcons.facebook, color: iconColor, size: 14),
+          const SizedBox(width: 6),
+          Text(_selectedBrand.facebook, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
+          const SizedBox(width: 10),
+          const FaIcon(FontAwesomeIcons.instagram, color: iconColor, size: 14),
+          const SizedBox(width: 6),
+          Text(_selectedBrand.instagram, style: GoogleFonts.lexend(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w300)),
         ],
       ],
     );
