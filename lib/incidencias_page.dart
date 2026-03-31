@@ -1053,43 +1053,43 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.picture_as_pdf_outlined,
-                      size: 20, color: Colors.blueGrey),
-                  onPressed: () {
-                    if (_selectedUserProfile != null) {
-                      IncidenciasPdfService.generateVacationRequest(
-                          _selectedUserProfile!, inc);
+                PopupMenuButton<String>(
+                  onSelected: (val) async {
+                    if (val == 'PDF') {
+                      if (_selectedUserProfile != null) {
+                        IncidenciasPdfService.generateVacationRequest(
+                            _selectedUserProfile!, inc);
+                      }
+                    } else if (val == 'EDIT') {
+                      _showIncidenciaForm(incidencia: inc);
+                    } else if (_userRole == 'admin') {
+                      await Supabase.instance.client
+                          .from('incidencias')
+                          .update({'status': val}).eq('id', inc['id']);
+                      await NotificationService.send(
+                        title: 'Tu incidencia fue $val',
+                        message: 'El estado de tu petición ha cambiado a $val.',
+                        userId: inc['usuario_id'],
+                        type: 'incidencia_status',
+                      );
+                      _fetchIncidencias();
                     }
                   },
-                ),
-                if (_userRole == 'admin')
-
-                  PopupMenuButton<String>(
-                    onSelected: (val) async {
-                      if (val == 'EDIT') {
-                        _showIncidenciaForm(incidencia: inc);
-                      } else {
-                        await Supabase.instance.client
-                            .from('incidencias')
-                            .update({'status': val}).eq('id', inc['id']);
-                        await NotificationService.send(
-                          title: 'Tu incidencia fue $val',
-                          message:
-                              'El estado de tu petición ha cambiado a $val.',
-                          userId: inc['usuario_id'],
-                          type: 'incidencia_status',
-                        );
-                        _fetchIncidencias();
-                      }
-                    },
-                    itemBuilder: (ctx) => [
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                        value: 'PDF',
+                        child: ListTile(
+                            leading: Icon(Icons.picture_as_pdf_outlined),
+                            title: Text('Descargar PDF'),
+                            dense: true)),
+                    if (_userRole == 'admin' || inc['status'] == 'PENDIENTE')
                       const PopupMenuItem(
                           value: 'EDIT',
                           child: ListTile(
                               leading: Icon(Icons.edit_outlined),
                               title: Text('Editar'),
                               dense: true)),
+                    if (_userRole == 'admin') ...[
                       const PopupMenuDivider(),
                       const PopupMenuItem(
                           value: 'APROBADA', child: Text('Aprobar')),
@@ -1098,11 +1098,8 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                       const PopupMenuItem(
                           value: 'PENDIENTE', child: Text('Pendiente')),
                     ],
-                  )
-                else if (inc['status'] == 'PENDIENTE')
-                  IconButton(
-                      icon: const Icon(Icons.edit_outlined, size: 20),
-                      onPressed: () => _showIncidenciaForm(incidencia: inc)),
+                  ],
+                ),
               ],
             ),
           ),
@@ -1110,6 +1107,7 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
       },
     );
   }
+
 
   /// Admin-only: shows all PENDIENTE records from all users.
   Widget _buildPendingTable(ThemeData theme) {
@@ -1319,21 +1317,28 @@ class _IncidenciasPageState extends State<IncidenciasPage> {
                   userProfile: _selectedUserProfile,
                   formatDate: _formatDate,
                   getStatusColor: _getStatusColor,
-
                   onEdit: (item) => _showIncidenciaForm(incidencia: item),
                   onStatusChange: (item, val) async {
-                    await Supabase.instance.client
-                        .from('incidencias')
-                        .update({'status': val}).eq('id', item['id']);
-                    await NotificationService.send(
-                      title: 'Tu incidencia fue $val',
-                      message: 'El estado de tu petición ha cambiado a $val.',
-                      userId: item['usuario_id'],
-                      type: 'incidencia_status',
-                    );
-                    _fetchIncidencias();
+                    if (val == 'PDF') {
+                      if (_selectedUserProfile != null) {
+                        IncidenciasPdfService.generateVacationRequest(
+                            _selectedUserProfile!, item);
+                      }
+                    } else {
+                      await Supabase.instance.client
+                          .from('incidencias')
+                          .update({'status': val}).eq('id', item['id']);
+                      await NotificationService.send(
+                        title: 'Tu incidencia fue $val',
+                        message: 'El estado de tu petición ha cambiado a $val.',
+                        userId: item['usuario_id'],
+                        type: 'incidencia_status',
+                      );
+                      _fetchIncidencias();
+                    }
                   },
                 ),
+
                 rowsPerPage: _incidencias.isEmpty
                     ? 1
                     : (_incidencias.length > 10 ? 10 : _incidencias.length),
@@ -1557,48 +1562,44 @@ class _IncidenciasDataSource extends DataTableSource {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
-              if (isAdmin)
-                PopupMenuButton<String>(
-                  onSelected: (val) {
-                    if (val == 'EDIT') {
-                      onEdit(inc);
-                    } else {
-                      onStatusChange(inc, val);
-                    }
-                  },
-                  itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                        value: 'EDIT',
-                        child: ListTile(
-                            leading: Icon(Icons.edit_outlined),
-                            title: Text('Editar'),
-                            dense: true)),
-                    const PopupMenuDivider(),
-                    const PopupMenuItem(
-                        value: 'APROBADA', child: Text('Aprobar')),
-                    const PopupMenuItem(
-                        value: 'CANCELADA', child: Text('Cancelar')),
-                    const PopupMenuItem(
-                        value: 'PENDIENTE', child: Text('Pendiente')),
-                  ],
-                )
-              else if (inc['status'] == 'PENDIENTE')
-                IconButton(
-                    icon: const Icon(Icons.edit_outlined, size: 20),
-                    onPressed: () => onEdit(inc)),
             ],
           ),
         ),
         DataCell(
-          IconButton(
-            icon: const Icon(Icons.picture_as_pdf_outlined,
-                size: 20, color: Colors.blueGrey),
-            onPressed: () {
-              if (userProfile != null) {
-                IncidenciasPdfService.generateVacationRequest(userProfile!, inc);
+          PopupMenuButton<String>(
+            onSelected: (val) {
+              if (val == 'EDIT') {
+                onEdit(inc);
+              } else if (val == 'PDF') {
+                if (userProfile != null) {
+                  IncidenciasPdfService.generateVacationRequest(
+                      userProfile!, inc);
+                }
+              } else {
+                onStatusChange(inc, val);
               }
             },
+            itemBuilder: (ctx) => [
+              const PopupMenuItem(
+                  value: 'PDF',
+                  child: ListTile(
+                      leading: Icon(Icons.picture_as_pdf_outlined),
+                      title: Text('Descargar PDF'),
+                      dense: true)),
+              if (isAdmin || inc['status'] == 'PENDIENTE')
+                const PopupMenuItem(
+                    value: 'EDIT',
+                    child: ListTile(
+                        leading: Icon(Icons.edit_outlined),
+                        title: Text('Editar'),
+                        dense: true)),
+              if (isAdmin) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem(value: 'APROBADA', child: Text('Aprobar')),
+                const PopupMenuItem(value: 'CANCELADA', child: Text('Cancelar')),
+                const PopupMenuItem(value: 'PENDIENTE', child: Text('Pendiente')),
+              ],
+            ],
           ),
         ),
       ],
